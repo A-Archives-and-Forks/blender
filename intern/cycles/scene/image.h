@@ -78,6 +78,7 @@ class ImageMetaData {
   /* Automatically set. */
   bool compress_as_srgb = false;
   bool associate_alpha = false;
+  bool is_cmyk = false;
 
   /* Tiling */
   uint32_t tile_size = 0;

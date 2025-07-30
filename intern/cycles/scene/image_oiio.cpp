@@ -288,6 +288,8 @@ bool OIIOImageLoader::load_metadata(ImageMetaData &metadata)
     }
   }
 
+  metadata.is_cmyk = strcmp(in->format_name(), "jpeg") == 0 && metadata.channels == 4;
+
   /* Load constant or average color. */
   if (load_metadata_color(spec, "oiio:ConstantColor", metadata.average_color)) {
     // TODO: avoid loading tiles entirely
@@ -328,39 +330,6 @@ bool OIIOImageLoader::load_metadata(ImageMetaData &metadata)
             << (metadata.tile_size ? "tiled" : "untiled");
 
   return true;
-}
-
-template<typename StorageType>
-static void oiio_conform_alpha_cmyk(const ImageMetaData &metadata,
-                                    const unique_ptr<ImageInput> &in,
-                                    StorageType *pixels,
-                                    const size_t num_pixels)
-{
-  /* CMYK to RGBA. */
-  const bool cmyk = strcmp(in->format_name(), "jpeg") == 0 && metadata.channels == 4;
-  if (cmyk) {
-    const StorageType one = util_image_cast_from_float<StorageType>(1.0f);
-
-    for (int64_t i = num_pixels - 1, pixel = 0; pixel < num_pixels; pixel++, i--) {
-      const float c = util_image_cast_to_float(pixels[i * 4 + 0]);
-      const float m = util_image_cast_to_float(pixels[i * 4 + 1]);
-      const float y = util_image_cast_to_float(pixels[i * 4 + 2]);
-      const float k = util_image_cast_to_float(pixels[i * 4 + 3]);
-      pixels[i * 4 + 0] = util_image_cast_from_float<StorageType>((1.0f - c) * (1.0f - k));
-      pixels[i * 4 + 1] = util_image_cast_from_float<StorageType>((1.0f - m) * (1.0f - k));
-      pixels[i * 4 + 2] = util_image_cast_from_float<StorageType>((1.0f - y) * (1.0f - k));
-      pixels[i * 4 + 3] = one;
-    }
-  }
-
-  if (metadata.channels == 4 && metadata.associate_alpha) {
-    for (int64_t i = num_pixels - 1, pixel = 0; pixel < num_pixels; pixel++, i--) {
-      const StorageType alpha = pixels[i * 4 + 3];
-      pixels[i * 4 + 0] = util_image_multiply_native(pixels[i * 4 + 0], alpha);
-      pixels[i * 4 + 1] = util_image_multiply_native(pixels[i * 4 + 1], alpha);
-      pixels[i * 4 + 2] = util_image_multiply_native(pixels[i * 4 + 2], alpha);
-    }
-  }
 }
 
 template<TypeDesc::BASETYPE FileFormat, typename StorageType>
@@ -404,8 +373,6 @@ static bool oiio_load_pixels_full(const ImageMetaData &metadata,
     }
     tmppixels.clear();
   }
-
-  oiio_conform_alpha_cmyk(metadata, in, pixels, width * height);
 
   return true;
 }
@@ -510,7 +477,6 @@ static bool oiio_load_pixels_tile(const unique_ptr<ImageInput> &in,
     tmppixels.clear();
   }
 
-  oiio_conform_alpha_cmyk<StorageType>(metadata, in, pixels, w * h);
   return true;
 }
 

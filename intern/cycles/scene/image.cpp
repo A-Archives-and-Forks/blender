@@ -479,6 +479,38 @@ static bool conform_pixels_to_metadata_type(const ImageSingle *img,
                         metadata.type == IMAGE_DATA_TYPE_HALF4 ||
                         metadata.type == IMAGE_DATA_TYPE_FLOAT4);
 
+  /* CMYK to RGBA. */
+  if (metadata.is_cmyk && is_rgba) {
+    const StorageType one = util_image_cast_from_float<StorageType>(1.0f);
+
+    for (int64_t j = 0; j < height; j++) {
+      StorageType *pixel = pixels + j * y_stride * 4;
+      for (int64_t i = 0; i < width; i++, pixel += 4) {
+        const float c = util_image_cast_to_float(pixel[0]);
+        const float m = util_image_cast_to_float(pixel[1]);
+        const float y = util_image_cast_to_float(pixel[2]);
+        const float k = util_image_cast_to_float(pixel[3]);
+        pixel[0] = util_image_cast_from_float<StorageType>((1.0f - c) * (1.0f - k));
+        pixel[1] = util_image_cast_from_float<StorageType>((1.0f - m) * (1.0f - k));
+        pixel[2] = util_image_cast_from_float<StorageType>((1.0f - y) * (1.0f - k));
+        pixel[3] = one;
+      }
+    }
+  }
+
+  /* Associate alpha. */
+  if (channels == 4 && metadata.associate_alpha) {
+    for (int64_t j = 0; j < height; j++) {
+      StorageType *pixel = pixels + j * y_stride * 4;
+      for (int64_t i = 0; i < width; i++, pixel += 4) {
+        const StorageType alpha = pixel[3];
+        pixel[0] = util_image_multiply_native(pixel[0], alpha);
+        pixel[1] = util_image_multiply_native(pixel[1], alpha);
+        pixel[2] = util_image_multiply_native(pixel[2], alpha);
+      }
+    }
+  }
+
   if (is_rgba) {
     const StorageType one = util_image_cast_from_float<StorageType>(1.0f);
 
