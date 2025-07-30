@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0 */
 
 #include "scene/image.h"
-#include "scene/colorspace.h"
 #include "scene/image_oiio.h"
 #include "scene/image_vdb.h"
 #include "scene/scene.h"
@@ -11,6 +10,7 @@
 
 #include "util/atomic.h"
 #include "util/color.h"
+#include "util/colorspace.h"
 #include "util/image.h"
 #include "util/image_impl.h"
 #include "util/log.h"

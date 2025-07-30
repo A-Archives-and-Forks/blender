@@ -4,7 +4,6 @@
 
 #include "scene/shader_nodes.h"
 #include "kernel/svm/types.h"
-#include "scene/colorspace.h"
 #include "scene/constant_fold.h"
 #include "scene/film.h"
 #include "scene/image.h"
@@ -18,8 +17,7 @@
 
 #include "sky_model.h"
 
-#include "util/color.h"
-
+#include "util/colorspace.h"
 #include "util/log.h"
 #include "util/math_base.h"
 #include "util/transform.h"

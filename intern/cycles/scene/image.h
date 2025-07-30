@@ -6,9 +6,9 @@
 
 #include "device/memory.h"
 
-#include "scene/colorspace.h"
 #include "scene/image_cache.h"
 
+#include "util/colorspace.h"
 #include "util/set.h"
 #include "util/string.h"
 #include "util/texture.h"

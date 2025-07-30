@@ -19,14 +19,10 @@
 #include "scene/svm.h"
 #include "scene/tables.h"
 
+#include "util/colorspace.h"
 #include "util/log.h"
 #include "util/murmurhash.h"
 #include "util/transform.h"
-
-#ifdef WITH_OCIO
-#  include <OpenColorIO/OpenColorIO.h>
-namespace OCIO = OCIO_NAMESPACE;
-#endif
 
 #include "scene/shader.tables"
 
@@ -836,37 +832,6 @@ bool ShaderManager::need_update() const
   return update_flags != UPDATE_NONE;
 }
 
-#ifdef WITH_OCIO
-static bool to_scene_linear_transform(OCIO::ConstConfigRcPtr &config,
-                                      const char *colorspace,
-                                      Transform &to_scene_linear)
-{
-  OCIO::ConstProcessorRcPtr processor;
-  try {
-    processor = config->getProcessor("scene_linear", colorspace);
-  }
-  catch (OCIO::Exception &) {
-    return false;
-  }
-
-  if (!processor) {
-    return false;
-  }
-
-  const OCIO::ConstCPUProcessorRcPtr device_processor = processor->getDefaultCPUProcessor();
-  if (!device_processor) {
-    return false;
-  }
-
-  to_scene_linear = transform_identity();
-  device_processor->applyRGB(&to_scene_linear.x.x);
-  device_processor->applyRGB(&to_scene_linear.y.x);
-  device_processor->applyRGB(&to_scene_linear.z.x);
-  to_scene_linear = transform_transposed_inverse(to_scene_linear);
-  return true;
-}
-#endif
-
 void ShaderManager::compute_thin_film_table(const Transform &xyz_to_rgb)
 {
   /* Our implementation of Thin Film Fresnel is based on
@@ -970,55 +935,9 @@ void ShaderManager::init_xyz_transforms()
 
   compute_thin_film_table(xyz_to_rec709);
 
-#ifdef WITH_OCIO
-  /* Get from OpenColorO config if it has the required roles. */
-  OCIO::ConstConfigRcPtr config = nullptr;
-  try {
-    config = OCIO::GetCurrentConfig();
-  }
-  catch (OCIO::Exception &exception) {
-    LOG_WARNING << "OCIO config error: " << exception.what();
-    return;
-  }
-
-  if (!(config && config->hasRole("scene_linear"))) {
-    return;
-  }
-
+  /* Based on OpenColorIO config if possible. */
   Transform xyz_to_rgb;
-
-  if (config->hasRole("aces_interchange")) {
-    /* Standard OpenColorIO role, defined as ACES AP0 (ACES2065-1). */
-    Transform aces_to_rgb;
-    if (!to_scene_linear_transform(config, "aces_interchange", aces_to_rgb)) {
-      return;
-    }
-
-    /* This is the OpenColorIO builtin transform:
-     * UTILITY - ACES-AP0_to_CIE-XYZ-D65_BFD. */
-    const Transform ACES_AP0_to_xyz_D65 = make_transform(0.938280f,
-                                                         -0.004451f,
-                                                         0.016628f,
-                                                         0.000000f,
-                                                         0.337369f,
-                                                         0.729522f,
-                                                         -0.066890f,
-                                                         0.000000f,
-                                                         0.001174f,
-                                                         -0.003711f,
-                                                         1.091595f,
-                                                         0.000000f);
-    const Transform xyz_to_aces = transform_inverse(ACES_AP0_to_xyz_D65);
-    xyz_to_rgb = aces_to_rgb * xyz_to_aces;
-  }
-  else if (config->hasRole("XYZ")) {
-    /* Custom role used before the standard existed. */
-    if (!to_scene_linear_transform(config, "XYZ", xyz_to_rgb)) {
-      return;
-    }
-  }
-  else {
-    /* No reference role found to determine XYZ. */
+  if (!ColorSpaceManager::get_xyz_to_scene_linear_rgb(xyz_to_rgb)) {
     return;
   }
 
@@ -1037,7 +956,6 @@ void ShaderManager::init_xyz_transforms()
   is_rec709 = transform_equal_threshold(xyz_to_rgb, xyz_to_rec709, 0.0001f);
 
   compute_thin_film_table(xyz_to_rgb);
-#endif
 }
 
 size_t ShaderManager::ensure_bsdf_table_impl(DeviceScene *dscene,

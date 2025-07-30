@@ -13,6 +13,7 @@ extern ustring u_colorspace_raw;
 extern ustring u_colorspace_srgb;
 
 class ColorSpaceProcessor;
+class Transform;
 
 class ColorSpaceManager {
  public:
@@ -52,6 +53,9 @@ class ColorSpaceManager {
    * This may be useful to allow regression test to create a configuration which is considered
    * valid without knowing the actual configuration used by the final application. */
   static void init_fallback_config();
+
+  /* Compute matrix to convert from XYZ to scene linear RGB, based on the config. */
+  static bool get_xyz_to_scene_linear_rgb(Transform &xyz_to_rgb);
 
  private:
   static void is_builtin_colorspace(ustring colorspace, bool &is_scene_linear, bool &is_srgb);

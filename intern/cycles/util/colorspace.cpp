@@ -2,14 +2,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0 */
 
-#include "scene/colorspace.h"
-
+#include "util/colorspace.h"
 #include "util/color.h"
 #include "util/image.h"
 #include "util/log.h"
 #include "util/map.h"
 #include "util/math.h"
 #include "util/thread.h"
+#include "util/transform.h"
 #include "util/vector.h"
 
 #ifdef WITH_OCIO
@@ -495,6 +495,92 @@ void ColorSpaceManager::init_fallback_config()
 #ifdef WITH_OCIO
   OCIO::SetCurrentConfig(OCIO::Config::CreateRaw());
 #endif
+}
+
+#ifdef WITH_OCIO
+static bool to_scene_linear_transform(OCIO::ConstConfigRcPtr &config,
+                                      const char *colorspace,
+                                      Transform &to_scene_linear)
+{
+  OCIO::ConstProcessorRcPtr processor;
+  try {
+    processor = config->getProcessor("scene_linear", colorspace);
+  }
+  catch (OCIO::Exception &) {
+    return false;
+  }
+
+  if (!processor) {
+    return false;
+  }
+
+  const OCIO::ConstCPUProcessorRcPtr device_processor = processor->getDefaultCPUProcessor();
+  if (!device_processor) {
+    return false;
+  }
+
+  to_scene_linear = transform_identity();
+  device_processor->applyRGB(&to_scene_linear.x.x);
+  device_processor->applyRGB(&to_scene_linear.y.x);
+  device_processor->applyRGB(&to_scene_linear.z.x);
+  to_scene_linear = transform_transposed_inverse(to_scene_linear);
+  return true;
+}
+#endif
+
+bool ColorSpaceManager::get_xyz_to_scene_linear_rgb(Transform &xyz_to_rgb)
+{
+#ifdef WITH_OCIO
+  /* Get from OpenColorO config if it has the required roles. */
+  OCIO::ConstConfigRcPtr config = nullptr;
+  try {
+    config = OCIO::GetCurrentConfig();
+  }
+  catch (OCIO::Exception &exception) {
+    LOG_WARNING << "OCIO config error: " << exception.what();
+    return false;
+  }
+
+  if (!(config && config->hasRole("scene_linear"))) {
+    return false;
+  }
+
+  if (config->hasRole("aces_interchange")) {
+    /* Standard OpenColorIO role, defined as ACES AP0 (ACES2065-1). */
+    Transform aces_to_rgb;
+    if (!to_scene_linear_transform(config, "aces_interchange", aces_to_rgb)) {
+      return false;
+    }
+
+    /* This is the OpenColorIO builtin transform:
+     * UTILITY - ACES-AP0_to_CIE-XYZ-D65_BFD. */
+    const Transform ACES_AP0_to_xyz_D65 = make_transform(0.938280f,
+                                                         -0.004451f,
+                                                         0.016628f,
+                                                         0.000000f,
+                                                         0.337369f,
+                                                         0.729522f,
+                                                         -0.066890f,
+                                                         0.000000f,
+                                                         0.001174f,
+                                                         -0.003711f,
+                                                         1.091595f,
+                                                         0.000000f);
+    const Transform xyz_to_aces = transform_inverse(ACES_AP0_to_xyz_D65);
+    xyz_to_rgb = aces_to_rgb * xyz_to_aces;
+    return true;
+  }
+
+  if (config->hasRole("XYZ")) {
+    /* Custom role used before the standard existed. */
+    if (to_scene_linear_transform(config, "XYZ", xyz_to_rgb)) {
+      return true;
+    }
+  }
+
+  /* No reference role found to determine XYZ. */
+#endif
+  return false;
 }
 
 /* Template instantiations so we don't have to inline functions. */

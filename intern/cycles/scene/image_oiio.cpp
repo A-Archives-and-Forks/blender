@@ -5,6 +5,7 @@
 #include "scene/image_oiio.h"
 #include "scene/image.h"
 
+#include "util/colorspace.h"
 #include "util/image.h"
 #include "util/log.h"
 #include "util/maketx.h"
