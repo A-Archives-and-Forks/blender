@@ -6,12 +6,12 @@
 
 #include "device/device.h"
 
-#include "scene/colorspace.h"
 #include "scene/scene.h"
 #include "scene/shader_graph.h"
 #include "scene/shader_nodes.h"
 
 #include "util/array.h"
+#include "util/colorspace.h"
 #include "util/log.h"
 #include "util/stats.h"
 #include "util/string.h"

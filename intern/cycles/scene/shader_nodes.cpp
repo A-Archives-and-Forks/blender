@@ -261,7 +261,7 @@ NODE_DEFINE(ImageTextureNode)
 
 ImageTextureNode::ImageTextureNode() : ImageSlotTextureNode(get_node_type())
 {
-  colorspace = u_colorspace_raw;
+  colorspace = u_colorspace_scene_linear;
   animated = false;
 }
 
@@ -493,7 +493,7 @@ NODE_DEFINE(EnvironmentTextureNode)
 
 EnvironmentTextureNode::EnvironmentTextureNode() : ImageSlotTextureNode(get_node_type())
 {
-  colorspace = u_colorspace_raw;
+  colorspace = u_colorspace_scene_linear;
   animated = false;
 }
 

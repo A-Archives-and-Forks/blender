@@ -907,38 +907,20 @@ void ShaderManager::compute_thin_film_table(const Transform &xyz_to_rgb)
 
 void ShaderManager::init_xyz_transforms()
 {
-  /* Default to ITU-BT.709 in case no appropriate transform found.
-   * Note XYZ here is defined as having a D65 white point. */
-  const Transform xyz_to_rec709 = make_transform(3.2404542f,
-                                                 -1.5371385f,
-                                                 -0.4985314f,
-                                                 0.0f,
-                                                 -0.9692660f,
-                                                 1.8760108f,
-                                                 0.0415560f,
-                                                 0.0f,
-                                                 0.0556434f,
-                                                 -0.2040259f,
-                                                 1.0572252f,
-                                                 0.0f);
+  const Transform xyz_to_rgb = ColorSpaceManager::get_xyz_to_scene_linear_rgb();
 
-  xyz_to_r = make_float3(xyz_to_rec709.x);
-  xyz_to_g = make_float3(xyz_to_rec709.y);
-  xyz_to_b = make_float3(xyz_to_rec709.z);
-  rgb_to_y = make_float3(0.2126729f, 0.7151522f, 0.0721750f);
-  white_xyz = make_float3(0.95047f, 1.0f, 1.08883f);
-
-  rec709_to_r = make_float3(1.0f, 0.0f, 0.0f);
-  rec709_to_g = make_float3(0.0f, 1.0f, 0.0f);
-  rec709_to_b = make_float3(0.0f, 0.0f, 1.0f);
-  is_rec709 = true;
-
-  compute_thin_film_table(xyz_to_rec709);
-
-  /* Based on OpenColorIO config if possible. */
-  Transform xyz_to_rgb;
-  if (!ColorSpaceManager::get_xyz_to_scene_linear_rgb(xyz_to_rgb)) {
-    return;
+  is_rec709 = ColorSpaceManager::get_scene_linear_is_rec709();
+  if (is_rec709) {
+    rec709_to_r = make_float3(1.0f, 0.0f, 0.0f);
+    rec709_to_g = make_float3(0.0f, 1.0f, 0.0f);
+    rec709_to_b = make_float3(0.0f, 0.0f, 1.0f);
+  }
+  else {
+    const Transform xyz_to_rec709 = ColorSpaceManager::get_xyz_to_rec709();
+    const Transform rec709_to_rgb = xyz_to_rgb * transform_inverse(xyz_to_rec709);
+    rec709_to_r = make_float3(rec709_to_rgb.x);
+    rec709_to_g = make_float3(rec709_to_rgb.y);
+    rec709_to_b = make_float3(rec709_to_rgb.z);
   }
 
   xyz_to_r = make_float3(xyz_to_rgb.x);
@@ -948,12 +930,6 @@ void ShaderManager::init_xyz_transforms()
   const Transform rgb_to_xyz = transform_inverse(xyz_to_rgb);
   rgb_to_y = make_float3(rgb_to_xyz.y);
   white_xyz = transform_direction(&rgb_to_xyz, one_float3());
-
-  const Transform rec709_to_rgb = xyz_to_rgb * transform_inverse(xyz_to_rec709);
-  rec709_to_r = make_float3(rec709_to_rgb.x);
-  rec709_to_g = make_float3(rec709_to_rgb.y);
-  rec709_to_b = make_float3(rec709_to_rgb.z);
-  is_rec709 = transform_equal_threshold(xyz_to_rgb, xyz_to_rec709, 0.0001f);
 
   compute_thin_film_table(xyz_to_rgb);
 }

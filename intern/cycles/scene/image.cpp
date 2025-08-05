@@ -199,7 +199,7 @@ void ImageMetaData::finalize(const ImageAlphaType alpha_type)
   colorspace = ColorSpaceManager::detect_known_colorspace(
       colorspace, colorspace_file_hint.c_str(), colorspace_file_format, is_float());
 
-  if (colorspace == u_colorspace_raw) {
+  if (colorspace == u_colorspace_scene_linear || colorspace == u_colorspace_data) {
     /* Nothing to do. */
   }
   else if (colorspace == u_colorspace_srgb) {
@@ -225,7 +225,7 @@ void ImageMetaData::finalize(const ImageAlphaType alpha_type)
                                          alpha_type == IMAGE_ALPHA_CHANNEL_PACKED);
 
   /* Convert average color to scene linear colorspace. */
-  if (!is_zero(average_color) && colorspace != u_colorspace_raw) {
+  if (!is_zero(average_color) && colorspace != u_colorspace_scene_linear) {
     if (colorspace == u_colorspace_srgb) {
       average_color = color_srgb_to_linear_v4(average_color);
     }
@@ -565,7 +565,10 @@ static bool conform_pixels_to_metadata_type(const ImageSingle *img,
     }
   }
 
-  if (metadata.colorspace != u_colorspace_raw && metadata.colorspace != u_colorspace_srgb) {
+  if (metadata.colorspace != u_colorspace_scene_linear &&
+      metadata.colorspace != u_colorspace_scene_linear_srgb &&
+      metadata.colorspace != u_colorspace_srgb)
+  {
     /* Convert to scene linear. */
     ColorSpaceManager::to_scene_linear(
         metadata.colorspace, pixels, width, height, y_stride, is_rgba, metadata.compress_as_srgb);

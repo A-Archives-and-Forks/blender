@@ -45,7 +45,7 @@ class ImageParams {
   ustring colorspace;
   float frame = 0.0f;
 
-  ImageParams() : colorspace(u_colorspace_raw) {}
+  ImageParams() : colorspace(u_colorspace_scene_linear) {}
 
   bool operator==(const ImageParams &other) const
   {
@@ -66,8 +66,8 @@ class ImageMetaData {
   int64_t byte_size = 0;
   ImageDataType type = IMAGE_DATA_NUM_TYPES;
 
-  /* Optional color space, defaults to raw. */
-  ustring colorspace = u_colorspace_raw;
+  /* Optional color space, defaults to scene linear. */
+  ustring colorspace = u_colorspace_scene_linear;
   string colorspace_file_hint;
   const char *colorspace_file_format = "";
 

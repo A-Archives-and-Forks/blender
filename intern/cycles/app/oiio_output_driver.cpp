@@ -4,7 +4,7 @@
 
 #include "app/oiio_output_driver.h"
 
-#include "scene/colorspace.h"
+#include "util/colorspace.h"
 
 #include "util/image.h"
 #include "util/unique_ptr.h"
@@ -62,9 +62,9 @@ void OIIOOutputDriver::write_render_tile(const Tile &tile)
 
   /* Apply gamma correction for (some) non-linear file formats.
    * TODO: use OpenColorIO view transform if available. */
-  if (ColorSpaceManager::detect_known_colorspace(
-          u_colorspace_auto, "", image_output->format_name(), true) == u_colorspace_srgb)
-  {
+  ustring colorspace = ColorSpaceManager::detect_known_colorspace(
+      u_colorspace_auto, "", image_output->format_name(), true);
+  if (colorspace == u_colorspace_scene_linear_srgb || colorspace == u_colorspace_srgb) {
     const float g = 1.0f / 2.2f;
     OIIO::ImageBufAlgo::pow(image_buffer, image_buffer, {g, g, g, 1.0f});
   }
