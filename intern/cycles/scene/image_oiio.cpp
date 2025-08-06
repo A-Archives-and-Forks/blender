@@ -6,8 +6,8 @@
 #include "scene/image.h"
 
 #include "util/image.h"
+#include "util/image_maketx.h"
 #include "util/log.h"
-#include "util/maketx.h"
 #include "util/path.h"
 #include "util/string.h"
 #include "util/texture.h"

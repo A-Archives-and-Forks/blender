@@ -15,9 +15,9 @@ set(SRC
   colorspace.cpp
   debug.cpp
   ies.cpp
+  image_maketx.cpp
   image_metadata.cpp
   log.cpp
-  maketx.cpp
   math_cdf.cpp
   md5.cpp
   murmurhash.cpp
@@ -63,10 +63,10 @@ set(SRC_HEADERS
   ies.h
   image.h
   image_impl.h
+  image_maketx.h
   image_metadata.h
   list.h
   log.h
-  maketx.h
   map.h
   math.h
   math_base.h
