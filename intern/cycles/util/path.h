@@ -27,7 +27,9 @@ string path_filename(const string &path);
 string path_dirname(const string &path);
 string path_join(const string &dir, const string &file);
 string path_escape(const string &path);
+string path_normalize(const string &path);
 bool path_is_relative(const string &path);
+string path_make_relative(const string &path, const string &base);
 
 /* file info */
 size_t path_file_size(const string &path);

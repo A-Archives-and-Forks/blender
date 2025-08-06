@@ -15,6 +15,7 @@
 #include <OpenImageIO/sysutil.h>
 
 #include <cstdio>
+#include <filesystem>
 
 #include <sys/stat.h>
 
@@ -441,6 +442,15 @@ string path_escape(const string &path)
   return result;
 }
 
+string path_normalize(const string &path)
+{
+  std::string normpath = std::filesystem::path(path).lexically_normal().make_preferred().string();
+#ifdef _WIN32
+  normpath = normpath.replace("\\", "/");
+#endif
+  return normpath;
+}
+
 bool path_is_relative(const string &path)
 {
 #ifdef _WIN32
@@ -459,6 +469,30 @@ bool path_is_relative(const string &path)
   }
   return path[0] != DIR_SEP;
 #endif   /* _WIN32 */
+}
+
+string path_make_relative(const string &path_, const string &base_)
+{
+  std::filesystem::path path(path_);
+  std::filesystem::path base(base_);
+
+  if (!path.is_absolute() && base.is_absolute()) {
+    return path_;
+  }
+
+  /* Don't make relative between different drives. */
+  std::filesystem::path root_name = path.root_name();
+  if (root_name != base.root_name()) {
+    return path_;
+  }
+
+  /* Also don't make relative if root directories are different. This prevents
+   * typical cases like making relative to /tmp, but is hardly reliable. TODO */
+  if (root_name.empty() && path.root_directory() != path.root_directory()) {
+    return path_;
+  }
+
+  return path.lexically_relative(base).string();
 }
 
 #ifdef _WIN32
