@@ -109,7 +109,7 @@ BLOCKLIST_GPU = [
 
 
 class CyclesReport(render_report.Report):
-    def __init__(self, title, output_dir, oiiotool, device=None, blocklist=[], osl=False):
+    def __init__(self, title, test_dir_name, output_dir, oiiotool, device=None, blocklist=[], osl=False):
         # Split device name in format "<device_type>[-<RT>]" into individual
         # tokens, setting the RT suffix to an empty string if its not specified.
         self.device, suffix = (device.split("-") + [""])[:2]
@@ -122,16 +122,22 @@ class CyclesReport(render_report.Report):
         if self.osl:
             variation += ' OSL'
 
+
+        # Use texture cache directory in output folder, and clear it to test auto generating.
+        self.texture_cache_dir = Path(output_dir) / test_dir_name / "texture_cache"
+        for tx_file in self.texture_cache_dir.glob("*.tx"):
+            tx_file.unlink()
+
         super().__init__(title, output_dir, oiiotool, variation, blocklist)
 
     def _get_render_arguments(self, arguments_cb, filepath, base_output_filepath):
-        return arguments_cb(filepath, base_output_filepath, self.use_hwrt, self.osl)
+        return arguments_cb(filepath, base_output_filepath, self.use_hwrt, self.osl, self.texture_cache_dir)
 
     def _get_arguments_suffix(self):
         return ['--', '--cycles-device', self.device] if self.device else []
 
 
-def get_arguments(filepath, output_filepath, use_hwrt=False, osl=False):
+def get_arguments(filepath, output_filepath, use_hwrt, osl, texture_cache_dir):
     dirname = os.path.dirname(filepath)
     basedir = os.path.dirname(dirname)
     subject = os.path.basename(dirname)
@@ -171,6 +177,9 @@ def get_arguments(filepath, output_filepath, use_hwrt=False, osl=False):
 
     if osl:
         args.extend(["--python-expr", "import bpy; bpy.context.scene.cycles.shading_system = True"])
+
+    texture_cache_pref = "bpy.context.preferences.filepaths.texture_cache_directory"
+    args.extend(["--python-expr", f"import bpy; {texture_cache_pref} = \"{texture_cache_dir}\""])
 
     if subject == 'bake':
         args.extend(['--python', os.path.join(basedir, "util", "render_bake.py")])
@@ -223,7 +232,9 @@ def main():
     if device == 'METAL':
         blocklist += BLOCKLIST_METAL
 
-    report = CyclesReport('Cycles', args.outdir, args.oiiotool, device, blocklist, args.osl == 'all')
+    test_dir_name = Path(args.testdir).name
+
+    report = CyclesReport('Cycles', test_dir_name, args.outdir, args.oiiotool, device, blocklist, args.osl == 'all')
     report.set_pixelated(True)
     report.set_reference_dir("cycles_renders")
     if device == 'CPU':
@@ -242,7 +253,6 @@ def main():
     #
     # both_displacement.blend has slight differences between Linux and other platforms.
 
-    test_dir_name = Path(args.testdir).name
     if (test_dir_name in {'motion_blur', 'integrator', "displacement"}) or \
        ((args.osl == 'all') and (test_dir_name in {'shader', 'hair'})):
         report.set_fail_threshold(0.032)
