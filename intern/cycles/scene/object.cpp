@@ -287,7 +287,7 @@ uint Object::visibility_for_tracing() const
   return SHADOW_CATCHER_OBJECT_VISIBILITY(is_shadow_catcher, visibility & PATH_RAY_ALL_VISIBILITY);
 }
 
-float Object::compute_volume_step_size() const
+float Object::compute_volume_step_size(Progress &progress) const
 {
   if (geometry->geometry_type != Geometry::MESH && geometry->geometry_type != Geometry::VOLUME) {
     return FLT_MAX;
@@ -326,7 +326,7 @@ float Object::compute_volume_step_size() const
     for (Attribute &attr : volume->attributes.attributes) {
       if (attr.element == ATTR_ELEMENT_VOXEL) {
         ImageHandle &handle = attr.data_voxel();
-        const ImageMetaData &metadata = handle.metadata();
+        const ImageMetaData &metadata = handle.metadata(progress);
         if (metadata.byte_size == 0) {
           continue;
         }
@@ -830,11 +830,8 @@ void ObjectManager::device_update(Device *device,
   }
 }
 
-void ObjectManager::device_update_flags(Device * /*unused*/,
-                                        DeviceScene *dscene,
-                                        Scene *scene,
-                                        Progress & /*progress*/,
-                                        bool bounds_valid)
+void ObjectManager::device_update_flags(
+    Device * /*unused*/, DeviceScene *dscene, Scene *scene, Progress &progress, bool bounds_valid)
 {
   if (!need_update() && !need_flags_update) {
     return;
@@ -874,7 +871,7 @@ void ObjectManager::device_update_flags(Device * /*unused*/,
        * step size until the final bounds are known. */
       if (bounds_valid) {
         volume_objects.push_back(object);
-        object_volume_step[object->index] = object->compute_volume_step_size();
+        object_volume_step[object->index] = object->compute_volume_step_size(progress);
       }
       else {
         object_volume_step[object->index] = FLT_MAX;

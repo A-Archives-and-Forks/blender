@@ -9,6 +9,7 @@
 #include "device/device.h"
 
 #include "util/array.h"
+#include "util/progress.h"
 #include "util/set.h"
 #include "util/string.h"
 
@@ -148,7 +149,7 @@ class OSLShaderManager : public ShaderManager {
 class OSLCompiler {
  public:
 #ifdef WITH_OSL
-  OSLCompiler(OSL::ShadingSystem *ss, Scene *scene);
+  OSLCompiler(OSL::ShadingSystem *ss, Scene *scene, Progress &progress);
 #endif
   void compile(Shader *shader);
 
@@ -181,6 +182,7 @@ class OSLCompiler {
 
   bool background;
   Scene *scene;
+  Progress &progress;
 
  private:
 #ifdef WITH_OSL

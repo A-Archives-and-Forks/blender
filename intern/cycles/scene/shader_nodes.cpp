@@ -376,7 +376,7 @@ void ImageTextureNode::compile(SVMCompiler &compiler)
   }
 
   /* All tiles have the same metadata. */
-  const ImageMetaData metadata = handle.metadata();
+  const ImageMetaData metadata = handle.metadata(compiler.progress);
   const bool compress_as_srgb = metadata.compress_as_srgb;
 
   const int vector_offset = tex_mapping.compile_begin(compiler, vector_in);
@@ -428,7 +428,7 @@ void ImageTextureNode::compile(OSLCompiler &compiler)
     handle = image_manager->add_image(filename.string(), image_params(), tiles);
   }
 
-  const ImageMetaData metadata = handle.metadata();
+  const ImageMetaData metadata = handle.metadata(compiler.progress);
   const bool is_float = metadata.is_float();
   const bool compress_as_srgb = metadata.compress_as_srgb;
 
@@ -539,7 +539,7 @@ void EnvironmentTextureNode::compile(SVMCompiler &compiler)
     handle = image_manager->add_image(filename.string(), image_params());
   }
 
-  const ImageMetaData metadata = handle.metadata();
+  const ImageMetaData metadata = handle.metadata(compiler.progress);
   const bool compress_as_srgb = metadata.compress_as_srgb;
 
   const int vector_offset = tex_mapping.compile_begin(compiler, vector_in);
@@ -569,7 +569,7 @@ void EnvironmentTextureNode::compile(OSLCompiler &compiler)
 
   tex_mapping.compile(compiler);
 
-  const ImageMetaData metadata = handle.metadata();
+  const ImageMetaData metadata = handle.metadata(compiler.progress);
   const bool is_float = metadata.is_float();
   const bool compress_as_srgb = metadata.compress_as_srgb;
 

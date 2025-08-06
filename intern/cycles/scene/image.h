@@ -65,7 +65,8 @@ class ImageLoader {
   /* Enable use of the texture cache for this image, if supported by the image loader. */
   virtual bool resolve_texture_cache(const bool /*auto_generate*/,
                                      const string & /*texture_cache_path*/,
-                                     const ImageAlphaType /*alpha_type*/)
+                                     const ImageAlphaType /*alpha_type*/,
+                                     Progress & /*progress*/)
   {
     return false;
   }
@@ -138,7 +139,7 @@ class ImageHandle {
   bool empty() const;
   int num_tiles() const;
 
-  ImageMetaData metadata();
+  ImageMetaData metadata(Progress &progress);
   int kernel_id() const;
 
   device_image *vdb_image_memory() const;
@@ -256,7 +257,7 @@ class ImageManager {
                               const bool builtin);
   ImageUDIM *add_image_slot(vector<std::pair<int, ImageHandle>> &&tiles);
 
-  void load_image_metadata(ImageSingle *img);
+  void load_image_metadata(ImageSingle *img, Progress &progress);
 
   template<TypeDesc::BASETYPE FileFormat, typename StorageType>
   bool file_load_image(Device *device, ImageSingle *img, const int texture_limit);

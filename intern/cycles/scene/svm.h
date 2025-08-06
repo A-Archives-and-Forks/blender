@@ -78,7 +78,7 @@ class SVMCompiler {
     string full_report() const;
   };
 
-  SVMCompiler(Scene *scene);
+  SVMCompiler(Scene *scene, Progress &progress);
   void compile(Shader *shader,
                array<int4> &svm_nodes,
                const int index,
@@ -117,6 +117,7 @@ class SVMCompiler {
   }
 
   Scene *scene;
+  Progress &progress;
   ShaderGraph *current_graph;
   bool background;
 

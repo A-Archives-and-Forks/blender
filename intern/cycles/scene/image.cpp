@@ -113,17 +113,17 @@ int ImageHandle::num_tiles() const
   return 0;
 }
 
-ImageMetaData ImageHandle::metadata()
+ImageMetaData ImageHandle::metadata(Progress &progress)
 {
   if (image_slot) {
     if (image_slot->type == ImageSlot::SINGLE) {
       ImageSingle *img = static_cast<ImageSingle *>(image_slot);
-      manager->load_image_metadata(img);
+      manager->load_image_metadata(img, progress);
       return img->metadata;
     }
     if (image_slot->type == ImageSlot::UDIM) {
       ImageUDIM *udim = static_cast<ImageUDIM *>(image_slot);
-      return udim->tiles[0].second.metadata();
+      return udim->tiles[0].second.metadata(progress);
     }
   }
 
@@ -228,7 +228,7 @@ bool ImageManager::set_animation_frame_update(const int frame)
   return false;
 }
 
-void ImageManager::load_image_metadata(ImageSingle *img)
+void ImageManager::load_image_metadata(ImageSingle *img, Progress &progress)
 {
   if (!img->need_metadata) {
     return;
@@ -741,7 +741,7 @@ void ImageManager::device_load_image(Device *device,
 
   progress.set_status("Updating Images", "Loading " + img->loader->name());
 
-  load_image_metadata(img);
+  load_image_metadata(img, progress);
 
   KernelImageTexture tex;
   tex.width = img->metadata.width;

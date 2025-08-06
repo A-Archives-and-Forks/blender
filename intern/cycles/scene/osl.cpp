@@ -600,10 +600,11 @@ void OSLShaderManager::device_update_specific(Device *device,
   for (Shader *shader : scene->shaders) {
     assert(shader->graph);
 
-    auto compile = [scene, shader, background_shader](Device *sub_device, OSLGlobals *) {
+    auto compile = [scene, &progress, shader, background_shader](Device *sub_device,
+                                                                 OSLGlobals *) {
       OSL::ShadingSystem *ss = scene->osl_manager->get_shading_system(sub_device);
 
-      OSLCompiler compiler(ss, scene);
+      OSLCompiler compiler(ss, scene, progress);
       compiler.background = (shader == background_shader);
       compiler.compile(shader);
     };
@@ -873,8 +874,11 @@ void OSLShaderManager::osl_image_handles(Device *device,
 
 /* Graph Compiler */
 
-OSLCompiler::OSLCompiler(OSL::ShadingSystem *ss, Scene *scene)
-    : scene(scene), services(static_cast<OSLRenderServices *>(ss->renderer())), ss(ss)
+OSLCompiler::OSLCompiler(OSL::ShadingSystem *ss, Scene *scene, Progress &progress)
+    : scene(scene),
+      progress(progress),
+      services(static_cast<OSLRenderServices *>(ss->renderer())),
+      ss(ss)
 {
   current_type = SHADER_TYPE_SURFACE;
   current_shader = nullptr;
