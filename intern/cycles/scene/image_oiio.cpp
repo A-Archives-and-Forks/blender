@@ -389,18 +389,22 @@ bool OIIOImageLoader::load_pixels_tile(const ImageMetaData &metadata,
     }
     if (!filehandle) {
       const string &filepath = get_filepath();
-      filehandle = unique_ptr<ImageInput>(ImageInput::create(filepath));
-      if (!filehandle) {
+      unique_ptr<ImageInput> in = unique_ptr<ImageInput>(ImageInput::create(filepath));
+      if (!in) {
         filehandle_failed = true;
         return false;
       }
 
       ImageSpec spec = ImageSpec();
-      if (!filehandle->open(filepath, spec)) {
+      ImageSpec config;
+      config.attribute("oiio:UnassociatedAlpha", 1);
+
+      if (!in->open(filepath, spec, config)) {
         filehandle_failed = true;
-        filehandle.reset();
         return false;
       }
+
+      filehandle = std::move(in);
     }
   }
 

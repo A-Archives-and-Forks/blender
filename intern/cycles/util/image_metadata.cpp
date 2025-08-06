@@ -203,7 +203,7 @@ bool ImageMetaData::load_metadata(OIIO::string_view filepath, OIIO::ImageSpec *r
   }
 
   ImageSpec spec;
-  ImageSpec config = ImageSpec();
+  ImageSpec config;
 
   /* Load without automatic OIIO alpha conversion. */
   config.attribute("oiio:UnassociatedAlpha", 1);
