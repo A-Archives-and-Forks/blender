@@ -327,9 +327,7 @@ void GeometryManager::geom_calc_offset(Scene *scene, BVHLayout bvh_layout)
   }
 }
 
-void GeometryManager::device_update_preprocess(Device * /*device*/,
-                                               Scene *scene,
-                                               Progress &progress)
+void GeometryManager::device_update_preprocess(Device *device, Scene *scene, Progress &progress)
 {
   if (!need_update() && !need_flags_update) {
     return;
@@ -346,6 +344,8 @@ void GeometryManager::device_update_preprocess(Device * /*device*/,
   progress.set_status("Updating Meshes Flags");
 
   /* Update flags. */
+  bool volume_images_updated = false;
+
   for (Geometry *geom : scene->geometry) {
     geom->has_volume = false;
 
@@ -415,6 +415,13 @@ void GeometryManager::device_update_preprocess(Device * /*device*/,
      * should only do it in that case, otherwise the BVH and mesh can go
      * out of sync. */
     if (geom->is_modified() && geom->is_volume()) {
+      /* Create volume meshes if there is voxel data. */
+      if (!volume_images_updated) {
+        progress.set_status("Updating Meshes Volume Bounds");
+        device_update_volume_images(device, scene, progress);
+        volume_images_updated = true;
+      }
+
       Volume *volume = static_cast<Volume *>(geom);
       create_volume_mesh(scene, volume, progress);
 
@@ -610,7 +617,6 @@ void GeometryManager::device_update_displacement_images(Device *device,
             continue;
           }
 
-          /* TODO: pass something else than slot index? */
           ImageSlotTextureNode *image_node = static_cast<ImageSlotTextureNode *>(node);
           if (!image_node->handle.empty()) {
             bump_images.insert(&image_node->handle);
@@ -629,6 +635,35 @@ void GeometryManager::device_update_displacement_images(Device *device,
 #endif
 
   image_manager->device_load_handles(device, scene, progress, bump_images);
+}
+
+void GeometryManager::device_update_volume_images(Device *device, Scene *scene, Progress &progress)
+{
+  progress.set_status("Updating Volume Images");
+  TaskPool pool;
+  ImageManager *image_manager = scene->image_manager.get();
+  set<const ImageHandle *> volume_images;
+
+  for (Geometry *geom : scene->geometry) {
+    if (!geom->is_modified()) {
+      continue;
+    }
+
+    for (Attribute &attr : geom->attributes.attributes) {
+      if (attr.element != ATTR_ELEMENT_VOXEL) {
+        continue;
+      }
+
+      const ImageHandle &handle = attr.data_voxel();
+      if (!handle.empty()) {
+        volume_images.insert(&handle);
+      }
+    }
+  }
+
+  /* TODO: We don't really need to do the device updates here, just load them
+   * into CPU memory. */
+  image_manager->device_load_handles(device, scene, progress, volume_images);
 }
 
 void GeometryManager::device_update(Device *device,

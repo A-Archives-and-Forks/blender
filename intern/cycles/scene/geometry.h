@@ -278,6 +278,8 @@ class GeometryManager {
   void device_update_bvh(Device *device, DeviceScene *dscene, Scene *scene, Progress &progress);
 
   void device_update_displacement_images(Device *device, Scene *scene, Progress &progress);
+
+  void device_update_volume_images(Device *device, Scene *scene, Progress &progress);
 };
 
 CCL_NAMESPACE_END
