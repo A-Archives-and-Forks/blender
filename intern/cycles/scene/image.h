@@ -65,6 +65,7 @@ class ImageLoader {
   /* Enable use of the texture cache for this image, if supported by the image loader. */
   virtual bool resolve_texture_cache(const bool /*auto_generate*/,
                                      const string & /*texture_cache_path*/,
+                                     const ustring & /*colorspace*/,
                                      const ImageAlphaType /*alpha_type*/,
                                      Progress & /*progress*/)
   {

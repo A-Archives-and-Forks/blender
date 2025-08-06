@@ -89,7 +89,8 @@ color sky_radiance_nishita(vector dir, float nishita_data[10], string filename)
       if (x > 1.0) {
         x = x - 1.0;
       }
-      xyz = (color)texture(filename, x, y, "wrap", "clamp", "interp", "linear", "alpha", alpha);
+      xyz = (color)texture(
+          filename, x, 1.0 - y, "wrap", "clamp", "interp", "linear", "alpha", alpha);
     }
   }
   /* ground */
@@ -107,7 +108,7 @@ color sky_radiance_nishita(vector dir, float nishita_data[10], string filename)
         x = x - 1.0;
       }
       xyz = (color)texture(
-                filename, x, y, "wrap", "periodic", "interp", "linear", "alpha", alpha) *
+                filename, x, 1.0 - y, "wrap", "periodic", "interp", "linear", "alpha", alpha) *
             mul;
     }
   }

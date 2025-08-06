@@ -9,6 +9,7 @@
 #include "util/color.h"
 #include "util/colorspace.h"
 #include "util/image.h"
+#include "util/image_maketx.h"
 #include "util/image_metadata.h"
 #include "util/log.h"
 #include "util/param.h"
@@ -289,7 +290,24 @@ bool ImageMetaData::load_metadata(OIIO::string_view filepath, OIIO::ImageSpec *r
   }
 
   if (spec.tile_width) {
-    if (!is_power_of_two(spec.tile_width)) {
+    const std::string software = spec.get_string_attribute("Software");
+    int tx_file_format_version = INT_MAX;
+    sscanf(software.c_str(), "Blender maketx v%d", &tx_file_format_version);
+
+    if (tx_file_format_version == INT_MAX) {
+      LOG_DEBUG << "Image " << OIIO::Filesystem::filename(filepath)
+                << " has tiles, but is missing blender:TxFileFormatVersion";
+    }
+    else if (tx_file_format_version < 0 || tx_file_format_version > TX_FILE_FORMAT_VERSION) {
+      LOG_DEBUG << "Image " << OIIO::Filesystem::filename(filepath)
+                << " has tiles, but file format version " << tx_file_format_version
+                << " is not supported by this version of Cycles";
+    }
+    else if (!(channels == 1 || channels == 4)) {
+      LOG_DEBUG << "Image " << OIIO::Filesystem::filename(filepath)
+                << " has tiles, but expected 1 or 4 channels, found " << channels;
+    }
+    else if (!is_power_of_two(spec.tile_width)) {
       LOG_DEBUG << "Image " << OIIO::Filesystem::filename(filepath)
                 << " has tiles, but tile size not power of two (" << spec.tile_width << ")";
     }

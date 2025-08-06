@@ -239,6 +239,18 @@ void ImageManager::load_image_metadata(ImageSingle *img, Progress &progress)
     return;
   }
 
+  /* Change image to use tx file if supported. */
+  /* TODO: Can we further delay auto generating until we are certain the image is used.
+   * On the other hand, shold we move this earlier so explicit use of the same tx file
+   * and source iamge is deduplicated? */
+  if (use_texture_cache) {
+    img->loader->resolve_texture_cache(auto_texture_cache,
+                                       texture_cache_path,
+                                       img->params.colorspace,
+                                       img->params.alpha_type,
+                                       progress);
+  }
+
   ImageMetaData &metadata = img->metadata;
   metadata = ImageMetaData();
   metadata.colorspace = img->params.colorspace;
@@ -320,11 +332,6 @@ ImageSingle *ImageManager::add_image_slot(unique_ptr<ImageLoader> &&loader,
                                           const ImageParams &params,
                                           const bool builtin)
 {
-  /* Change image to use tx file if supported. */
-  if (use_texture_cache) {
-    loader->resolve_texture_cache(auto_texture_cache, texture_cache_path, params.alpha_type);
-  }
-
   const thread_scoped_lock device_lock(images_mutex);
 
   /* Find existing image. */

@@ -7,8 +7,8 @@
 
 #include "util/image.h"
 #include "util/image_maketx.h"
-#include "util/log.h"
 #include "util/path.h"
+#include "util/progress.h"
 #include "util/string.h"
 #include "util/texture.h"
 #include "util/thread.h"
@@ -23,132 +23,35 @@ OIIOImageLoader::OIIOImageLoader(const string &filepath) : original_filepath(fil
 
 OIIOImageLoader::~OIIOImageLoader() = default;
 
-static bool texture_cache_file_outdated(const string &filepath, const string &tx_filepath)
-{
-  if (!path_is_file(tx_filepath)) {
-    return true;
-  }
-
-  std::time_t in_time = OIIO::Filesystem::last_write_time(filepath);
-  std::time_t out_time = OIIO::Filesystem::last_write_time(tx_filepath);
-
-  /* TODO: Compare metadata? maketx:full_command_line? */
-
-  if (in_time == out_time) {
-    LOG_INFO << "Using texture cache file: " << tx_filepath;
-    return false;
-  }
-
-  LOG_INFO << "Texture cache file is outdated: " << tx_filepath;
-  return true;
-}
-
 bool OIIOImageLoader::resolve_texture_cache(const bool auto_generate,
                                             const string &texture_cache_path,
-                                            const ImageAlphaType alpha_type)
+                                            const ustring &colorspace,
+                                            const ImageAlphaType alpha_type,
+                                            Progress &progress)
 {
-  /* Nothing to do if file doesn't even exist. */
-  const string &filepath = get_filepath();
+  const std::string &filepath = get_filepath();
+  const bool found = resolve_tx(filepath,
+                                texture_cache_path,
+                                colorspace,
+                                alpha_type,
+                                IMAGE_FORMAT_PLAIN,
+                                texture_cache_filepath);
 
-  if (!path_exists(filepath)) {
-    return false;
-  }
-
-  /* TODO: progress display for users. */
-  /* TODO: delay auto generating in case image is not used. */
-  /* TODO: check if it's is a texture cache file we can actually use? */
-  /* TODO: different filenames for different wrap modes, colorspace, etc? */
-  /* TODO: avoid overwriting other file types? */
-  const char *ext = ".tx";
-  if (string_endswith(filepath, ext)) {
+  if (found) {
     return true;
-  }
-
-  /* TODO: check if path_is_relative function properly handles things like network drives. */
-  /* TODO: add hash of full path to filename when using an absolute path, to avoid conflicts?
-   * Though this would not be portable? */
-  const string tx_filename = path_filename(filepath) + ext;
-  const string tx_filepath = path_join(path_is_relative(texture_cache_path) ?
-                                           path_join(path_dirname(filepath), texture_cache_path) :
-                                           texture_cache_path,
-                                       tx_filename);
-  if (!texture_cache_file_outdated(filepath, tx_filepath)) {
-    texture_cache_filepath = tx_filepath;
-    return true;
-  }
-
-  /* Check in the same directory. */
-  if (!texture_cache_path.empty()) {
-    const string tx_local_filepath = filepath + ext;
-    if (!texture_cache_file_outdated(filepath, tx_local_filepath)) {
-      texture_cache_filepath = tx_local_filepath;
-      return true;
-    }
-  }
-
-  /* Check in default subdirectory. */
-  /* TODO: not sure if we should do this. */
-  const char *default_texture_cache_dir = "texture_cache";
-  if (texture_cache_path != default_texture_cache_dir) {
-    const string tx_default_filepath = path_join(
-        path_join(path_dirname(filepath), default_texture_cache_dir), tx_filename);
-    if (!texture_cache_file_outdated(filepath, tx_default_filepath)) {
-      texture_cache_filepath = tx_default_filepath;
-      return true;
-    }
   }
 
   if (!auto_generate) {
+    texture_cache_filepath.clear();
     return false;
   }
 
-  /* Auto generate. */
-  LOG_INFO << "Auto generating texture cache file: " << tx_filepath;
+  progress.set_status("Generating tx cache", path_filename(texture_cache_filepath));
 
-  /* TODO: explicitly check for write permission? And even write somewhere else? */
-
-  if (!path_create_directories(tx_filepath)) {
-    LOG_WARNING << "Failed to create directory for texture cache: " << path_dirname(tx_filepath);
-    return false;
+  if (!make_tx(filepath, texture_cache_filepath, colorspace, alpha_type, IMAGE_FORMAT_PLAIN)) {
+    texture_cache_filepath.clear();
   }
 
-  /* TODO: Create ImageCache to limit memory usage, enable forcefloat? */
-  /* TODO: MakeTxEnvLatl support. */
-  ImageSpec configspec;
-  configspec.attribute("maketx:constant_color_detect", true);
-  configspec.attribute("maketx:monochrome_detect", true);
-  configspec.attribute("maketx:compute_average", true);
-  configspec.attribute("maketx:fixnan", true);
-  /* TODO: temporarily resize to power of two until we can load other resolutions. */
-  configspec.attribute("maketx:resize", true);
-  /* TODO: configspec.attribute("maketx:filtername", filtername); */
-  /* TODO: configspec.attribute("maketx:prman_options", true); */
-  /* TODO: configspec.attribute("maketx:unpremult", associate_alpha); */
-  /* TODO: configspec.attribute("maketx:incolorspace", colorspace); */
-  /* TODO: configspec.attribute("maketx:wrapmodes", "black,black"); */
-  /* TODO: configspec.attribute("maketx:full_command_line", full_command_line); */
-  /* TODO: configspec.attribtue("maketx:set_full_to_pixels", true); */
-
-  /* TODO: make associate alpha match Blender logic exactly. */
-  ImageMetaData metadata;
-  load_metadata(metadata);
-  metadata.finalize(alpha_type);
-  configspec.attribute("maketx:ignore_unassoc", !metadata.associate_alpha);
-
-  OIIO::ImageBufAlgo::MakeTextureMode mode = OIIO::ImageBufAlgo::MakeTxTexture;
-  std::stringstream outstream;
-
-  if (!make_tx(mode, filepath, tx_filepath, configspec, &outstream)) {
-    /* TODO: this will contain non-errors as well. OIIO::geterror() gets just the errors but is not
-     * thread safe. */
-    LOG_WARNING << "Failed to generate tx file: " << outstream.str();
-    return false;
-  }
-
-  /* Stamp with same time as input image file to detect updates. */
-  OIIO::Filesystem::last_write_time(tx_filepath, OIIO::Filesystem::last_write_time(filepath));
-  assert(path_is_file(tx_filepath));
-  texture_cache_filepath = tx_filepath;
   return true;
 }
 
@@ -271,7 +174,7 @@ static bool oiio_load_pixels_tile(const unique_ptr<ImageInput> &in,
 
 static bool oiio_load_pixels_tile(const unique_ptr<ImageInput> &in,
                                   const ImageMetaData &metadata,
-                                  const int64_t height,
+                                  const int64_t /*height*/,
                                   const int miplevel,
                                   const int64_t x,
                                   const int64_t y,
@@ -281,39 +184,27 @@ static bool oiio_load_pixels_tile(const unique_ptr<ImageInput> &in,
                                   const int64_t y_stride,
                                   uint8_t *pixels)
 {
-  /* Flip vertical pixel order from OIIO to Cycles convention. */
-  // TODO: this fails if image is not multiple of tile size
-  const int64_t flip_y = height - h - y;
-  const int64_t flip_y_stride = -y_stride;
-  uint8_t *flip_pixels = pixels + (h - 1) * y_stride;
-
+  /* Note: Here we don't flip vertical pixel order, because this was already done in the tx file.
+   * TODO: Blender reading should also unflip them, or we should not flip them in the tx file.
+   * Another possibility would be to change tile indexing or the convention in Cycles. */
   switch (metadata.type) {
     case IMAGE_DATA_TYPE_BYTE:
     case IMAGE_DATA_TYPE_BYTE4:
-      return oiio_load_pixels_tile<uint8_t>(in,
-                                            metadata,
-                                            miplevel,
-                                            x,
-                                            flip_y,
-                                            w,
-                                            h,
-                                            TypeDesc::UINT8,
-                                            x_stride,
-                                            flip_y_stride,
-                                            flip_pixels);
+      return oiio_load_pixels_tile<uint8_t>(
+          in, metadata, miplevel, x, y, w, h, TypeDesc::UINT8, x_stride, y_stride, pixels);
     case IMAGE_DATA_TYPE_USHORT:
     case IMAGE_DATA_TYPE_USHORT4:
       return oiio_load_pixels_tile<uint16_t>(in,
                                              metadata,
                                              miplevel,
                                              x,
-                                             flip_y,
+                                             y,
                                              w,
                                              h,
                                              TypeDesc::USHORT,
                                              x_stride,
-                                             flip_y_stride,
-                                             reinterpret_cast<uint16_t *>(flip_pixels));
+                                             y_stride,
+                                             reinterpret_cast<uint16_t *>(pixels));
       break;
     case IMAGE_DATA_TYPE_HALF:
     case IMAGE_DATA_TYPE_HALF4:
@@ -321,26 +212,26 @@ static bool oiio_load_pixels_tile(const unique_ptr<ImageInput> &in,
                                          metadata,
                                          miplevel,
                                          x,
-                                         flip_y,
+                                         y,
                                          w,
                                          h,
                                          TypeDesc::HALF,
                                          x_stride,
-                                         flip_y_stride,
-                                         reinterpret_cast<half *>(flip_pixels));
+                                         y_stride,
+                                         reinterpret_cast<half *>(pixels));
     case IMAGE_DATA_TYPE_FLOAT:
     case IMAGE_DATA_TYPE_FLOAT4:
       return oiio_load_pixels_tile<float>(in,
                                           metadata,
                                           miplevel,
                                           x,
-                                          flip_y,
+                                          y,
                                           w,
                                           h,
                                           TypeDesc::FLOAT,
                                           x_stride,
-                                          flip_y_stride,
-                                          reinterpret_cast<float *>(flip_pixels));
+                                          y_stride,
+                                          reinterpret_cast<float *>(pixels));
     case IMAGE_DATA_TYPE_NANOVDB_FLOAT:
     case IMAGE_DATA_TYPE_NANOVDB_FLOAT3:
     case IMAGE_DATA_TYPE_NANOVDB_FLOAT4:

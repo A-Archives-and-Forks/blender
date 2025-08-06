@@ -19,6 +19,7 @@ class OIIOImageLoader : public ImageLoader {
 
   bool resolve_texture_cache(const bool auto_generate,
                              const string &texture_cache_path,
+                             const ustring &colorspace,
                              const ImageAlphaType alpha_type,
                              Progress &progress) override;
 
