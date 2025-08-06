@@ -246,8 +246,8 @@ typedef uint64_t ccl_gpu_image_object_3D;
 
 template<typename T>
 ccl_device_forceinline T ccl_gpu_image_object_read_2D(const ccl_gpu_image_object_2D texobj,
-                                                    const float x,
-                                                    const float y)
+                                                      const float x,
+                                                      const float y)
 {
   /* Generic implementation not possible due to limitation with SYCL bindless sampled images
    * not being able to read in a format, which is different from the supported data type of
@@ -258,9 +258,8 @@ ccl_device_forceinline T ccl_gpu_image_object_read_2D(const ccl_gpu_image_object
 }
 
 template<>
-ccl_device_forceinline float ccl_gpu_image_object_read_2D<float>(const ccl_gpu_image_object_2D texobj,
-                                                               const float x,
-                                                               const float y)
+ccl_device_forceinline float ccl_gpu_image_object_read_2D<float>(
+    const ccl_gpu_image_object_2D texobj, const float x, const float y)
 {
   sycl::ext::oneapi::experimental::sampled_image_handle image(
       (sycl::ext::oneapi::experimental::sampled_image_handle::raw_image_handle_type)texobj);
@@ -279,9 +278,9 @@ ccl_device_forceinline float4 ccl_gpu_image_object_read_2D<float4>(
 
 template<typename T>
 ccl_device_forceinline T ccl_gpu_image_object_read_3D(const ccl_gpu_image_object_3D texobj,
-                                                    const float x,
-                                                    const float y,
-                                                    const float z)
+                                                      const float x,
+                                                      const float y,
+                                                      const float z)
 {
   /* A generic implementation is not possible due to limitations with SYCL bindless sampled images
    * not being able to read in a format that is different from the supported data type of
@@ -293,10 +292,8 @@ ccl_device_forceinline T ccl_gpu_image_object_read_3D(const ccl_gpu_image_object
 }
 
 template<>
-ccl_device_forceinline float ccl_gpu_image_object_read_3D<float>(const ccl_gpu_image_object_3D texobj,
-                                                               const float x,
-                                                               const float y,
-                                                               const float z)
+ccl_device_forceinline float ccl_gpu_image_object_read_3D<float>(
+    const ccl_gpu_image_object_3D texobj, const float x, const float y, const float z)
 {
   sycl::ext::oneapi::experimental::sampled_image_handle image(
       (sycl::ext::oneapi::experimental::sampled_image_handle::raw_image_handle_type)texobj);

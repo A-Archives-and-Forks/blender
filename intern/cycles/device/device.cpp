@@ -564,7 +564,7 @@ void GPUDevice::init_host_memory(const size_t preferred_texture_headroom,
   device_working_headroom = preferred_working_headroom > 0 ? preferred_working_headroom :
                                                              32 * 1024 * 1024LL;  // 32MB
   device_image_headroom = preferred_texture_headroom > 0 ? preferred_texture_headroom :
-                                                             128 * 1024 * 1024LL;  // 128MB
+                                                           128 * 1024 * 1024LL;  // 128MB
 
   LOG_INFO << "Mapped host memory limit set to " << string_human_readable_number(map_host_limit)
            << " bytes. (" << string_human_readable_size(map_host_limit) << ")";
