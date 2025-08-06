@@ -5,7 +5,6 @@
 #include "scene/image_oiio.h"
 #include "scene/image.h"
 
-#include "util/colorspace.h"
 #include "util/image.h"
 #include "util/log.h"
 #include "util/maketx.h"
@@ -153,183 +152,9 @@ bool OIIOImageLoader::resolve_texture_cache(const bool auto_generate,
   return true;
 }
 
-static bool load_metadata_color(const ImageSpec &spec, const char *name, float4 &r_color)
-{
-  string_view metadata_color = spec.get_string_attribute(name);
-  if (metadata_color.size() == 0) {
-    return false;
-  }
-
-  vector<float> color;
-  while (metadata_color.size()) {
-    float val;
-    if (!OIIO::Strutil::parse_float(metadata_color, val)) {
-      break;
-    }
-    color.push_back(val);
-    if (!OIIO::Strutil::parse_char(metadata_color, ',')) {
-      break;
-    }
-  }
-
-  if (color.size() != size_t(spec.nchannels)) {
-    return false;
-  }
-
-  switch (spec.nchannels) {
-    case 1:
-      r_color = make_float4(color[0], color[0], color[0], 1.0f);
-      return true;
-    case 2:
-      r_color = make_float4(color[0], color[0], color[0], color[1]);
-      return true;
-    case 3:
-      r_color = make_float4(color[0], color[1], color[2], 1.0f);
-      return true;
-    case 4:
-      r_color = make_float4(color[0], color[1], color[2], color[3]);
-      return true;
-    default:
-      return false;
-  }
-}
-
 bool OIIOImageLoader::load_metadata(ImageMetaData &metadata)
 {
-  /* Perform preliminary checks, with meaningful logging. */
-  const string &filepath = get_filepath();
-  if (!path_exists(filepath)) {
-    LOG_WARNING << "File " << filepath << " does not exist.";
-    return false;
-  }
-  if (path_is_directory(filepath)) {
-    LOG_WARNING << "File " << filepath << " is a directory, can't use as image.";
-    return false;
-  }
-
-  unique_ptr<ImageInput> in(ImageInput::create(filepath));
-  if (!in) {
-    LOG_WARNING << "File " << filepath << " failed to open.";
-    return false;
-  }
-
-  ImageSpec spec;
-  ImageSpec config = ImageSpec();
-
-  /* Load without automatic OIIO alpha conversion. */
-  config.attribute("oiio:UnassociatedAlpha", 1);
-
-  if (!in->open(filepath, spec, config)) {
-    LOG_WARNING << "File " << filepath << " failed to open.";
-    return false;
-  }
-
-  metadata.width = spec.width;
-  metadata.height = spec.height;
-  metadata.compress_as_srgb = false;
-
-  /* Check the main format, and channel formats. */
-  size_t channel_size = spec.format.basesize();
-
-  bool is_float = false;
-  bool is_half = false;
-
-  if (spec.format.is_floating_point()) {
-    is_float = true;
-  }
-
-  for (size_t channel = 0; channel < spec.channelformats.size(); channel++) {
-    channel_size = max(channel_size, spec.channelformats[channel].basesize());
-    if (spec.channelformats[channel].is_floating_point()) {
-      is_float = true;
-    }
-  }
-
-  /* check if it's half float */
-  if (spec.format == TypeDesc::HALF) {
-    is_half = true;
-  }
-
-  /* set type and channels */
-  metadata.channels = spec.nchannels;
-
-  if (is_half) {
-    metadata.type = (metadata.channels > 1) ? IMAGE_DATA_TYPE_HALF4 : IMAGE_DATA_TYPE_HALF;
-  }
-  else if (is_float) {
-    metadata.type = (metadata.channels > 1) ? IMAGE_DATA_TYPE_FLOAT4 : IMAGE_DATA_TYPE_FLOAT;
-  }
-  else if (spec.format == TypeDesc::USHORT) {
-    metadata.type = (metadata.channels > 1) ? IMAGE_DATA_TYPE_USHORT4 : IMAGE_DATA_TYPE_USHORT;
-  }
-  else {
-    metadata.type = (metadata.channels > 1) ? IMAGE_DATA_TYPE_BYTE4 : IMAGE_DATA_TYPE_BYTE;
-  }
-
-  metadata.colorspace_file_format = in->format_name();
-  metadata.colorspace_file_hint = spec.get_string_attribute("oiio:ColorSpace");
-
-  metadata.associate_alpha = spec.get_int_attribute("oiio:UnassociatedAlpha", 0);
-
-  if (!metadata.associate_alpha && spec.alpha_channel != -1) {
-    /* Workaround OIIO not detecting TGA file alpha the same as Blender (since #3019).
-     * We want anything not marked as premultiplied alpha to get associated. */
-    if (strcmp(in->format_name(), "targa") == 0) {
-      metadata.associate_alpha = spec.get_int_attribute("targa:alpha_type", -1) != 4;
-    }
-    /* OIIO DDS reader never sets UnassociatedAlpha attribute. */
-    if (strcmp(in->format_name(), "dds") == 0) {
-      metadata.associate_alpha = true;
-    }
-    /* Workaround OIIO bug that sets oiio:UnassociatedAlpha on the last layer
-     * but not composite image that we read. */
-    if (strcmp(in->format_name(), "psd") == 0) {
-      metadata.associate_alpha = true;
-    }
-  }
-
-  metadata.is_cmyk = strcmp(in->format_name(), "jpeg") == 0 && metadata.channels == 4;
-
-  /* Load constant or average color. */
-  if (load_metadata_color(spec, "oiio:ConstantColor", metadata.average_color)) {
-    // TODO: avoid loading tiles entirely
-  }
-  else {
-    load_metadata_color(spec, "oiio:AverageColor", metadata.average_color);
-  }
-
-  if (spec.tile_width) {
-    // TODO: only do for particular file formats?
-    if (!is_power_of_two(spec.tile_width)) {
-      LOG_DEBUG << "Image " << name() << "has tiles, but tile size not power of two ("
-                << spec.tile_width << ")";
-    }
-    else if (spec.tile_width != spec.tile_height) {
-      LOG_DEBUG << "Image " << name() << "has tiles, but tile size is not square ("
-                << spec.tile_width << "x" << spec.tile_height << ")";
-    }
-    else if (spec.tile_depth != 1) {
-      LOG_DEBUG << "Image " << name() << "has tiles, but depth is not 1";
-    }
-    else if (spec.tile_width < KERNEL_IMAGE_TEX_PADDING * 4) {
-      LOG_DEBUG << "Image " << name() << "has tiles, but tile size too small (found "
-                << spec.tile_width << ", minimum " << KERNEL_IMAGE_TEX_PADDING * 4 << ")";
-    }
-    else if (metadata.width < spec.tile_width && metadata.height < spec.tile_width) {
-      // TODO: there are artifacts loading images smaller than tile size, because
-      // the repeat mode is not respected for padding. Fix and and remove this exception.
-      LOG_DEBUG << "Image " << name()
-                << "has tiles, but image resolution is smaller than tile size";
-    }
-    else {
-      metadata.tile_size = spec.tile_width;
-    }
-  }
-
-  LOG_DEBUG << "Image " << name() << ", " << metadata.width << "x" << metadata.height << ", "
-            << (metadata.tile_size ? "tiled" : "untiled");
-
-  return true;
+  return metadata.load_metadata(get_filepath());
 }
 
 template<TypeDesc::BASETYPE FileFormat, typename StorageType>
@@ -379,49 +204,13 @@ static bool oiio_load_pixels_full(const ImageMetaData &metadata,
 
 bool OIIOImageLoader::load_pixels_full(const ImageMetaData &metadata, uint8_t *pixels)
 {
-  /* load image from file through OIIO */
-  const string &filepath = get_filepath();
-  unique_ptr<ImageInput> in = unique_ptr<ImageInput>(ImageInput::create(filepath));
-  if (!in) {
+  if (!metadata.load_pixels(get_filepath(), pixels)) {
     return false;
   }
 
-  ImageSpec spec = ImageSpec();
-  ImageSpec config = ImageSpec();
-
-  /* Load without automatic OIIO alpha conversion, we do it ourselves. OIIO
-   * will associate alpha in the 8bit buffer for PNGs, which leads to too
-   * much precision loss when we load it as half float to do a color-space transform. */
-  config.attribute("oiio:UnassociatedAlpha", 1);
-
-  if (!in->open(filepath, spec, config)) {
-    return false;
-  }
-
-  switch (metadata.type) {
-    case IMAGE_DATA_TYPE_BYTE:
-    case IMAGE_DATA_TYPE_BYTE4:
-      return oiio_load_pixels_full<TypeDesc::UINT8, uchar>(metadata, in, (uchar *)pixels);
-    case IMAGE_DATA_TYPE_USHORT:
-    case IMAGE_DATA_TYPE_USHORT4:
-      return oiio_load_pixels_full<TypeDesc::USHORT, uint16_t>(metadata, in, (uint16_t *)pixels);
-    case IMAGE_DATA_TYPE_HALF:
-    case IMAGE_DATA_TYPE_HALF4:
-      return oiio_load_pixels_full<TypeDesc::HALF, half>(metadata, in, (half *)pixels);
-    case IMAGE_DATA_TYPE_FLOAT:
-    case IMAGE_DATA_TYPE_FLOAT4:
-      return oiio_load_pixels_full<TypeDesc::FLOAT, float>(metadata, in, (float *)pixels);
-    case IMAGE_DATA_TYPE_NANOVDB_FLOAT:
-    case IMAGE_DATA_TYPE_NANOVDB_FLOAT3:
-    case IMAGE_DATA_TYPE_NANOVDB_FLOAT4:
-    case IMAGE_DATA_TYPE_NANOVDB_FPN:
-    case IMAGE_DATA_TYPE_NANOVDB_FP16:
-    case IMAGE_DATA_TYPE_NANOVDB_EMPTY:
-    case IMAGE_DATA_NUM_TYPES:
-      break;
-  }
-
-  return false;
+  /* TODO: skip when loading tx file without texture cache? */
+  metadata.conform_pixels(pixels);
+  return true;
 }
 
 template<typename StorageType>

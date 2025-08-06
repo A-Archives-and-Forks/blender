@@ -59,6 +59,7 @@ bool SkyLoader::load_pixels_full(const ImageMetaData &metadata, uint8_t *pixels)
                                                          ozone_density);
                });
 
+  metadata.conform_pixels(pixels);
   return true;
 }
 

@@ -209,6 +209,10 @@ bool BlenderImageLoader::load_pixels_full(const ImageMetaData &metadata, uint8_t
     BKE_image_free_buffers_ex(b_image, true);
   }
 
+  if (!mismatch) {
+    metadata.conform_pixels(out_pixels);
+  }
+
   return !mismatch;
 }
 
