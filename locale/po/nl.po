@@ -1,18 +1,18 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-04-14 08:33+0000\n"
-"Last-Translator: Brecht Van Lommel <brechtvanlommel@gmail.com>\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 14:52+0000\n"
+"Last-Translator: Lisa <blendergirl@tutanota.com>\n"
 "Language-Team: Dutch <https://translate.blender.org/projects/blender-ui/ui/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10.1"
+"X-Generator: Weblate 5.12.1"
 
 
 msgid "Shader AOV"
@@ -663,6 +663,10 @@ msgstr "Extern"
 
 msgid "Target"
 msgstr "Doel"
+
+
+msgid "Normals"
+msgstr "Normalen"
 
 
 msgid "Split Materials"
@@ -2147,10 +2151,6 @@ msgid "Underline Position"
 msgstr "Positie Onderstreping"
 
 
-msgid "Normals"
-msgstr "Normalen"
-
-
 msgid "Active Texture"
 msgstr "Actieve Textuur"
 
@@ -2474,6 +2474,10 @@ msgstr "Simulatie"
 
 msgid "Color Depth"
 msgstr "Kleurdiepte"
+
+
+msgid "Video"
+msgstr "Video"
 
 
 msgid "Deflate"
@@ -5714,6 +5718,10 @@ msgid "Random"
 msgstr "Willekeurig"
 
 
+msgid "Replace Selection"
+msgstr "Vervang Selectie"
+
+
 msgctxt "Sequence"
 msgid "Type"
 msgstr "Type"
@@ -5772,10 +5780,6 @@ msgstr "Tekst"
 msgctxt "Operator"
 msgid "Copy"
 msgstr "Kopieer"
-
-
-msgid "Replace Selection"
-msgstr "Vervang Selectie"
 
 
 msgctxt "Operator"
@@ -6425,10 +6429,6 @@ msgstr "Schaduwen"
 
 msgid "Audio"
 msgstr "Geluid"
-
-
-msgid "Video"
-msgstr "Video"
 
 
 msgid "Views"
@@ -7726,11 +7726,6 @@ msgstr "Spiegel Y"
 
 
 msgctxt "Operator"
-msgid "Toggle Fullscreen Area"
-msgstr "Volledig Scherm Gebied aan/uit"
-
-
-msgctxt "Operator"
 msgid "Sound"
 msgstr "Geluid"
 
@@ -7777,6 +7772,21 @@ msgstr "Vervagen"
 msgctxt "Operator"
 msgid "Change Keying Set..."
 msgstr "Pas Sleutel Set..."
+
+
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "Verwijder Sleutelframes..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "Maak Sleutelframes Leeg..."
+
+
+msgctxt "Operator"
+msgid "Interactive Mirror"
+msgstr "Interactieve Spiegel"
 
 
 msgctxt "Operator"
@@ -8002,11 +8012,6 @@ msgstr "Locatie:"
 
 
 msgctxt "Operator"
-msgid "Interactive Mirror"
-msgstr "Interactieve Spiegel"
-
-
-msgctxt "Operator"
 msgid "Active Camera"
 msgstr "Actieve Camera"
 
@@ -8119,16 +8124,6 @@ msgstr "Luidspreker"
 msgctxt "Operator"
 msgid "Make Local..."
 msgstr "Maak Lokaal..."
-
-
-msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "Verwijder Sleutelframes..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "Maak Sleutelframes Leeg..."
 
 
 msgctxt "Operator"
@@ -8285,10 +8280,6 @@ msgstr "Kijk Naar"
 msgctxt "Plural"
 msgid "Sharp"
 msgstr "Scherp"
-
-
-msgid "Seams"
-msgstr "Naden"
 
 
 msgctxt "Operator"
@@ -8793,6 +8784,10 @@ msgid "Icosphere"
 msgstr "Icosphere"
 
 
+msgid "Seams"
+msgstr "Naden"
+
+
 msgid "Close"
 msgstr "Sluit"
 
@@ -8992,10 +8987,6 @@ msgid "Select Layer"
 msgstr "Selecteer Laag"
 
 
-msgid "Can't Load Image"
-msgstr "Kan Afbeelding Niet Laden"
-
-
 msgid "unsupported image format"
 msgstr "niet-ondersteunde afbeeldingsindeling"
 
@@ -9006,10 +8997,6 @@ msgstr "Afbeelding \"%s\" opgeslagen"
 
 msgid "Saved %s"
 msgstr "%s Opgeslagen"
-
-
-msgid "can't save image while rendering"
-msgstr "kan afbeelding niet opslaan tijdens renderen"
 
 
 msgid "Now"
@@ -9084,14 +9071,6 @@ msgstr "Vervang Origineel"
 
 msgid "Crease Edges"
 msgstr "Vouwranden"
-
-
-msgid "Path:"
-msgstr "Pad:"
-
-
-msgid "Layer:"
-msgstr "Laag:"
 
 
 msgid "Old"

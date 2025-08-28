@@ -156,6 +156,8 @@ void WM_init_splash(bContext *C);
 
 void WM_init_gpu();
 
+bool WM_gpu_is_initialized();
+
 /**
  * Return an identifier for the underlying GHOST implementation.
  * \warning Use of this function should be limited & never for compatibility checks.
@@ -314,6 +316,11 @@ bool WM_window_is_main_top_level(const wmWindow *win);
 bool WM_window_is_fullscreen(const wmWindow *win);
 bool WM_window_is_maximized(const wmWindow *win);
 
+/*
+ * Support for wide gamut and HDR colors.
+ */
+bool WM_window_support_hdr_color(const wmWindow *win);
+
 /**
  * Some editor data may need to be synced with scene data (3D View camera and layers).
  * This function ensures data is synced for editors
@@ -448,7 +455,7 @@ void WM_file_autoexec_init(const char *filepath);
 /**
  * \param use_scripts_autoexec_check: When true, script auto-execution checks excluded directories.
  * Note that this is passed in as an argument because `filepath` may reference a path to recover.
- * In this case the that used for exclusion is the recovery path which is only known once
+ * In this case the file-path used for exclusion is the recovery path which is only known once
  * the file has been loaded.
  */
 bool WM_file_read(bContext *C,
@@ -687,7 +694,7 @@ void WM_event_remove_ui_handler(ListBase *handlers,
                                 wmUIHandlerRemoveFunc remove_fn,
                                 void *user_data,
                                 bool postpone);
-void WM_event_remove_area_handler(ListBase *handlers, void *area);
+void WM_event_remove_handlers_by_area(ListBase *handlers, const ScrArea *area);
 void WM_event_free_ui_handler_all(bContext *C,
                                   ListBase *handlers,
                                   wmUIHandlerFunc handle_fn,
@@ -819,13 +826,6 @@ wmTimer *WM_event_timer_add_notifier(wmWindowManager *wm,
                                      double time_step);
 
 void WM_event_timer_free_data(wmTimer *timer);
-/**
- * Free all timers immediately.
- *
- * \note This should only be used on-exit,
- * in all other cases timers should be tagged for removal by #WM_event_timer_remove.
- */
-void WM_event_timers_free_all(wmWindowManager *wm);
 
 /**
  * Mark the given `timer` to be removed, actual removal and deletion is deferred and handled
@@ -1974,10 +1974,10 @@ void WM_autosave_write(wmWindowManager *wm, Main *bmain);
 
 /**
  * Lock the interface for any communication.
- * For #WM_set_locked_interface_with_flags, #lock_flags is #ARegionDrawLockFlags
+ * For #WM_locked_interface_set_with_flags, #lock_flags is #ARegionDrawLockFlags
  */
-void WM_set_locked_interface(wmWindowManager *wm, bool lock);
-void WM_set_locked_interface_with_flags(wmWindowManager *wm, short lock_flags);
+void WM_locked_interface_set(wmWindowManager *wm, bool lock);
+void WM_locked_interface_set_with_flags(wmWindowManager *wm, short lock_flags);
 
 void WM_event_tablet_data_default_set(wmTabletData *tablet_data);
 

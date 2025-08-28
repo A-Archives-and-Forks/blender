@@ -105,7 +105,7 @@ class NODE_MT_category_compositor_color_adjust(Menu):
         node_add_menu.add_node_type(layout, "CompositorNodeColorBalance")
         node_add_menu.add_node_type(layout, "CompositorNodeColorCorrection")
         node_add_menu.add_node_type(layout, "CompositorNodeExposure")
-        node_add_menu.add_node_type(layout, "CompositorNodeGamma")
+        node_add_menu.add_node_type(layout, "ShaderNodeGamma")
         node_add_menu.add_node_type(layout, "CompositorNodeHueCorrect")
         node_add_menu.add_node_type(layout, "CompositorNodeHueSat")
         node_add_menu.add_node_type(layout, "CompositorNodeCurveRGB")
@@ -145,12 +145,15 @@ class NODE_MT_category_compositor_filter(Menu):
         node_add_menu.add_node_type(layout, "CompositorNodeDilateErode")
         node_add_menu.add_node_type(layout, "CompositorNodeInpaint")
         layout.separator()
-        node_add_menu.add_node_type_with_searchable_enum(context, layout, "CompositorNodeFilter", "filter_type")
-        node_add_menu.add_node_type_with_searchable_enum(context, layout, "CompositorNodeGlare", "glare_type")
+        node_add_menu.add_node_type_with_searchable_enum_socket(
+            context, layout, "CompositorNodeFilter", "Type", [
+                "Soften", "Box Sharpen", "Diamond Sharpen", "Laplace", "Sobel", "Prewitt", "Kirsch", "Shadow"])
+        node_add_menu.add_node_type_with_searchable_enum_socket(
+            context, layout, "CompositorNodeGlare", "Type", [
+                "Bloom", "Ghosts", "Streaks", "Fog Glow", "Simple Star", "Sun Beams"])
         node_add_menu.add_node_type(layout, "CompositorNodeKuwahara")
         node_add_menu.add_node_type(layout, "CompositorNodePixelate")
         node_add_menu.add_node_type(layout, "CompositorNodePosterize")
-        node_add_menu.add_node_type(layout, "CompositorNodeSunBeams")
 
         node_add_menu.draw_assets_for_catalog(layout, self.bl_label)
 

@@ -450,7 +450,7 @@ static void export_hair_motion_validate_attribute(Hair *hair,
   if (num_motion_keys != num_keys || !have_motion) {
     /* No motion or hair "topology" changed, remove attributes again. */
     if (num_motion_keys != num_keys) {
-      LOG_WORK << "Hair topology changed, removing motion attribute.";
+      LOG_DEBUG << "Hair topology changed, removing motion attribute.";
     }
     hair->attributes.remove(ATTR_STD_MOTION_VERTEX_POSITION);
   }
@@ -675,6 +675,8 @@ void BlenderSync::sync_particle_hair(
       }
     }
   }
+
+  hair->curve_shape = scene->params.hair_shape;
 }
 
 template<typename TypeInCycles, typename GetValueAtIndex>
@@ -1029,6 +1031,15 @@ void BlenderSync::sync_hair(Hair *hair, BObjectInfo &b_ob_info, bool motion, con
   else {
     export_hair_curves(scene, hair, b_curves, need_motion, motion_scale);
   }
+
+  const blender::VArray<int8_t> b_types = b_curves.curve_types();
+  /* This does not handle cases where the curve type is not the same across all curves */
+  if (!b_types.is_empty() && b_types[0] == CURVE_TYPE_POLY) {
+    hair->curve_shape = CURVE_THICK_LINEAR;
+  }
+  else {
+    hair->curve_shape = scene->params.hair_shape;
+  }
 }
 
 void BlenderSync::sync_hair(BObjectInfo &b_ob_info, Hair *hair)
@@ -1067,6 +1078,8 @@ void BlenderSync::sync_hair(BObjectInfo &b_ob_info, Hair *hair)
   }
 
   hair->attributes.update(std::move(new_hair.attributes));
+
+  hair->curve_shape = new_hair.curve_shape;
 
   /* tag update */
 

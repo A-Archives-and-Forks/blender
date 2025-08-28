@@ -153,7 +153,7 @@ Instances::Instances(Instances &&other)
       instances_num_(other.instances_num_),
       attributes_(std::move(other.attributes_)),
       reference_user_counts_(std::move(other.reference_user_counts_)),
-      almost_unique_ids_cache_(std::move(other.almost_unique_ids_cache_))
+      unique_ids_cache_(std::move(other.unique_ids_cache_))
 {
 }
 
@@ -162,7 +162,7 @@ Instances::Instances(const Instances &other)
       instances_num_(other.instances_num_),
       attributes_(other.attributes_),
       reference_user_counts_(other.reference_user_counts_),
-      almost_unique_ids_cache_(other.almost_unique_ids_cache_)
+      unique_ids_cache_(other.unique_ids_cache_)
 {
 }
 
@@ -193,10 +193,12 @@ void Instances::resize(int capacity)
   const int old_size = this->instances_num();
   attributes_.resize(AttrDomain::Instance, capacity);
   instances_num_ = capacity;
-  fill_attribute_range_default(this->attributes_for_write(),
-                               AttrDomain::Instance,
-                               {},
-                               IndexRange::from_begin_end(old_size, capacity));
+  if (capacity > old_size) {
+    fill_attribute_range_default(this->attributes_for_write(),
+                                 AttrDomain::Instance,
+                                 {},
+                                 IndexRange::from_begin_end(old_size, capacity));
+  }
 }
 
 void Instances::add_instance(const int instance_handle, const float4x4 &transform)
@@ -213,7 +215,8 @@ void Instances::add_instance(const int instance_handle, const float4x4 &transfor
 Span<int> Instances::reference_handles() const
 {
   return get_span_attribute<int>(
-      attributes_, AttrDomain::Instance, ".reference_index", instances_num_);
+             attributes_, AttrDomain::Instance, ".reference_index", instances_num_)
+      .value_or(Span<int>());
 }
 
 MutableSpan<int> Instances::reference_handles_for_write()
@@ -225,7 +228,8 @@ MutableSpan<int> Instances::reference_handles_for_write()
 Span<float4x4> Instances::transforms() const
 {
   return get_span_attribute<float4x4>(
-      attributes_, AttrDomain::Instance, "instance_transform", instances_num_);
+             attributes_, AttrDomain::Instance, "instance_transform", instances_num_)
+      .value_or(Span<float4x4>());
 }
 
 MutableSpan<float4x4> Instances::transforms_for_write()
@@ -269,6 +273,11 @@ int Instances::add_new_reference(const InstanceReference &reference)
 }
 
 Span<InstanceReference> Instances::references() const
+{
+  return references_;
+}
+
+MutableSpan<InstanceReference> Instances::references_for_write()
 {
   return references_;
 }
@@ -459,10 +468,15 @@ static Array<int> generate_unique_instance_ids(Span<int> original_ids)
         break;
       }
       if (iteration == max_iteration) {
-        /* It seems to be very unlikely that we ever run into this case (assuming there are less
-         * than 2^30 instances). However, if that happens, it's better to use an id that is not
-         * unique than to be stuck in an infinite loop. */
-        unique_ids[instance_index] = original_id;
+        /* The likelyhood of running into this case is very low even if there is a huge number of
+         * instances. For correctness, it's still good to systematically find an unused id instead
+         * of purely relying on randomness. */
+        for (const int generated_id : IndexRange(INT32_MAX)) {
+          if (used_unique_ids.add(generated_id)) {
+            unique_ids[instance_index] = generated_id;
+            break;
+          }
+        }
         break;
       }
     }
@@ -488,9 +502,9 @@ Span<int> Instances::reference_user_counts() const
   return reference_user_counts_.data();
 }
 
-Span<int> Instances::almost_unique_ids() const
+Span<int> Instances::unique_ids() const
 {
-  almost_unique_ids_cache_.ensure([&](Array<int> &r_data) {
+  unique_ids_cache_.ensure([&](Array<int> &r_data) {
     const VArraySpan<int> instance_ids = *this->attributes().lookup<int>("id");
     if (instance_ids.is_empty()) {
       r_data.reinitialize(instances_num_);
@@ -499,7 +513,7 @@ Span<int> Instances::almost_unique_ids() const
     }
     r_data = generate_unique_instance_ids(instance_ids);
   });
-  return almost_unique_ids_cache_.data();
+  return unique_ids_cache_.data();
 }
 
 static float3 get_transform_position(const float4x4 &transform)

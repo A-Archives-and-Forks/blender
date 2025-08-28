@@ -152,6 +152,7 @@ set_property(GLOBAL PROPERTY ICON_GEOM_NAMES
   ops.sculpt.polyline_trim
   ops.sequencer.blade
   ops.sequencer.retime
+  ops.sequencer.slip
   ops.transform.bone_envelope
   ops.transform.bone_size
   ops.transform.edge_slide
@@ -317,6 +318,10 @@ if(WITH_BLENDER)
       driver_transform
       duplicate
       edgesel
+      edge_bevel
+      edge_crease
+      edge_seam
+      edge_sharp
       editmode_hlt
       empty_arrows
       empty_axis
@@ -723,6 +728,8 @@ if(WITH_BLENDER)
       play
       play_reverse
       play_sound
+      playhead_snap_off
+      playhead_snap_on
       plugin
       plus
       pmarker
@@ -899,6 +906,7 @@ if(WITH_BLENDER)
       uv_sync_select
       uv_vertexsel
       vertexsel
+      vertex_crease
       view3d
       viewzoom
       view_camera
@@ -958,6 +966,7 @@ if(WITH_BLENDER)
       cursor_pointer
       cursor_right_handle
       cursor_s_arrow
+      cursor_slip
       cursor_stop
       cursor_swap_area
       cursor_text_edit

@@ -5,6 +5,7 @@
 set(INC
   .
   ..
+  include
   ../intern
   ../../editors/include
   ../../compositor
@@ -57,7 +58,6 @@ set(SRC
   nodes/node_composite_file_output.cc
   nodes/node_composite_filter.cc
   nodes/node_composite_flip.cc
-  nodes/node_composite_gamma.cc
   nodes/node_composite_glare.cc
   nodes/node_composite_group_input.cc
   nodes/node_composite_group_output.cc
@@ -94,7 +94,6 @@ set(SRC
   nodes/node_composite_setalpha.cc
   nodes/node_composite_split.cc
   nodes/node_composite_stabilize2d.cc
-  nodes/node_composite_sunbeams.cc
   nodes/node_composite_switch.cc
   nodes/node_composite_switchview.cc
   nodes/node_composite_tonemap.cc
@@ -108,6 +107,7 @@ set(SRC
   node_composite_tree.cc
   node_composite_util.cc
 
+  include/NOD_compositor_file_output.hh
   node_composite_util.hh
 )
 
@@ -115,6 +115,7 @@ set(LIB
   PRIVATE bf::blenkernel
   PRIVATE bf::blenlib
   PRIVATE bf::blentranslation
+  PRIVATE bf::blenloader
   PRIVATE bf::depsgraph
   PRIVATE bf::dna
   PRIVATE bf::functions

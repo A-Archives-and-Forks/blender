@@ -320,8 +320,7 @@ MTLContext::~MTLContext()
     if (this->pipeline_state.ubo_bindings[i].bound &&
         this->pipeline_state.ubo_bindings[i].ubo != nullptr)
     {
-      GPUUniformBuf *ubo = wrap(
-          static_cast<UniformBuf *>(this->pipeline_state.ubo_bindings[i].ubo));
+      gpu::UniformBuf *ubo = this->pipeline_state.ubo_bindings[i].ubo;
       GPU_uniformbuf_unbind(ubo);
     }
   }
@@ -1301,7 +1300,7 @@ bool MTLContext::ensure_buffer_bindings(
     }
   }
 
-  /* Bind Global GPUStorageBuf's */
+  /* Bind Global StorageBuf's */
   /* Iterate through expected SSBOs in the shader interface, and check if the globally bound ones
    * match. This is used to support the gpu_uniformbuffer module, where the uniform data is global,
    * and not owned by the shader instance. */
@@ -2409,7 +2408,9 @@ void MTLContext::sampler_bind(MTLSamplerState sampler_state, uint sampler_unit)
   this->pipeline_state.sampler_bindings[sampler_unit] = {true, sampler_state};
 }
 
-void MTLContext::texture_unbind(gpu::MTLTexture *mtl_texture, bool is_image)
+void MTLContext::texture_unbind(gpu::MTLTexture *mtl_texture,
+                                bool is_image,
+                                StateManager *state_manager)
 {
   BLI_assert(mtl_texture);
 
@@ -2423,6 +2424,9 @@ void MTLContext::texture_unbind(gpu::MTLTexture *mtl_texture, bool is_image)
     if (resource_bind_table[i].texture_resource == mtl_texture) {
       resource_bind_table[i].texture_resource = nullptr;
       resource_bind_table[i].used = false;
+      if (is_image) {
+        state_manager->image_formats[i] = TextureWriteFormat::Invalid;
+      }
     }
   }
 

@@ -532,12 +532,12 @@ ccl_device_template_spec bool set_attribute(ustring str,
   if (type.basetype == TypeDesc::STRING && type.aggregate == TypeDesc::SCALAR &&
       type.arraylen == 0)
   {
-    ustring *sval = (ustring *)val;
+    OSLUStringHash *sval = (OSLUStringHash *)val;
     sval[0] = str;
 
     if (derivatives) {
-      sval[1] = OSLRenderServices::u_empty;
-      sval[2] = OSLRenderServices::u_empty;
+      sval[1] = OSLUStringHash();
+      sval[2] = OSLUStringHash();
     }
 
     return true;
@@ -791,6 +791,11 @@ bool OSLRenderServices::get_object_standard_attribute(
 #endif
   if (name == u_normal_map_normal) {
     if (sd->type & PRIMITIVE_TRIANGLE) {
+      const AttributeDescriptor desc = find_attribute(
+          kg, sd->object, sd->prim, ATTR_STD_NORMAL_UNDISPLACED);
+      if (desc.offset != ATTR_STD_NOT_FOUND) {
+        return get_object_attribute(kg, sd, desc, type, derivatives, val);
+      }
       const float3 f = triangle_smooth_normal_unnormalized(kg, sd, sd->Ng, sd->prim, sd->u, sd->v);
       return set_attribute(f, type, derivatives, val);
     }
@@ -1179,7 +1184,7 @@ bool OSLRenderServices::texture3d(OSLUStringHash filename,
       /* TODO: test this case. Different handle type? */
       const float3 P_float3 = make_float3(P.x, P.y, P.z);
       float4 rgba = kernel_image_interp_3d(
-          kernel_globals, handle->id, P_float3, INTERPOLATION_NONE, -1.0f);
+          kernel_globals, globals->sd, handle->id, P_float3, INTERPOLATION_NONE, false);
 
       result[0] = rgba[0];
       if (nchannels > 1) {

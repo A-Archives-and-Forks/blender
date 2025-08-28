@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <variant>
 
 #include "MEM_guardedalloc.h"
@@ -51,8 +52,9 @@ bool Result::is_single_value_only_type(ResultType type)
     case ResultType::Int:
     case ResultType::Int2:
     case ResultType::Bool:
-      return false;
     case ResultType::Menu:
+      return false;
+    case ResultType::String:
       return true;
   }
 
@@ -84,6 +86,10 @@ blender::gpu::TextureFormat Result::gpu_texture_format(ResultType type, ResultPr
           /* No bool texture formats, so we store in an 8-bit integer. Precision doesn't matter. */
           return blender::gpu::TextureFormat::SINT_8;
         case ResultType::Menu:
+          /* Menu values are technically stored in 32-bit integers, but 8 is sufficient in
+           * practice. */
+          return blender::gpu::TextureFormat::SINT_8;
+        case ResultType::String:
           /* Single only types do not support GPU code path. */
           BLI_assert(Result::is_single_value_only_type(type));
           BLI_assert_unreachable();
@@ -111,6 +117,10 @@ blender::gpu::TextureFormat Result::gpu_texture_format(ResultType type, ResultPr
           /* No bool texture formats, so we store in an 8-bit integer. Precision doesn't matter. */
           return blender::gpu::TextureFormat::SINT_8;
         case ResultType::Menu:
+          /* Menu values are technically stored in 32-bit integers, but 8 is sufficient in
+           * practice. */
+          return blender::gpu::TextureFormat::SINT_8;
+        case ResultType::String:
           /* Single only types do not support GPU storage. */
           BLI_assert(Result::is_single_value_only_type(type));
           BLI_assert_unreachable();
@@ -135,8 +145,9 @@ eGPUDataFormat Result::gpu_data_format(ResultType type)
     case ResultType::Int:
     case ResultType::Int2:
     case ResultType::Bool:
-      return GPU_DATA_INT;
     case ResultType::Menu:
+      return GPU_DATA_INT;
+    case ResultType::String:
       /* Single only types do not support GPU storage. */
       BLI_assert(Result::is_single_value_only_type(type));
       BLI_assert_unreachable();
@@ -317,7 +328,9 @@ const CPPType &Result::cpp_type(const ResultType type)
     case ResultType::Bool:
       return CPPType::get<bool>();
     case ResultType::Menu:
-      return CPPType::get<int32_t>();
+      return CPPType::get<nodes::MenuValue>();
+    case ResultType::String:
+      return CPPType::get<std::string>();
   }
 
   BLI_assert_unreachable();
@@ -345,6 +358,8 @@ const char *Result::type_name(const ResultType type)
       return "bool";
     case ResultType::Menu:
       return "menu";
+    case ResultType::String:
+      return "string";
   }
 
   BLI_assert_unreachable();
@@ -431,7 +446,10 @@ void Result::allocate_single_value()
       this->set_single_value(false);
       break;
     case ResultType::Menu:
-      this->set_single_value(0);
+      this->set_single_value(nodes::MenuValue(0));
+      break;
+    case ResultType::String:
+      this->set_single_value(std::string(""));
       break;
   }
 }
@@ -453,7 +471,7 @@ Result Result::upload_to_gpu(const bool from_pool)
   return result;
 }
 
-void Result::bind_as_texture(GPUShader *shader, const char *texture_name) const
+void Result::bind_as_texture(gpu::Shader *shader, const char *texture_name) const
 {
   BLI_assert(storage_type_ == ResultStorageType::GPU);
 
@@ -464,7 +482,7 @@ void Result::bind_as_texture(GPUShader *shader, const char *texture_name) const
   GPU_texture_bind(this->gpu_texture(), texture_image_unit);
 }
 
-void Result::bind_as_image(GPUShader *shader, const char *image_name, bool read) const
+void Result::bind_as_image(gpu::Shader *shader, const char *image_name, bool read) const
 {
   BLI_assert(storage_type_ == ResultStorageType::GPU);
 
@@ -760,6 +778,7 @@ void Result::update_single_value_data()
         case ResultType::Int:
         case ResultType::Int2:
         case ResultType::Bool:
+        case ResultType::Menu:
           GPU_texture_update(
               this->gpu_texture(), this->get_gpu_data_format(), this->single_value().get());
           break;
@@ -770,7 +789,7 @@ void Result::update_single_value_data()
           GPU_texture_update(this->gpu_texture(), GPU_DATA_FLOAT, vector_value);
           break;
         }
-        case ResultType::Menu:
+        case ResultType::String:
           /* Single only types do not support GPU storage. */
           BLI_assert(Result::is_single_value_only_type(this->type()));
           BLI_assert_unreachable();

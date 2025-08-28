@@ -277,12 +277,12 @@ void draw_polyline(const float4x4 &transform,
   immUnbindProgram();
 }
 
-static GPUUniformBuf *create_shader_ubo(const RegionView3D &rv3d,
-                                        const int2 &win_size,
-                                        const Object &object,
-                                        const eGPDstroke_Caps cap_start,
-                                        const eGPDstroke_Caps cap_end,
-                                        const bool is_fill_stroke)
+static gpu::UniformBuf *create_shader_ubo(const RegionView3D &rv3d,
+                                          const int2 &win_size,
+                                          const Object &object,
+                                          const eGPDstroke_Caps cap_start,
+                                          const eGPDstroke_Caps cap_end,
+                                          const bool is_fill_stroke)
 {
   GPencilStrokeData data;
   copy_v2_v2(data.viewport, float2(win_size));
@@ -331,7 +331,8 @@ static void draw_grease_pencil_stroke(const float4x4 &transform,
       format, "color", blender::gpu::VertAttrType::SFLOAT_32_32_32_32);
 
   immBindBuiltinProgram(GPU_SHADER_GPENCIL_STROKE);
-  GPUUniformBuf *ubo = create_shader_ubo(rv3d, win_size, object, cap_start, cap_end, fill_stroke);
+  gpu::UniformBuf *ubo = create_shader_ubo(
+      rv3d, win_size, object, cap_start, cap_end, fill_stroke);
   immBindUniformBuf("gpencil_stroke_data", ubo);
 
   /* If cyclic the curve needs one more vertex. */
@@ -558,6 +559,18 @@ void draw_lines(const float4x4 &transform,
   immUnbindProgram();
 }
 
+static GVArray attribute_interpolate(const GSpan &input, const bke::CurvesGeometry &curves)
+{
+  if (curves.is_single_type(CURVE_TYPE_POLY)) {
+    return GVArray::from_span(input);
+  }
+
+  const CPPType &type = input.type();
+  GArray<> out(type, curves.evaluated_points_num());
+  curves.interpolate_to_evaluated(input, out.as_mutable_span());
+  return GVArray::from_garray(std::move(out));
+};
+
 void draw_grease_pencil_strokes(const RegionView3D &rv3d,
                                 const int2 &win_size,
                                 const Object &object,
@@ -582,11 +595,18 @@ void draw_grease_pencil_strokes(const RegionView3D &rv3d,
   }
 
   const bke::CurvesGeometry &curves = drawing.strokes();
-  const OffsetIndices points_by_curve = curves.points_by_curve();
-  const Span<float3> positions = curves.positions();
+  const OffsetIndices points_by_curve = curves.evaluated_points_by_curve();
+  const Span<float3> positions = curves.evaluated_positions();
   const bke::AttributeAccessor attributes = curves.attributes();
   const VArray<bool> cyclic = curves.cyclic();
-  const VArray<float> &radii = drawing.radii();
+
+  curves.ensure_can_interpolate_to_evaluated();
+
+  const VArray<float> radii =
+      attribute_interpolate(VArraySpan(drawing.radii()), curves).typed<float>();
+  const VArray<ColorGeometry4f> eval_colors =
+      attribute_interpolate(VArraySpan(colors), curves).typed<ColorGeometry4f>();
+
   const VArray<int8_t> stroke_start_caps = *attributes.lookup_or_default<int8_t>(
       "start_cap", bke::AttrDomain::Curve, GP_STROKE_CAP_ROUND);
   const VArray<int8_t> stroke_end_caps = *attributes.lookup_or_default<int8_t>(
@@ -619,7 +639,7 @@ void draw_grease_pencil_strokes(const RegionView3D &rv3d,
                                   points_by_curve[stroke_i],
                                   positions,
                                   radii,
-                                  colors,
+                                  eval_colors,
                                   cyclic[stroke_i],
                                   eGPDstroke_Caps(stroke_start_caps[stroke_i]),
                                   eGPDstroke_Caps(stroke_end_caps[stroke_i]),
@@ -629,7 +649,8 @@ void draw_grease_pencil_strokes(const RegionView3D &rv3d,
       case GP_MATERIAL_MODE_DOT:
       case GP_MATERIAL_MODE_SQUARE:
         /* NOTE: Squares don't have their own shader, render as dots too. */
-        draw_dots(transform, points_by_curve[stroke_i], positions, radii, colors, radius_scale);
+        draw_dots(
+            transform, points_by_curve[stroke_i], positions, radii, eval_colors, radius_scale);
         break;
     }
   });

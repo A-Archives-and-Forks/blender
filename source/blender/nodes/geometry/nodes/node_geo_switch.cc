@@ -124,7 +124,7 @@ class LazyFunctionForSwitchNode : public LazyFunction {
       }
     }
     BLI_assert(socket_type != nullptr);
-    const CPPType &cpp_type = *socket_type->geometry_nodes_cpp_type;
+    const CPPType &cpp_type = CPPType::get<SocketValueVariant>();
     base_type_ = socket_type->base_cpp_type;
 
     debug_name_ = node.name;
@@ -202,7 +202,8 @@ class LazyFunctionForSwitchNode : public LazyFunction {
                                    ColorGeometry4f,
                                    std::string,
                                    math::Quaternion,
-                                   float4x4>([&](auto type_tag) {
+                                   float4x4,
+                                   MenuValue>([&](auto type_tag) {
       using T = typename decltype(type_tag)::type;
       if constexpr (std::is_void_v<T>) {
         BLI_assert_unreachable();
@@ -242,11 +243,6 @@ static void node_rna(StructRNA *srna)
         *r_free = true;
         return enum_items_filter(rna_enum_node_socket_data_type_items,
                                  [](const EnumPropertyItem &item) -> bool {
-                                   if (!U.experimental.use_bundle_and_closure_nodes) {
-                                     if (ELEM(item.value, SOCK_BUNDLE, SOCK_CLOSURE)) {
-                                       return false;
-                                     }
-                                   }
                                    return ELEM(item.value,
                                                SOCK_FLOAT,
                                                SOCK_INT,

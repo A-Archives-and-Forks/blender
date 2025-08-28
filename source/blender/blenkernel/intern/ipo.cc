@@ -2077,14 +2077,15 @@ struct Seq_callback_data {
 
 static bool strip_convert_callback(Strip *strip, void *userdata)
 {
-  IpoCurve *icu = static_cast<IpoCurve *>((strip->ipo) ? strip->ipo->curve.first : nullptr);
+  IpoCurve *icu = static_cast<IpoCurve *>((strip->ipo_legacy) ? strip->ipo_legacy->curve.first :
+                                                                nullptr);
   short adrcode = STRIP_FAC1;
 
   if (G.debug & G_DEBUG) {
     printf("\tconverting sequence strip %s\n", strip->name + 2);
   }
 
-  if (ELEM(nullptr, strip->ipo, icu)) {
+  if (ELEM(nullptr, strip->ipo_legacy, icu)) {
     strip->flag |= SEQ_USE_EFFECT_DEFAULT_FADE;
     return true;
   }
@@ -2107,14 +2108,14 @@ static bool strip_convert_callback(Strip *strip, void *userdata)
   Seq_callback_data *cd = (Seq_callback_data *)userdata;
 
   /* convert IPO */
-  ipo_to_animdata(cd->bmain, (ID *)cd->scene, strip->ipo, nullptr, nullptr, strip);
+  ipo_to_animdata(cd->bmain, (ID *)cd->scene, strip->ipo_legacy, nullptr, nullptr, strip);
 
   if (cd->adt->action && !blender::animrig::versioning::action_is_layered(*cd->adt->action)) {
     cd->adt->action->idroot = ID_SCE; /* scene-rooted */
   }
 
-  id_us_min(&strip->ipo->id);
-  strip->ipo = nullptr;
+  id_us_min(&strip->ipo_legacy->id);
+  strip->ipo_legacy = nullptr;
   return true;
 }
 
@@ -2386,7 +2387,7 @@ void do_versions_ipos_to_layered_actions(Main *bmain)
   for (id = static_cast<ID *>(bmain->scenes.first); id; id = static_cast<ID *>(id->next)) {
     Scene *scene = (Scene *)id;
     Editing *ed = scene->ed;
-    if (ed && ed->seqbasep) {
+    if (ed && ed->current_strips()) {
       Seq_callback_data cb_data = {bmain, scene, BKE_animdata_ensure_id(id)};
       seq::for_each_callback(&ed->seqbase, strip_convert_callback, &cb_data);
     }

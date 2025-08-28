@@ -615,8 +615,8 @@ static void set_frame_range(ImportJobData *data)
     scene->r.cfra = scene->r.sfra;
   }
   else if (data->min_time < data->max_time) {
-    scene->r.sfra = int(round(data->min_time * FPS));
-    scene->r.efra = int(round(data->max_time * FPS));
+    scene->r.sfra = int(round(data->min_time * scene->frames_per_second()));
+    scene->r.efra = int(round(data->max_time * scene->frames_per_second()));
     scene->r.cfra = scene->r.sfra;
   }
 }
@@ -629,7 +629,7 @@ static void import_startjob(void *user_data, wmJobWorkerStatus *worker_status)
   data->progress = &worker_status->progress;
   data->start_time = blender::timeit::Clock::now();
 
-  WM_set_locked_interface(data->wm, true);
+  WM_locked_interface_set(data->wm, true);
   float file_progress_factor = 1.0f / float(data->paths.size());
   for (int idx : data->paths.index_range()) {
     import_file(data, data->paths[idx].c_str(), file_progress_factor);
@@ -711,7 +711,7 @@ static void import_endjob(void *user_data)
     }
   }
 
-  WM_set_locked_interface(data->wm, false);
+  WM_locked_interface_set(data->wm, false);
 
   switch (data->error_code) {
     default:
@@ -767,7 +767,7 @@ bool ABC_import(bContext *C, const AlembicImportParams *params, bool as_backgrou
     wmJob *wm_job = WM_jobs_get(CTX_wm_manager(C),
                                 CTX_wm_window(C),
                                 job->scene,
-                                "Alembic Import",
+                                "Importing Alembic...",
                                 WM_JOB_PROGRESS,
                                 WM_JOB_TYPE_ALEMBIC_IMPORT);
 

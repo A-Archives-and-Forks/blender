@@ -228,7 +228,7 @@ static void gwl_round_int2_by(int value_p[2], const int round_value)
 /**
  * Return true if the value is already rounded by `round_value`.
  */
-static bool gwl_round_int_test(int value, const int round_value)
+static bool gwl_round_int_test(const int value, const int round_value)
 {
   return value == ((value / round_value) * round_value);
 }
@@ -266,11 +266,11 @@ wl_fixed_t gwl_window_scale_wl_fixed_from(const GWL_WindowScaleParams &scale_par
   return value / scale_params.scale;
 }
 
-int gwl_window_scale_int_to(const GWL_WindowScaleParams &scale_params, int value)
+int gwl_window_scale_int_to(const GWL_WindowScaleParams &scale_params, const int value)
 {
   return wl_fixed_to_int(gwl_window_scale_wl_fixed_to(scale_params, wl_fixed_from_int(value)));
 }
-int gwl_window_scale_int_from(const GWL_WindowScaleParams &scale_params, int value)
+int gwl_window_scale_int_from(const GWL_WindowScaleParams &scale_params, const int value)
 {
   return wl_fixed_to_int(gwl_window_scale_wl_fixed_from(scale_params, wl_fixed_from_int(value)));
 }
@@ -641,7 +641,7 @@ static bool gwl_window_state_set(GWL_Window *win, const GHOST_TWindowState state
  * Scale a value from a viewport value to Wayland windowing.
  * Scale down or not at all.
  */
-static int gwl_window_fractional_to_viewport(const GWL_WindowFrame &frame, int value)
+static int gwl_window_fractional_to_viewport(const GWL_WindowFrame &frame, const int value)
 {
   GHOST_ASSERT(frame.fractional_scale != 0, "Not fractional or called before initialized!");
   return (value * frame.fractional_scale) / FRACTIONAL_DENOMINATOR;
@@ -651,7 +651,7 @@ static int gwl_window_fractional_to_viewport(const GWL_WindowFrame &frame, int v
  * Scale a value from a Wayland windowing value to the viewport.
  * Scales up or not at all.
  */
-static int gwl_window_fractional_from_viewport(const GWL_WindowFrame &frame, int value)
+static int gwl_window_fractional_from_viewport(const GWL_WindowFrame &frame, const int value)
 {
   GHOST_ASSERT(frame.fractional_scale != 0, "Not fractional or called before initialized!");
   return (value * FRACTIONAL_DENOMINATOR) / frame.fractional_scale;
@@ -661,13 +661,13 @@ static int gwl_window_fractional_from_viewport(const GWL_WindowFrame &frame, int
  * (rounding is part of the WAYLAND spec). All other conversions such as cursor coordinates
  * can used simple integer division as rounding is not defined in this case. */
 
-static int gwl_window_fractional_to_viewport_round(const GWL_WindowFrame &frame, int value)
+static int gwl_window_fractional_to_viewport_round(const GWL_WindowFrame &frame, const int value)
 {
   GHOST_ASSERT(frame.fractional_scale != 0, "Not fractional or called before initialized!");
   return lroundf(double(value * frame.fractional_scale) / double(FRACTIONAL_DENOMINATOR));
 }
 
-static int gwl_window_fractional_from_viewport_round(const GWL_WindowFrame &frame, int value)
+static int gwl_window_fractional_from_viewport_round(const GWL_WindowFrame &frame, const int value)
 {
   GHOST_ASSERT(frame.fractional_scale != 0, "Not fractional or called before initialized!");
   return lroundf(double(value * FRACTIONAL_DENOMINATOR) / double(frame.fractional_scale));
@@ -1289,8 +1289,8 @@ static void xdg_toplevel_handle_close(void *data, xdg_toplevel * /*xdg_toplevel*
 
 static void xdg_toplevel_handle_configure_bounds(void *data,
                                                  xdg_toplevel * /*xdg_toplevel*/,
-                                                 int32_t width,
-                                                 int32_t height)
+                                                 const int32_t width,
+                                                 const int32_t height)
 {
   /* Only available in interface version 4. */
   CLOG_DEBUG(LOG, "configure_bounds (size=[%d, %d])", width, height);
@@ -1688,7 +1688,7 @@ static void surface_handle_leave(void *data, wl_surface * /*wl_surface*/, wl_out
     defined(WL_SURFACE_PREFERRED_BUFFER_TRANSFORM_SINCE_VERSION)
 static void surface_handle_preferred_buffer_scale(void * /*data*/,
                                                   wl_surface * /*wl_surface*/,
-                                                  int32_t factor)
+                                                  const int32_t factor)
 {
   /* Only available in interface version 6. */
   CLOG_DEBUG(LOG, "handle_preferred_buffer_scale (factor=%d)", factor);
@@ -1696,7 +1696,7 @@ static void surface_handle_preferred_buffer_scale(void * /*data*/,
 
 static void surface_handle_preferred_buffer_transform(void * /*data*/,
                                                       wl_surface * /*wl_surface*/,
-                                                      uint32_t transform)
+                                                      const uint32_t transform)
 {
   /* Only available in interface version 6. */
   CLOG_DEBUG(LOG, "handle_preferred_buffer_transform (transform=%u)", transform);
@@ -1731,17 +1731,15 @@ GHOST_WindowWayland::GHOST_WindowWayland(GHOST_SystemWayland *system,
                                          const uint32_t width,
                                          const uint32_t height,
                                          const GHOST_TWindowState state,
-                                         const GHOST_IWindow *parentWindow,
+                                         const GHOST_IWindow *parent_window,
                                          const GHOST_TDrawingContextType type,
                                          const bool is_dialog,
-                                         const bool stereoVisual,
+                                         const GHOST_ContextParams &context_params,
                                          const bool exclusive,
-                                         const bool is_debug,
                                          const GHOST_GPUDevice &preferred_device)
-    : GHOST_Window(width, height, state, stereoVisual, exclusive),
+    : GHOST_Window(width, height, state, context_params, exclusive),
       system_(system),
       window_(new GWL_Window),
-      is_debug_context_(is_debug),
       preferred_device_(preferred_device)
 {
 #ifdef USE_EVENT_BACKGROUND_THREAD
@@ -1815,9 +1813,9 @@ GHOST_WindowWayland::GHOST_WindowWayland(GHOST_SystemWayland *system,
     libdecor_frame_set_min_content_size(decor.frame, UNPACK2(size_min));
     libdecor_frame_set_app_id(decor.frame, xdg_app_id);
 
-    if (parentWindow) {
+    if (parent_window) {
       GWL_LibDecor_Window &decor_parent =
-          *dynamic_cast<const GHOST_WindowWayland *>(parentWindow)->window_->libdecor;
+          *dynamic_cast<const GHOST_WindowWayland *>(parent_window)->window_->libdecor;
       libdecor_frame_set_parent(decor.frame, decor_parent.frame);
     }
   }
@@ -1836,9 +1834,9 @@ GHOST_WindowWayland::GHOST_WindowWayland(GHOST_SystemWayland *system,
     xdg_surface_add_listener(decor.surface, &xdg_surface_listener, window_);
     xdg_toplevel_add_listener(decor.toplevel, &xdg_toplevel_listener, window_);
 
-    if (parentWindow && is_dialog) {
+    if (parent_window && is_dialog) {
       GWL_XDG_Decor_Window &decor_parent =
-          *dynamic_cast<const GHOST_WindowWayland *>(parentWindow)->window_->xdg_decor;
+          *dynamic_cast<const GHOST_WindowWayland *>(parent_window)->window_->xdg_decor;
       xdg_toplevel_set_parent(decor.toplevel, decor_parent.toplevel);
     }
   }
@@ -1993,7 +1991,12 @@ GHOST_WindowWayland::GHOST_WindowWayland(GHOST_SystemWayland *system,
     window_->backend.vulkan_window_info = new GHOST_ContextVK_WindowInfo;
     window_->backend.vulkan_window_info->size[0] = window_->frame.size[0];
     window_->backend.vulkan_window_info->size[1] = window_->frame.size[1];
-    window_->backend.vulkan_window_info->is_color_managed = true;
+
+    /* There is no HDR on/off settings as on Windows, so from the Window side
+     * consider it always enabled. But may still get disabled if Vulkan has no
+     * appropriate surface format. */
+    hdr_info_.hdr_enabled = true;
+    hdr_info_.sdr_white_level = 1.0f;
   }
 #endif
 
@@ -2088,10 +2091,20 @@ GHOST_WindowWayland::GHOST_WindowWayland(GHOST_SystemWayland *system,
    * isn't essential, it reduces flickering. */
   wl_surface_commit(window_->wl.surface);
 
-  window_->is_init = true;
+#ifdef WITH_OPENGL_BACKEND
+  if (type == GHOST_kDrawingContextTypeOpenGL) {
+    /* NOTE(@ideasman42): Set the swap interval to 0 (disable VSync) to prevent blocking.
+     * This was reported for SDL in 2021 so it may be good to revisit this decision
+     * at some point since forcing the VSync setting seems heavy-handed,
+     * especially if the issue gets resolved up-stream.
+     *
+     * For reference: https://github.com/libsdl-org/SDL/issues/4335
+     * From the report the compositor causing problems was GNOME's Mutter. */
+    setSwapInterval(0);
+  }
+#endif
 
-  /* Set swap interval to 0 to prevent blocking. */
-  setSwapInterval(0);
+  window_->is_init = true;
 }
 
 GHOST_WindowWayland::~GHOST_WindowWayland()
@@ -2164,9 +2177,9 @@ GHOST_TSuccess GHOST_WindowWayland::swapBuffers()
 }
 #endif /* USE_EVENT_BACKGROUND_THREAD */
 
-GHOST_TSuccess GHOST_WindowWayland::hasCursorShape(GHOST_TStandardCursor cursorShape)
+GHOST_TSuccess GHOST_WindowWayland::hasCursorShape(GHOST_TStandardCursor cursor_shape)
 {
-  return system_->cursor_shape_check(cursorShape);
+  return system_->cursor_shape_check(cursor_shape);
 }
 
 GHOST_TSuccess GHOST_WindowWayland::setWindowCursorGrab(GHOST_TGrabCursorMode mode)
@@ -2177,7 +2190,7 @@ GHOST_TSuccess GHOST_WindowWayland::setWindowCursorGrab(GHOST_TGrabCursorMode mo
 
   GHOST_Rect bounds_buf;
   const GHOST_Rect *bounds = nullptr;
-  if (m_cursorGrab == GHOST_kGrabWrap) {
+  if (cursor_grab_ == GHOST_kGrabWrap) {
     if (getCursorGrabBounds(bounds_buf) == GHOST_kFailure) {
       getClientBounds(bounds_buf);
     }
@@ -2185,10 +2198,10 @@ GHOST_TSuccess GHOST_WindowWayland::setWindowCursorGrab(GHOST_TGrabCursorMode mo
   }
 
   if (system_->window_cursor_grab_set(mode,
-                                      m_cursorGrab,
-                                      m_cursorGrabInitPos,
+                                      cursor_grab_,
+                                      cursor_grab_init_pos_,
                                       bounds,
-                                      m_cursorGrabAxis,
+                                      cursor_grab_axis_,
                                       window_->wl.surface,
                                       this->scale_params_get()))
   {
@@ -2206,16 +2219,16 @@ GHOST_TSuccess GHOST_WindowWayland::setWindowCursorShape(GHOST_TStandardCursor s
   const bool is_active = this == static_cast<const GHOST_WindowWayland *>(
                                      system_->getWindowManager()->getActiveWindow());
   gwl_window_cursor_custom_clear(&window_->cursor_generator);
-  m_cursorShape = shape;
+  cursor_shape_ = shape;
 
   GHOST_TSuccess ok;
   if (is_active) {
-    ok = system_->cursor_shape_set(m_cursorShape);
+    ok = system_->cursor_shape_set(cursor_shape_);
     GHOST_TSuccess ok_test = ok;
     if (ok == GHOST_kFailure) {
       /* Failed, try again with the default cursor. */
-      m_cursorShape = GHOST_kStandardCursorDefault;
-      ok_test = system_->cursor_shape_set(m_cursorShape);
+      cursor_shape_ = GHOST_kStandardCursorDefault;
+      ok_test = system_->cursor_shape_set(cursor_shape_);
     }
 
     wl_display *display = system_->wl_display_get();
@@ -2235,7 +2248,7 @@ GHOST_TSuccess GHOST_WindowWayland::setWindowCursorShape(GHOST_TStandardCursor s
     /* Set later when activating the window. */
     ok = system_->cursor_shape_check(shape);
     if (ok == GHOST_kFailure) {
-      m_cursorShape = GHOST_kStandardCursorDefault;
+      cursor_shape_ = GHOST_kStandardCursorDefault;
     }
   }
   return ok;
@@ -2246,7 +2259,7 @@ bool GHOST_WindowWayland::getCursorGrabUseSoftwareDisplay()
 #ifdef USE_EVENT_BACKGROUND_THREAD
   std::lock_guard lock_server_guard{*system_->server_mutex};
 #endif
-  return system_->cursor_grab_use_software_display_get(m_cursorGrab);
+  return system_->cursor_grab_use_software_display_get(cursor_grab_);
 }
 
 GHOST_TSuccess GHOST_WindowWayland::setWindowCustomCursorGenerator(
@@ -2256,7 +2269,7 @@ GHOST_TSuccess GHOST_WindowWayland::setWindowCustomCursorGenerator(
 #ifdef USE_EVENT_BACKGROUND_THREAD
   std::lock_guard lock_server_guard{*system_->server_mutex};
 #endif
-  m_cursorShape = GHOST_kStandardCursorCustom;
+  cursor_shape_ = GHOST_kStandardCursorCustom;
   if (window_->cursor_generator) {
     gwl_window_cursor_custom_free(window_->cursor_generator);
   }
@@ -2359,8 +2372,8 @@ GHOST_TSuccess GHOST_WindowWayland::setClientSize(const uint32_t width, const ui
   return GHOST_kSuccess;
 }
 
-void GHOST_WindowWayland::screenToClient(int32_t inX,
-                                         int32_t inY,
+void GHOST_WindowWayland::screenToClient(const int32_t inX,
+                                         const int32_t inY,
                                          int32_t &outX,
                                          int32_t &outY) const
 {
@@ -2368,8 +2381,8 @@ void GHOST_WindowWayland::screenToClient(int32_t inX,
   outY = inY;
 }
 
-void GHOST_WindowWayland::clientToScreen(int32_t inX,
-                                         int32_t inY,
+void GHOST_WindowWayland::clientToScreen(const int32_t inX,
+                                         const int32_t inY,
                                          int32_t &outX,
                                          int32_t &outY) const
 {
@@ -2389,7 +2402,7 @@ uint16_t GHOST_WindowWayland::getDPIHint()
   return window_->frame.buffer_scale * base_dpi;
 }
 
-GHOST_TSuccess GHOST_WindowWayland::setWindowCursorVisibility(bool visible)
+GHOST_TSuccess GHOST_WindowWayland::setWindowCursorVisibility(const bool visible)
 {
 #ifdef USE_EVENT_BACKGROUND_THREAD
   std::lock_guard lock_server_guard{*system_->server_mutex};
@@ -2449,13 +2462,13 @@ GHOST_Context *GHOST_WindowWayland::newDrawingContext(GHOST_TDrawingContextType 
 {
   switch (type) {
     case GHOST_kDrawingContextTypeNone: {
-      GHOST_Context *context = new GHOST_ContextNone(m_wantStereoVisual);
+      GHOST_Context *context = new GHOST_ContextNone(want_context_params_);
       return context;
     }
 
 #ifdef WITH_VULKAN_BACKEND
     case GHOST_kDrawingContextTypeVulkan: {
-      GHOST_ContextVK *context = new GHOST_ContextVK(m_wantStereoVisual,
+      GHOST_ContextVK *context = new GHOST_ContextVK(want_context_params_,
                                                      GHOST_kVulkanPlatformWayland,
                                                      0,
                                                      nullptr,
@@ -2464,8 +2477,8 @@ GHOST_Context *GHOST_WindowWayland::newDrawingContext(GHOST_TDrawingContextType 
                                                      window_->backend.vulkan_window_info,
                                                      1,
                                                      2,
-                                                     is_debug_context_,
-                                                     preferred_device_);
+                                                     preferred_device_,
+                                                     &hdr_info_);
       if (context->initializeDrawingContext()) {
         return context;
       }
@@ -2479,14 +2492,14 @@ GHOST_Context *GHOST_WindowWayland::newDrawingContext(GHOST_TDrawingContextType 
       for (int minor = 6; minor >= 3; --minor) {
         GHOST_Context *context = new GHOST_ContextEGL(
             system_,
-            m_wantStereoVisual,
+            want_context_params_,
             EGLNativeWindowType(window_->backend.egl_window),
             EGLNativeDisplayType(system_->wl_display_get()),
             EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
             4,
             minor,
             GHOST_OPENGL_EGL_CONTEXT_FLAGS |
-                (is_debug_context_ ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0),
+                (want_context_params_.is_debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0),
             GHOST_OPENGL_EGL_RESET_NOTIFICATION_STRATEGY,
             EGL_OPENGL_API);
 
@@ -2507,7 +2520,8 @@ GHOST_Context *GHOST_WindowWayland::newDrawingContext(GHOST_TDrawingContextType 
 
 #ifdef WITH_INPUT_IME
 
-void GHOST_WindowWayland::beginIME(int32_t x, int32_t y, int32_t w, int32_t h, bool completed)
+void GHOST_WindowWayland::beginIME(
+    const int32_t x, const int32_t y, const int32_t w, const int32_t h, const bool completed)
 {
   system_->ime_begin(this, x, y, w, h, completed);
 }
@@ -2667,7 +2681,7 @@ GHOST_TSuccess GHOST_WindowWayland::cursor_shape_refresh()
     return GHOST_kSuccess;
   }
 #endif
-  return gwl_window_cursor_shape_refresh(m_cursorShape, window_->cursor_generator, system_);
+  return gwl_window_cursor_shape_refresh(cursor_shape_, window_->cursor_generator, system_);
 }
 
 void GHOST_WindowWayland::outputs_changed_update_scale_tag()

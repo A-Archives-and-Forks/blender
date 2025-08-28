@@ -20,6 +20,7 @@
 #include "BLI_string_utf8.h"
 
 #include "BLI_array.hh"
+#include "BLI_hash.h"
 #include "BLI_math_geom.h"
 #include "BLI_math_matrix.h"
 #include "BLI_math_rotation.h"
@@ -38,6 +39,7 @@
 #include "DNA_pointcloud_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_volume_types.h"
+#include "DNA_world_types.h"
 
 #include "BKE_collection.hh"
 #include "BKE_duplilist.hh"
@@ -58,10 +60,8 @@
 #include "DEG_depsgraph.hh"
 #include "DEG_depsgraph_query.hh"
 
-#include "BLI_hash.h"
-#include "DNA_world_types.h"
-
 #include "NOD_geometry_nodes_log.hh"
+
 #include "RNA_access.hh"
 #include "RNA_path.hh"
 #include "RNA_prototypes.hh"
@@ -827,10 +827,15 @@ static Object *find_family_object(
 
 static void make_duplis_font(const DupliContext *ctx)
 {
+  /* Font dupli-verts not supported inside collections. */
+  if (ctx->collection) {
+    return;
+  }
+
   Object *par = ctx->object;
   GHash *family_gh;
   Object *ob;
-  Curve *cu;
+  Curve *cu = (Curve *)par->data;
   CharTrans *ct, *chartransdata = nullptr;
   float vec[3], obmat[4][4], pmat[4][4], fsize, xof, yof;
   int text_len, a;
@@ -838,23 +843,17 @@ static void make_duplis_font(const DupliContext *ctx)
   const char32_t *text = nullptr;
   bool text_free = false;
 
-  /* Font dupli-verts not supported inside collections. */
-  if (ctx->collection) {
-    return;
-  }
-
   copy_m4_m4(pmat, par->object_to_world().ptr());
 
   /* In `par` the family name is stored, use this to find the other objects. */
 
   BKE_vfont_to_curve_ex(
-      par, (Curve *)par->data, FO_DUPLI, nullptr, &text, &text_len, &text_free, &chartransdata);
+      par, *cu, FO_DUPLI, nullptr, &text, &text_len, &text_free, &chartransdata, nullptr);
 
   if (text == nullptr || chartransdata == nullptr) {
     return;
   }
 
-  cu = (Curve *)par->data;
   fsize = cu->fsize;
   xof = cu->xof;
   yof = cu->yof;
@@ -890,11 +889,11 @@ static void make_duplis_font(const DupliContext *ctx)
 
       copy_m4_m4(obmat, par->object_to_world().ptr());
 
-      if (UNLIKELY(ct->rot != 0.0f)) {
+      if (UNLIKELY(ct->rotate != 0.0f)) {
         float rmat[4][4];
 
         zero_v3(obmat[3]);
-        axis_angle_to_mat4_single(rmat, 'Z', -ct->rot);
+        axis_angle_to_mat4_single(rmat, 'Z', -ct->rotate);
         mul_m4_m4m4(obmat, obmat, rmat);
       }
 
@@ -986,12 +985,12 @@ static void make_duplis_geometry_set_impl(const DupliContext *ctx,
 
   Span<float4x4> instance_offset_matrices = instances->transforms();
   Span<int> reference_handles = instances->reference_handles();
-  Span<int> almost_unique_ids = instances->almost_unique_ids();
+  Span<int> unique_ids = instances->unique_ids();
   Span<InstanceReference> references = instances->references();
 
   for (int64_t i : instance_offset_matrices.index_range()) {
     const InstanceReference &reference = references[reference_handles[i]];
-    const int id = almost_unique_ids[i];
+    const int id = unique_ids[i];
 
     const DupliContext *ctx_for_instance = instances_ctx;
     /* Set the #preview_instance_index when necessary. */
@@ -1114,7 +1113,7 @@ struct FaceDupliData_Mesh {
   Span<int> corner_verts;
   Span<float3> vert_positions;
   const float (*orco)[3];
-  const float2 *mloopuv;
+  const float2 *uv_map;
 };
 
 struct FaceDupliData_EditMesh {
@@ -1258,7 +1257,7 @@ static void make_child_duplis_faces_from_mesh(const DupliContext *ctx,
 {
   FaceDupliData_Mesh *fdd = (FaceDupliData_Mesh *)userdata;
   const float(*orco)[3] = fdd->orco;
-  const float2 *mloopuv = fdd->mloopuv;
+  const float2 *uv_map = fdd->uv_map;
   const int totface = fdd->totface;
   const bool use_scale = fdd->params.use_scale;
 
@@ -1287,9 +1286,9 @@ static void make_child_duplis_faces_from_mesh(const DupliContext *ctx,
         madd_v3_v3fl(dob->orco, orco[face_verts[j]], w);
       }
     }
-    if (mloopuv) {
+    if (uv_map) {
       for (int j = 0; j < face.size(); j++) {
-        madd_v2_v2fl(dob->uv, mloopuv[face[j]], w);
+        madd_v2_v2fl(dob->uv, uv_map[face[j]], w);
       }
     }
   }
@@ -1370,9 +1369,9 @@ static void make_duplis_faces(const DupliContext *ctx)
     fdd.faces = mesh_eval->faces();
     fdd.corner_verts = mesh_eval->corner_verts();
     fdd.vert_positions = mesh_eval->vert_positions();
-    fdd.mloopuv = (uv_idx != -1) ? (const float2 *)CustomData_get_layer_n(
-                                       &mesh_eval->corner_data, CD_PROP_FLOAT2, uv_idx) :
-                                   nullptr;
+    fdd.uv_map = (uv_idx != -1) ? (const float2 *)CustomData_get_layer_n(
+                                      &mesh_eval->corner_data, CD_PROP_FLOAT2, uv_idx) :
+                                  nullptr;
     fdd.orco = (const float(*)[3])CustomData_get_layer(&mesh_eval->vert_data, CD_ORCO);
 
     make_child_duplis(ctx, &fdd, make_child_duplis_faces_from_mesh);
@@ -1995,15 +1994,15 @@ static bool find_geonode_attribute_rgba(const DupliObject *dupli,
   return false;
 }
 
-/** Lookup an arbitrary RNA property and convert it to RGBA if possible. */
-static bool find_rna_property_rgba(PointerRNA *id_ptr, const char *name, float r_data[4])
+/** Lookup an arbitrary Custom or RNA property and convert it to RGBA if possible. */
+static bool find_property_rgba(PointerRNA *id_ptr, const char *name, float r_data[4])
 {
   if (id_ptr->data == nullptr) {
     return false;
   }
 
   /* First, check custom properties. */
-  IDProperty *group = RNA_struct_system_idprops(id_ptr, false);
+  IDProperty *group = RNA_struct_idprops(id_ptr, false);
   PropertyRNA *prop = nullptr;
 
   if (group && group->type == IDP_GROUP) {
@@ -2066,10 +2065,10 @@ static bool find_rna_property_rgba(PointerRNA *id_ptr, const char *name, float r
   return false;
 }
 
-static bool find_rna_property_rgba(const ID *id, const char *name, float r_data[4])
+static bool find_property_rgba(const ID *id, const char *name, float r_data[4])
 {
   PointerRNA ptr = RNA_id_pointer_create(const_cast<ID *>(id));
-  return find_rna_property_rgba(&ptr, name, r_data);
+  return find_property_rgba(&ptr, name, r_data);
 }
 
 bool BKE_object_dupli_find_rgba_attribute(const Object *ob,
@@ -2082,7 +2081,7 @@ bool BKE_object_dupli_find_rgba_attribute(const Object *ob,
   if (dupli && dupli->particle_system) {
     const ParticleSettings *settings = dupli->particle_system->part;
 
-    if (find_rna_property_rgba(&settings->id, name, r_value)) {
+    if (find_property_rgba(&settings->id, name, r_value)) {
       return true;
     }
   }
@@ -2093,18 +2092,18 @@ bool BKE_object_dupli_find_rgba_attribute(const Object *ob,
   }
 
   /* Check the dupli parent object. */
-  if (dupli_parent && find_rna_property_rgba(&dupli_parent->id, name, r_value)) {
+  if (dupli_parent && find_property_rgba(&dupli_parent->id, name, r_value)) {
     return true;
   }
 
   /* Check the main object. */
   if (ob) {
-    if (find_rna_property_rgba(&ob->id, name, r_value)) {
+    if (find_property_rgba(&ob->id, name, r_value)) {
       return true;
     }
 
     /* Check the main object data (e.g. mesh). */
-    if (ob->data && find_rna_property_rgba((const ID *)ob->data, name, r_value)) {
+    if (ob->data && find_property_rgba((const ID *)ob->data, name, r_value)) {
       return true;
     }
   }
@@ -2122,16 +2121,16 @@ bool BKE_view_layer_find_rgba_attribute(const Scene *scene,
     PointerRNA layer_ptr = RNA_pointer_create_discrete(
         &const_cast<ID &>(scene->id), &RNA_ViewLayer, const_cast<ViewLayer *>(layer));
 
-    if (find_rna_property_rgba(&layer_ptr, name, r_value)) {
+    if (find_property_rgba(&layer_ptr, name, r_value)) {
       return true;
     }
   }
 
-  if (find_rna_property_rgba(&scene->id, name, r_value)) {
+  if (find_property_rgba(&scene->id, name, r_value)) {
     return true;
   }
 
-  if (scene->world && find_rna_property_rgba(&scene->world->id, name, r_value)) {
+  if (scene->world && find_property_rgba(&scene->world->id, name, r_value)) {
     return true;
   }
 

@@ -61,6 +61,7 @@
 
 #include "WM_api.hh"
 #include "WM_types.hh"
+
 #include "mesh_intern.hh"
 
 using blender::float3;
@@ -1563,6 +1564,10 @@ static wmOperatorStatus mesh_reorder_vertices_spatial_exec(bContext *C, wmOperat
   if (ob->mode == OB_MODE_SCULPT && mesh->flag & ME_SCULPT_DYNAMIC_TOPOLOGY) {
     /* Dyntopo not supported. */
     BKE_report(op->reports, RPT_INFO, "Not supported in dynamic topology sculpting");
+    return OPERATOR_CANCELLED;
+  }
+
+  if (mesh->faces_num == 0 || mesh->verts_num == 0) {
     return OPERATOR_CANCELLED;
   }
 

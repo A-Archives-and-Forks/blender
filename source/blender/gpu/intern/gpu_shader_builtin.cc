@@ -101,14 +101,18 @@ static const char *builtin_shader_create_info_name(eGPUBuiltinShader shader)
       return "gpu_shader_2D_node_socket_inst";
     case GPU_SHADER_2D_NODELINK:
       return "gpu_shader_2D_nodelink";
-    case GPU_SHADER_2D_NODELINK_INST:
-      return "gpu_shader_2D_nodelink_inst";
     case GPU_SHADER_GPENCIL_STROKE:
       return "gpu_shader_gpencil_stroke";
     case GPU_SHADER_SEQUENCER_STRIPS:
       return "gpu_shader_sequencer_strips";
     case GPU_SHADER_SEQUENCER_THUMBS:
       return "gpu_shader_sequencer_thumbs";
+    case GPU_SHADER_SEQUENCER_SCOPE_RASTER:
+      return "gpu_shader_sequencer_scope_raster";
+    case GPU_SHADER_SEQUENCER_SCOPE_RESOLVE:
+      return "gpu_shader_sequencer_scope_resolve";
+    case GPU_SHADER_SEQUENCER_ZEBRA:
+      return "gpu_shader_sequencer_zebra";
     case GPU_SHADER_INDEXBUF_POINTS:
       return "gpu_shader_index_2d_array_points";
     case GPU_SHADER_INDEXBUF_LINES:
@@ -144,8 +148,8 @@ static const char *builtin_shader_create_info_name_clipped(eGPUBuiltinShader sha
   }
 }
 
-GPUShader *GPU_shader_get_builtin_shader_with_config(eGPUBuiltinShader shader,
-                                                     eGPUShaderConfig sh_cfg)
+blender::gpu::Shader *GPU_shader_get_builtin_shader_with_config(eGPUBuiltinShader shader,
+                                                                eGPUShaderConfig sh_cfg)
 {
   BLI_assert(shader < GPU_SHADER_BUILTIN_LEN);
 
@@ -184,13 +188,13 @@ GPUShader *GPU_shader_get_builtin_shader_with_config(eGPUBuiltinShader shader,
              GPU_SHADER_3D_POLYLINE_FLAT_COLOR,
              GPU_SHADER_3D_POLYLINE_SMOOTH_COLOR))
     {
-      GPUShader *sh = (*sh_p)->get();
+      blender::gpu::Shader *sh = (*sh_p)->get();
       /* Set a default value for `lineSmooth`.
        * Ideally this value should be set by the caller. */
       GPU_shader_bind(sh);
       GPU_shader_uniform_1i(sh, "lineSmooth", 1);
       /* WORKAROUND: See is_polyline declaration. */
-      blender::gpu::unwrap(sh)->is_polyline = true;
+      sh->is_polyline = true;
     }
   }
 
@@ -230,7 +234,7 @@ static void gpu_shader_warm_builtin_shader_async(eGPUBuiltinShader shader, eGPUS
   (*sh_p)->ensure_compile_async();
 }
 
-GPUShader *GPU_shader_get_builtin_shader(eGPUBuiltinShader shader)
+blender::gpu::Shader *GPU_shader_get_builtin_shader(eGPUBuiltinShader shader)
 {
   return GPU_shader_get_builtin_shader_with_config(shader, GPU_SHADER_CFG_DEFAULT);
 }

@@ -69,7 +69,7 @@ integrate_transparent_surface_shadow(KernelGlobals kg,
 
 #  ifdef __VOLUME__
   /* Exit/enter volume. */
-  shadow_volume_stack_enter_exit(kg, state, shadow_sd);
+  volume_stack_enter_exit<true>(kg, state, shadow_sd);
 #  endif
 
   /* Disable transparent shadows for ray portals */
@@ -112,10 +112,7 @@ integrate_transparent_volume_shadow(KernelGlobals kg,
   /* `object` is only needed for light tree with light linking, it is irrelevant for shadow. */
   shader_setup_from_volume(shadow_sd, &ray, OBJECT_NONE);
 
-  VOLUME_READ_LAMBDA(integrator_state_read_shadow_volume_stack(state, i));
-  const float step_size = volume_stack_step_size(kg, volume_read_lambda_pass);
-
-  return volume_shadow_heterogeneous(kg, state, &ray, shadow_sd, throughput, step_size);
+  return volume_shadow_heterogeneous(kg, state, &ray, shadow_sd, throughput);
 }
 #  endif
 

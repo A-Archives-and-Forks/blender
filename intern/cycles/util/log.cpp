@@ -33,12 +33,10 @@ const char *log_level_to_string(const LogLevel level)
     case LOG_LEVEL_INFO_IMPORTANT:
     case LOG_LEVEL_INFO:
       return "INFO";
-    case LOG_LEVEL_WORK:
-      return "WORK";
-    case LOG_LEVEL_STATS:
-      return "STATS";
     case LOG_LEVEL_DEBUG:
       return "DEBUG";
+    case LOG_LEVEL_TRACE:
+      return "TRACE";
     case LOG_LEVEL_UNKNOWN:
       return "UNKNOWN";
   }
@@ -62,14 +60,11 @@ LogLevel log_string_to_level(const string &str)
   if (str_lower == "info") {
     return LOG_LEVEL_INFO;
   }
-  if (str_lower == "work") {
-    return LOG_LEVEL_WORK;
-  }
-  if (str_lower == "stats") {
-    return LOG_LEVEL_STATS;
-  }
   if (str_lower == "debug") {
     return LOG_LEVEL_DEBUG;
+  }
+  if (str_lower == "trace") {
+    return LOG_LEVEL_TRACE;
   }
   return LOG_LEVEL_UNKNOWN;
 }
@@ -142,6 +137,12 @@ std::ostream &operator<<(std::ostream &os, const int2 &value)
 std::ostream &operator<<(std::ostream &os, const float3 &value)
 {
   os << "(" << value.x << ", " << value.y << ", " << value.z << ")";
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const float4 &value)
+{
+  os << "(" << value.x << ", " << value.y << ", " << value.z << ", " << value.w << ")";
   return os;
 }
 

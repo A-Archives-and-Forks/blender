@@ -29,9 +29,13 @@
 #include "IMB_imbuf_types.hh"
 #include "IMB_metadata.hh"
 
+#include "CLG_log.h"
+
 #include <cstring>
 #include <jerror.h>
 #include <jpeglib.h>
+
+static CLG_LogRef LOG = {"image.jpeg"};
 
 /* the types are from the jpeg lib */
 static void jpeg_error(j_common_ptr cinfo) ATTR_NORETURN;
@@ -502,7 +506,7 @@ ImBuf *imb_thumbnail_jpeg(const char *filepath,
   }
 
   if ((infile = BLI_fopen(filepath, "rb")) == nullptr) {
-    fprintf(stderr, "can't open %s\n", filepath);
+    CLOG_ERROR(&LOG, "Cannot open \"%s\"", filepath);
     return nullptr;
   }
 
@@ -614,6 +618,19 @@ static void write_jpeg(jpeg_compress_struct *cinfo, ImBuf *ibuf)
           MEM_freeN(text);
         }
       }
+    }
+  }
+
+  /* Write ICC profile if there is one associated with the colorspace. */
+  const ColorSpace *colorspace = ibuf->byte_buffer.colorspace;
+  if (colorspace) {
+    blender::Vector<char> icc_profile = IMB_colormanagement_space_icc_profile(colorspace);
+    if (!icc_profile.is_empty()) {
+      icc_profile.prepend({'I', 'C', 'C', '_', 'P', 'R', 'O', 'F', 'I', 'L', 'E', 0, 0, 1});
+      jpeg_write_marker(cinfo,
+                        JPEG_APP0 + 2,
+                        reinterpret_cast<const JOCTET *>(icc_profile.data()),
+                        icc_profile.size());
     }
   }
 

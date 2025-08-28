@@ -300,7 +300,7 @@ bool WM_toolsystem_activate_brush_and_tool(bContext *C, Paint *paint, Brush *bru
   const bToolRef *active_tool = toolsystem_active_tool_from_context_or_view3d(C);
   const PaintMode paint_mode = BKE_paintmode_get_active_from_context(C);
 
-  if (!BKE_paint_brush_poll(paint, brush)) {
+  if (!BKE_paint_can_use_brush(paint, brush)) {
     /* Avoid switching tool when brush isn't valid for this mode anyway. */
     return false;
   }
@@ -393,18 +393,18 @@ static void toolsystem_brush_activate_from_toolref_for_object_paint(Main *bmain,
           return *brush_ref->brush_asset_reference;
         }
         /* No remembered brush found for this type, use a default for the type. */
-        return BKE_paint_brush_type_default_reference(eObjectMode(paint->runtime->ob_mode),
+        return BKE_paint_brush_type_default_reference(paint->runtime->paint_mode,
                                                       tref_rt->brush_type);
       }();
 
       if (brush_asset_reference) {
-        BKE_paint_brush_set(bmain, paint, &*brush_asset_reference);
+        BKE_paint_brush_set(bmain, paint, *brush_asset_reference);
       }
     }
     /* Re-activate the main brush, regardless of the brush type. */
     else {
       if (paint->tool_brush_bindings.main_brush_asset_reference) {
-        BKE_paint_brush_set(bmain, paint, paint->tool_brush_bindings.main_brush_asset_reference);
+        BKE_paint_brush_set(bmain, paint, *paint->tool_brush_bindings.main_brush_asset_reference);
         toolsystem_main_brush_binding_update_from_active(paint);
       }
       else {
@@ -413,12 +413,11 @@ static void toolsystem_brush_activate_from_toolref_for_object_paint(Main *bmain,
           if (paint->tool_brush_bindings.main_brush_asset_reference) {
             return *paint->tool_brush_bindings.main_brush_asset_reference;
           }
-          return BKE_paint_brush_type_default_reference(eObjectMode(paint->runtime->ob_mode),
-                                                        std::nullopt);
+          return BKE_paint_brush_type_default_reference(paint->runtime->paint_mode, std::nullopt);
         }();
 
         if (main_brush_asset_reference) {
-          BKE_paint_brush_set(bmain, paint, &*main_brush_asset_reference);
+          BKE_paint_brush_set(bmain, paint, *main_brush_asset_reference);
           toolsystem_main_brush_binding_update_from_active(paint);
         }
       }
@@ -511,7 +510,7 @@ static void toolsystem_ref_link(Main *bmain, WorkSpace *workspace, bToolRef *tre
     if (gzgt != nullptr) {
       if ((gzgt->flag & WM_GIZMOGROUPTYPE_TOOL_INIT) == 0) {
         if (!WM_gizmo_group_type_ensure_ptr(gzgt)) {
-          /* Even if the group-type was has been linked, it's possible the space types
+          /* Even if the group-type has been linked, it's possible the space types
            * were not previously using it. (happens with multiple windows). */
           wmGizmoMapType *gzmap_type = WM_gizmomaptype_ensure(&gzgt->gzmap_params);
           WM_gizmoconfig_update_tag_group_type_init(gzmap_type, gzgt);
@@ -728,7 +727,7 @@ static bool toolsystem_key_ensure_check(const bToolKey *tkey)
     case SPACE_VIEW3D:
       return true;
     case SPACE_IMAGE:
-      if (ELEM(tkey->mode, SI_MODE_PAINT, SI_MODE_UV, SI_MODE_VIEW)) {
+      if (ELEM(tkey->mode, SI_MODE_PAINT, SI_MODE_UV, SI_MODE_VIEW, SI_MODE_MASK)) {
         return true;
       }
       break;
@@ -1140,6 +1139,8 @@ static const char *toolsystem_default_tool(const bToolKey *tkey)
           return "builtin.brush";
         case SI_MODE_VIEW:
           return "builtin.sample";
+        case SI_MODE_MASK:
+          return "builtin.select_box";
       }
       break;
     case SPACE_NODE: {

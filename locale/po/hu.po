@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-04-14 08:24+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 15:31+0000\n"
 "Last-Translator: Balázs Füvesi <fuvesib@gmail.com>\n"
 "Language-Team: Hungarian <https://translate.blender.org/projects/blender-ui/ui/hu/>\n"
 "Language: hu\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10.1\n"
+"X-Generator: Weblate 5.12.1\n"
 "X-Poedit-Basepath: .\n"
 "X-Poedit-SearchPath-0: E:\\PROJEKTEK\\Blender\\FORDITAS\\osszefuzes"
 
@@ -868,12 +868,48 @@ msgid "Target"
 msgstr "Cél"
 
 
+msgid "Choose shading information to bake into the image"
+msgstr "Árnyékolási információk kiválasztása a képbe való sütésükhöz"
+
+
+msgid "Normals"
+msgstr "Normálisok"
+
+
+msgid "Bake normals"
+msgstr "Normálisok kisütése"
+
+
+msgid "Displacement"
+msgstr "Elmozdítás"
+
+
+msgid "Bake displacement"
+msgstr "Elmozdítások kisütése"
+
+
 msgid "Automatic Name"
 msgstr "Automatikus név"
 
 
 msgid "Clear"
 msgstr "Törlés"
+
+
+msgid "Low Resolution Mesh"
+msgstr "Alacsony felbontású térháló"
+
+
+msgid "Calculate heights against unsubdivided low resolution mesh"
+msgstr "Magasságok számítása a felosztatlan, alacsony felbontású térhálók ellen"
+
+
+msgid "Bake from Multires"
+msgstr "Sütés Multi-felbontásból"
+
+
+msgid "Bake directly from multires object"
+msgstr "Sütés közvetlenül a multi-felbontásos objektumokból"
 
 
 msgid "Selected to Active"
@@ -1280,10 +1316,6 @@ msgstr "Engedélyezett"
 
 msgid "Display Device"
 msgstr "Kijelző"
-
-
-msgid "Display device name"
-msgstr "Kijelző eszköz neve"
 
 
 msgid "Input Color Space"
@@ -3019,10 +3051,6 @@ msgid "Factor"
 msgstr "Faktor"
 
 
-msgid "Displacement"
-msgstr "Elmozdítás"
-
-
 msgid "File Format"
 msgstr "Fájlformátum"
 
@@ -4287,10 +4315,6 @@ msgid "Spacing between words"
 msgstr "Szavak közti távolság"
 
 
-msgid "Normals"
-msgstr "Normálisok"
-
-
 msgid "Freestyle Line Style"
 msgstr "Freestyle vonalstílus"
 
@@ -4675,36 +4699,20 @@ msgid "Display Aspect for this image, does not affect rendering"
 msgstr "A jelenlegi kép megjelenítési aránya, a renderelésre nincsen hatással"
 
 
-msgid "Output image in bitmap format"
-msgstr "Kimeneti kép bittérképes formátumbn"
+msgid "Output image in JPEG format"
+msgstr "Kimeneti kép JPEG formátumban"
+
+
+msgid "Output image in OpenEXR format"
+msgstr "Kimeneti kép OpenEXR formátumban"
 
 
 msgid "Output image in PNG format"
 msgstr "Kimeneti kép PNG formátumban"
 
 
-msgid "Output image in JPEG format"
-msgstr "Kimeneti kép JPEG formátumban"
-
-
-msgid "Targa"
-msgstr "Targa"
-
-
-msgid "Output image in Targa format"
-msgstr "Kimeneti kép Targa formátumban"
-
-
-msgid "Targa Raw"
-msgstr "Targa Raw (nyers)"
-
-
-msgid "Output image in uncompressed Targa format"
-msgstr "Kimeneti kép tömörítetlen Targa formátumban"
-
-
-msgid "Cineon"
-msgstr "Cineon"
+msgid "Output image in bitmap format"
+msgstr "Kimeneti kép bittérképes formátumbn"
 
 
 msgid "Output image in Cineon format"
@@ -4715,28 +4723,24 @@ msgid "Output image in DPX format"
 msgstr "Kimeneti kép DPX formátumban"
 
 
-msgid "OpenEXR MultiLayer"
-msgstr "OpenEXR MultiLayer"
-
-
-msgid "Output image in multilayer OpenEXR format"
-msgstr "Kimeneti kép multiréteges OpenEXR formátumban"
-
-
-msgid "Output image in OpenEXR format"
-msgstr "Kimeneti kép OpenEXR formátumban"
-
-
-msgid "Radiance HDR"
-msgstr "Radiance HDR"
-
-
 msgid "Output image in Radiance HDR format"
 msgstr "Kimeneti kép Radiancia HDR formátumban"
 
 
+msgid "Output image in Targa format"
+msgstr "Kimeneti kép Targa formátumban"
+
+
+msgid "Output image in uncompressed Targa format"
+msgstr "Kimeneti kép tömörítetlen Targa formátumban"
+
+
 msgid "Output image in TIFF format"
 msgstr "Kimeneti kép TIFF formátumban"
+
+
+msgid "Output image in multilayer OpenEXR format"
+msgstr "Kimeneti kép multiréteges OpenEXR formátumban"
 
 
 msgid "Generated image height"
@@ -5610,6 +5614,10 @@ msgstr "Pxr24 (veszteséges)"
 
 msgid "File format to save the rendered images as"
 msgstr "A mentésre kerülő renderelt kép fájlformátuma"
+
+
+msgid "Video"
+msgstr "Videó"
 
 
 msgid "Quality for image formats that support lossy compression"
@@ -9258,10 +9266,6 @@ msgid "Bake"
 msgstr "Sütés"
 
 
-msgid "Triangles"
-msgstr "Háromszögek"
-
-
 msgid "Linear interpolation"
 msgstr "Lineáris interpoláció"
 
@@ -9270,16 +9274,16 @@ msgid "Edge Angle"
 msgstr "Élszög"
 
 
+msgid "Triangles"
+msgstr "Háromszögek"
+
+
 msgid "Object Info"
 msgstr "Objektum infó"
 
 
 msgid "Repeat Output"
 msgstr "Kimenet ismétlése"
-
-
-msgid "Z Up"
-msgstr "Z fel"
 
 
 msgid "Set Material"
@@ -10170,6 +10174,10 @@ msgstr "X fel"
 
 msgid "Y Up"
 msgstr "Y fel"
+
+
+msgid "Z Up"
+msgstr "Z fel"
 
 
 msgid "-X Up"
@@ -11158,10 +11166,6 @@ msgid "Move Shape Key"
 msgstr "Formakulcs mozgatása"
 
 
-msgid "Move the active shape key up/down in the list"
-msgstr "Az aktív formakulcs mozgatása fel/le a listában"
-
-
 msgctxt "Operator"
 msgid "Remove Shape Key"
 msgstr "Formakulcs eltávolítása"
@@ -11950,6 +11954,14 @@ msgid "Custom Curve"
 msgstr "Egyéni görbe"
 
 
+msgid "Channel to place this strip into"
+msgstr "Csatorna, amiben a sáv el lesz helyezve"
+
+
+msgid "Replace Selection"
+msgstr "Kijelölés lecserélése"
+
+
 msgctxt "Sequence"
 msgid "Type"
 msgstr "Típus"
@@ -12017,18 +12029,6 @@ msgstr "Másolás"
 
 msgid "Add an effect to the sequencer, most are applied on top of existing strips"
 msgstr "Effekt hozzáadása a szekvenciához, többségük a létező sávok fölé kerül"
-
-
-msgid "Channel to place this strip into"
-msgstr "Csatorna, amiben a sáv el lesz helyezve"
-
-
-msgid "Start frame of the sequence strip"
-msgstr "A szekvenciasáv kezdő képkockája"
-
-
-msgid "Replace Selection"
-msgstr "Kijelölés lecserélése"
 
 
 msgid "Add an image or image sequence to the sequencer"
@@ -12911,10 +12911,6 @@ msgstr "Kódolás"
 
 msgid "Audio"
 msgstr "Audió"
-
-
-msgid "Video"
-msgstr "Videó"
 
 
 msgid "Note"
@@ -13864,26 +13860,6 @@ msgid "Render Strands in this Layer"
 msgstr "Szálak renderelése ezen a rétegen"
 
 
-msgid "Bias"
-msgstr "Eltérés"
-
-
-msgid "Number of samples used for ambient occlusion baking from multires"
-msgstr "Mintavételek száma a multi-felbontásos objektumokból kisütött környezeti elnyelődésnél"
-
-
-msgid "Choose shading information to bake into the image"
-msgstr "Árnyékolási információk kiválasztása a képbe való sütésükhöz"
-
-
-msgid "Bake normals"
-msgstr "Normálisok kisütése"
-
-
-msgid "Bake displacement"
-msgstr "Elmozdítások kisütése"
-
-
 msgid "Dither Intensity"
 msgstr "Szórás intenzitás"
 
@@ -14014,26 +13990,6 @@ msgstr "A szálak számának automatikus meghatározása, a CPU-n alapulva"
 
 msgid "Manually determine the number of threads"
 msgstr "A szálak számának manuális meghatározása"
-
-
-msgid "Clear Images before baking"
-msgstr "Képek tisztára törlése sütés előtt"
-
-
-msgid "Low Resolution Mesh"
-msgstr "Alacsony felbontású térháló"
-
-
-msgid "Calculate heights against unsubdivided low resolution mesh"
-msgstr "Magasságok számítása a felosztatlan, alacsony felbontású térhálók ellen"
-
-
-msgid "Bake from Multires"
-msgstr "Sütés Multi-felbontásból"
-
-
-msgid "Bake directly from multires object"
-msgstr "Sütés közvetlenül a multi-felbontásos objektumokból"
 
 
 msgid "Add the file format extensions to the rendered file name (eg: filename + .jpg)"
@@ -14174,6 +14130,10 @@ msgstr "Impulzus szétválasztása"
 
 msgid "Reduce extra velocity that can build up when objects collide (lowers simulation stability a little so use only when necessary)"
 msgstr "Extra sebesség csökkentése, ami termelődhet az objektumok ütözésekor (alacsonyabb szimulációs stabilitás, csak akkor ajánlott, ha feltétlenül szükséges)"
+
+
+msgid "Bias"
+msgstr "Eltérés"
 
 
 msgid "Show Cache"
@@ -14567,22 +14527,6 @@ msgid "Color of disabled marker"
 msgstr "Letiltott marker színe"
 
 
-msgid "Align Handle"
-msgstr "Markolat igazítása"
-
-
-msgid "Handle Vertex"
-msgstr "Fogantyú csúcspont"
-
-
-msgid "Handle Vertex Select"
-msgstr "Kijelölt fogantyú csúcspont"
-
-
-msgid "Handle Vertex Size"
-msgstr "Fogantyú csúcspont mérete"
-
-
 msgid "Locked Marker"
 msgstr "Zárolt marker"
 
@@ -14623,24 +14567,36 @@ msgid "Color of selected marker"
 msgstr "Kijelölt marker színe"
 
 
-msgid "Theme Dope Sheet"
-msgstr "Kulcstábla témája"
+msgid "Channel Group"
+msgstr "Csatorna csoport"
 
 
 msgid "Active Channel Group"
 msgstr "Aktív csatorna csoport"
 
 
-msgid "Channel Group"
-msgstr "Csatorna csoport"
+msgid "Align Handle"
+msgstr "Markolat igazítása"
+
+
+msgid "Handle Vertex"
+msgstr "Fogantyú csúcspont"
+
+
+msgid "Handle Vertex Select"
+msgstr "Kijelölt fogantyú csúcspont"
+
+
+msgid "Handle Vertex Size"
+msgstr "Fogantyú csúcspont mérete"
+
+
+msgid "Theme Dope Sheet"
+msgstr "Kulcstábla témája"
 
 
 msgid "Channels Selected"
 msgstr "Kijelölt csatornák"
-
-
-msgid "Dope Sheet Channel"
-msgstr "Kulcstábla csatorna"
 
 
 msgid "Keyframe Selected"
@@ -14657,14 +14613,6 @@ msgstr "Kijelölt hosszú kulcs"
 
 msgid "Summary"
 msgstr "Összegzés"
-
-
-msgid "Value Sliders"
-msgstr "Érték csúszkák"
-
-
-msgid "View Sliders"
-msgstr "Nézet csúszkák"
 
 
 msgid "Shadow Size"
@@ -14723,10 +14671,6 @@ msgid "Vertex Size"
 msgstr "Csúcspont mérete"
 
 
-msgid "Window Sliders"
-msgstr "Ablak csúszkák"
-
-
 msgid "Edge Select"
 msgstr "Kijelölt él"
 
@@ -14737,10 +14681,6 @@ msgstr "Kijelölt oldallap pont"
 
 msgid "Face Dot Size"
 msgstr "Oldallap pontjának mérete"
-
-
-msgid "Freestyle Face Mark"
-msgstr "Freestyle Oldallap jelölés"
 
 
 msgid "Active Action"
@@ -14823,10 +14763,6 @@ msgid "Camera Path"
 msgstr "Kamera útvonal"
 
 
-msgid "Edge UV Face Select"
-msgstr "UV Oldallap kiválasztás élei"
-
-
 msgid "Edge Seam"
 msgstr "Él illesztés"
 
@@ -14845,6 +14781,10 @@ msgstr "Oldallap szög felirat"
 
 msgid "Face Area Text"
 msgstr "Oldallap terület felirat"
+
+
+msgid "Freestyle Face Mark"
+msgstr "Freestyle Oldallap jelölés"
 
 
 msgid "Face Normal"
@@ -15496,11 +15436,6 @@ msgid "Delete All Groups"
 msgstr "Minden csoport törlése"
 
 
-msgctxt "Operator"
-msgid "Mirror Shape Key (Topology)"
-msgstr "Formakulcs tükrözése (Topológia)"
-
-
 msgid "Base Transparency"
 msgstr "Alap átlátszóság"
 
@@ -15774,6 +15709,16 @@ msgstr "Létrehozás"
 msgctxt "Operator"
 msgid "Movie"
 msgstr "Videó"
+
+
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "Kulcs-képkockák törlése..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "Kulcsképkockák tisztítása..."
 
 
 msgctxt "Operator"
@@ -16096,16 +16041,6 @@ msgstr "Kamera"
 msgctxt "Operator"
 msgid "Speaker"
 msgstr "Hangszóró"
-
-
-msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "Kulcs-képkockák törlése..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "Kulcsképkockák tisztítása..."
 
 
 msgctxt "Operator"
@@ -16877,10 +16812,6 @@ msgid "Hard coded Non-Linear, Gamma:1.7"
 msgstr "Fizikailag kódolt Nem-lineáris, Gamma:1.7"
 
 
-msgid "Can't Load Image"
-msgstr "Nem tölthető be kép"
-
-
 msgid "unsupported image format"
 msgstr "Nem támogatott képtípus"
 
@@ -17080,18 +17011,6 @@ msgstr "Kép 1"
 
 msgid "Image 2"
 msgstr "Kép 2"
-
-
-msgid "Layer:"
-msgstr "Réteg:"
-
-
-msgid "File Subpath:"
-msgstr "Fájl alútvonala:"
-
-
-msgid "Format:"
-msgstr "Formátum:"
 
 
 msgid "Mesh 1"

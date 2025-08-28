@@ -450,7 +450,7 @@ void object_sculpt_mode_enter(Main &bmain,
     if ((message_unsupported == nullptr) || force_dyntopo) {
       /* Needed because we may be entering this mode before the undo system loads. */
       wmWindowManager *wm = static_cast<wmWindowManager *>(bmain.wm.first);
-      const bool has_undo = wm->undo_stack != nullptr;
+      const bool has_undo = wm->runtime->undo_stack != nullptr;
       /* Undo push is needed to prevent memory leak. */
       if (has_undo) {
         undo::push_begin_ex(scene, ob, "Dynamic topology enable");
@@ -553,16 +553,6 @@ static wmOperatorStatus sculpt_mode_toggle_exec(bContext *C, wmOperator *op)
   const bool is_mode_set = (ob.mode & mode_flag) != 0;
 
   if (!is_mode_set) {
-    /* Being in sculpt mode on an invisible object is a confusing state; while switching the
-     * visibility of the current object shouldn't inherently change the mode, we prevent entering
-     * sculpt mode on an object that is already invisible to better align with how the mode toggle
-     * works currently. */
-    const View3D *v3d = CTX_wm_view3d(C);
-    const Base *base = BKE_view_layer_base_find(&view_layer, &ob);
-    if (!BKE_base_is_visible(v3d, base)) {
-      return OPERATOR_CANCELLED;
-    }
-
     if (!object::mode_compat_set(C, &ob, eObjectMode(mode_flag), op->reports)) {
       return OPERATOR_CANCELLED;
     }
@@ -660,9 +650,7 @@ static wmOperatorStatus sample_color_invoke(bContext *C, wmOperator *op, const w
                                                 std::get<int>(ss.active_vert()));
   }
 
-  float color_srgb[3];
-  IMB_colormanagement_scene_linear_to_srgb_v3(color_srgb, active_vertex_color);
-  BKE_brush_color_set(&sd.paint, &brush, color_srgb);
+  BKE_brush_color_set(&sd.paint, &brush, active_vertex_color);
 
   WM_event_add_notifier(C, NC_BRUSH | NA_EDITED, &brush);
 
@@ -1205,7 +1193,7 @@ static wmOperatorStatus mask_from_cavity_exec(bContext *C, wmOperator *op)
   const IndexMask node_mask = bke::pbvh::all_leaf_nodes(pbvh, memory);
 
   /* Set up automasking settings. */
-  Sculpt scene_copy = sd;
+  Sculpt scene_copy = dna::shallow_copy(sd);
 
   MaskSettingsSource src = (MaskSettingsSource)RNA_enum_get(op->ptr, "settings_source");
   switch (src) {
@@ -1399,7 +1387,7 @@ static wmOperatorStatus mask_from_boundary_exec(bContext *C, wmOperator *op)
   const IndexMask node_mask = bke::pbvh::all_leaf_nodes(pbvh, memory);
 
   /* Set up automasking settings. */
-  Sculpt scene_copy = sd;
+  Sculpt scene_copy = dna::shallow_copy(sd);
 
   MaskSettingsSource src = (MaskSettingsSource)RNA_enum_get(op->ptr, "settings_source");
   switch (src) {

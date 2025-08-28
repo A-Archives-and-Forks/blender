@@ -6,8 +6,11 @@
  * \ingroup edinterface
  */
 
+#include <fmt/format.h>
+
 #include "BKE_context.hh"
 #include "BKE_key.hh"
+#include "BKE_object.hh"
 
 #include "BLI_listbase.h"
 #include "BLT_translation.hh"
@@ -19,12 +22,13 @@
 #include "RNA_prototypes.hh"
 
 #include "DEG_depsgraph.hh"
+
 #include "DNA_key_types.h"
+
 #include "WM_api.hh"
+#include "WM_types.hh"
 
 #include "ED_undo.hh"
-#include "WM_types.hh"
-#include <fmt/format.h>
 
 namespace blender::ed::object::shapekey {
 
@@ -58,7 +62,7 @@ class ShapeKeyDragController : public ui::AbstractViewItemDragController {
   {
   }
 
-  eWM_DragDataType get_drag_type() const override
+  std::optional<eWM_DragDataType> get_drag_type() const override
   {
     return WM_DRAG_SHAPE_KEY;
   }
@@ -69,7 +73,7 @@ class ShapeKeyDragController : public ui::AbstractViewItemDragController {
     *drag_data = drag_key_;
     return drag_data;
   }
-  void on_drag_start() override
+  void on_drag_start(bContext & /*C*/) override
   {
     drag_key_.object->shapenr = drag_key_.index + 1;
   }
@@ -112,6 +116,9 @@ class ShapeKeyDropTarget : public ui::TreeViewItemDropTarget {
         BLI_assert_unreachable();
         break;
       case ui::DropLocation::Before:
+        if (drop_index_ == 0) {
+          return TIP_("Cannot move above basis shape key");
+        }
         return fmt::format(fmt::runtime(TIP_("Move {} above {}")), drag_name, drop_name);
       case ui::DropLocation::After:
         return fmt::format(fmt::runtime(TIP_("Move {} below {}")), drag_name, drop_name);
@@ -134,6 +141,9 @@ class ShapeKeyDropTarget : public ui::TreeViewItemDropTarget {
         BLI_assert_unreachable();
         break;
       case ui::DropLocation::Before:
+        if (drop_index == 0) {
+          return false;
+        }
         drop_index -= int(drag_index < drop_index);
         break;
       case ui::DropLocation::After:
@@ -227,8 +237,30 @@ class ShapeKeyItem : public ui::AbstractTreeViewItem {
     return label_;
   }
 
+  void delete_item(bContext *C) override
+  {
+    Main *bmain = CTX_data_main(C);
+    BKE_object_shapekey_remove(bmain, shape_key_.object, shape_key_.kb);
+    DEG_id_tag_update(&shape_key_.object->id, ID_RECALC_GEOMETRY);
+    WM_event_add_notifier(C, NC_OBJECT | ND_DRAW, nullptr);
+    ED_undo_grouped_push(C, "Delete Shape Key");
+  }
+
+  void build_context_menu(bContext &C, uiLayout &layout) const override
+  {
+    MenuType *mt = WM_menutype_find("MESH_MT_shape_key_tree_context_menu", true);
+    if (!mt) {
+      return;
+    }
+    UI_menutype_draw(&C, mt, &layout);
+  }
+
   std::unique_ptr<ui::AbstractViewItemDragController> create_drag_controller() const override
   {
+    if (shape_key_.index == 0) {
+      /* Prevent basis shape key from dragging. */
+      return nullptr;
+    }
     return std::make_unique<ShapeKeyDragController>(
         static_cast<ShapeKeyTreeView &>(get_tree_view()), shape_key_);
   }

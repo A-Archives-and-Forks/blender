@@ -50,6 +50,7 @@ class BakeData;
 class RenderStats;
 class SceneUpdateStats;
 class Volume;
+class VolumeManager;
 
 /* Scene Parameters */
 
@@ -156,6 +157,7 @@ class Scene : public NodeOwner {
   unique_ptr<ParticleSystemManager> particle_system_manager;
   unique_ptr<BakeManager> bake_manager;
   unique_ptr<ProceduralManager> procedural_manager;
+  unique_ptr<VolumeManager> volume_manager;
 
   /* default shaders */
   Shader *default_surface;
@@ -204,6 +206,9 @@ class Scene : public NodeOwner {
 
   bool has_shadow_catcher();
   void tag_shadow_catcher_modified();
+  bool has_volume();
+  bool has_volume_modified() const;
+  void tag_has_volume_modified();
 
   /* This function is used to create a node of a specified type instead of
    * calling 'new', and sets the scene as the owner of the node.
@@ -248,6 +253,7 @@ class Scene : public NodeOwner {
 
   bool has_shadow_catcher_ = false;
   bool shadow_catcher_modified_ = true;
+  bool has_volume_modified_ = true;
 
   /* Maximum number of closure during session lifetime. */
   int max_closure_global;

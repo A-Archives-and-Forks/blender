@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-04-14 08:41+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 14:56+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Serbian (Latin script) <https://translate.blender.org/projects/blender-ui/ui/sr_Latn/>\n"
 "Language: sr@latin\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.10.1"
+"X-Generator: Weblate 5.12.1"
 
 
 msgid "Valid"
@@ -779,6 +779,22 @@ msgid "Target"
 msgstr "Cilj"
 
 
+msgid "Choose shading information to bake into the image"
+msgstr "Izaberite informaciju senčenja za pretvaranje (pečenje) u sliku"
+
+
+msgid "Normals"
+msgstr "Normale"
+
+
+msgid "Bake normals"
+msgstr "Ispeci normale"
+
+
+msgid "Displacement"
+msgstr "Izdizanje"
+
+
 msgid "Automatic Name"
 msgstr "Automatska imena"
 
@@ -1321,10 +1337,6 @@ msgstr "Glava"
 
 msgid "Location of head end of the bone relative to its parent"
 msgstr "Lokacija glave kosti relativno u odnosu na roditelja"
-
-
-msgid "Bone is not visible when it is not in Edit Mode (i.e. in Object or Pose Modes)"
-msgstr "Kost nije vidljiva van režima izmene (npr. u režimima objekta ili poziranja)"
 
 
 msgid "Selectable"
@@ -1931,10 +1943,6 @@ msgstr "Ubi čestice pri sudaru"
 
 msgid "Display Device"
 msgstr "Prikaži krive"
-
-
-msgid "Display device name"
-msgstr "Prikaži scene"
 
 
 msgid "Input Color Space"
@@ -3539,10 +3547,6 @@ msgid "Strength of displace when applied to the mesh"
 msgstr "Jačina izdizanja kad se primeni na meš"
 
 
-msgid "Displacement"
-msgstr "Izdizanje"
-
-
 msgid "Acceleration"
 msgstr "Ubrzanje"
 
@@ -4644,6 +4648,10 @@ msgid "Normal"
 msgstr "Normalno"
 
 
+msgid "Shader"
+msgstr "Senčenja"
+
+
 msgid "Freestyle Line Set"
 msgstr "Zbirka slobodoručnih linija"
 
@@ -5602,10 +5610,6 @@ msgid "Don't fill polygons while editing"
 msgstr "Ne popunjavaj poligone prilikom uređivanja"
 
 
-msgid "Normals"
-msgstr "Normale"
-
-
 msgid "Freestyle Line Style"
 msgstr "Slobodoručni stil linije"
 
@@ -5774,32 +5778,8 @@ msgid "Image bit depth"
 msgstr "Bitna dubina slike"
 
 
-msgid "Iris"
-msgstr "Iris"
-
-
-msgid "Targa"
-msgstr "Targa"
-
-
 msgid "Output image in Targa format"
 msgstr "Izvoz slike u Targa formatu"
-
-
-msgid "Targa Raw"
-msgstr "Targa sirovo"
-
-
-msgid "Cineon"
-msgstr "Cineon"
-
-
-msgid "OpenEXR MultiLayer"
-msgstr "Višeslojni OpenEXR"
-
-
-msgid "Radiance HDR"
-msgstr "Radiance HDR"
 
 
 msgid "Image/Movie file name"
@@ -6050,10 +6030,6 @@ msgid "Show Cone"
 msgstr "Prikaži kupu"
 
 
-msgid "Spot Size"
-msgstr "Veličina projekcije"
-
-
 msgid "Intensity"
 msgstr "Intenzitet"
 
@@ -6268,10 +6244,6 @@ msgstr "Mat"
 
 msgid "Script"
 msgstr "Skripta"
-
-
-msgid "Shader"
-msgstr "Senčenja"
 
 
 msgid "Pattern"
@@ -7846,10 +7818,6 @@ msgstr "Magla"
 
 msgid "World mist settings"
 msgstr "Podešavanje magle"
-
-
-msgid "Use shader nodes to render the world"
-msgstr "Koristi čvorove senčenja za renderovanje sveta"
 
 
 msgid "Operation"
@@ -10632,10 +10600,6 @@ msgid "ITU 709"
 msgstr "YCbCr (ITU 709)"
 
 
-msgid "Composite"
-msgstr "Spojeno"
-
-
 msgid "To"
 msgstr "Ka"
 
@@ -10836,22 +10800,6 @@ msgid "File Output"
 msgstr "Izlazna datoteka"
 
 
-msgid "Active Input Index"
-msgstr "Aktivni indeks ulaza"
-
-
-msgid "Base Path"
-msgstr "Osnovna putanja"
-
-
-msgid "Base output path for the image"
-msgstr "Osnovna izlazna putanja slike"
-
-
-msgid "File Slots"
-msgstr "Slotovi datoteka"
-
-
 msgid "Pixelate"
 msgstr "Tačkasto"
 
@@ -10956,10 +10904,6 @@ msgid "Only Faces"
 msgstr "Samo stranice"
 
 
-msgid "Triangles"
-msgstr "Trougao"
-
-
 msgid "Primary"
 msgstr "Primarno"
 
@@ -10984,12 +10928,12 @@ msgid "Fill Type"
 msgstr "Vrsta uklapanja"
 
 
+msgid "Triangles"
+msgstr "Trougao"
+
+
 msgid "Object Info"
 msgstr "Informacije o objektu"
-
-
-msgid "Z Up"
-msgstr "Gore po Z"
 
 
 msgid "Tangent Space"
@@ -11002,14 +10946,6 @@ msgstr "Nepoznato"
 
 msgid "Selection"
 msgstr "Izbor"
-
-
-msgid "Angle Based"
-msgstr "Na osnovu ugla"
-
-
-msgid "Conformal"
-msgstr "Zaštitni"
 
 
 msgid "Warning"
@@ -11290,18 +11226,6 @@ msgstr "Do čvora"
 
 msgid "To socket"
 msgstr "Do utičnice"
-
-
-msgid "Output File Slot"
-msgstr "Slot izlazne datoteke"
-
-
-msgid "Use Node Format"
-msgstr "Koristi format čvora"
-
-
-msgid "Output File Layer Slot"
-msgstr "Slot sloja izlazne datoteke"
 
 
 msgid "Tooltip"
@@ -13584,6 +13508,10 @@ msgstr "Ništa"
 
 msgid "Y Up"
 msgstr "Gore po Y"
+
+
+msgid "Z Up"
+msgstr "Gore po Z"
 
 
 msgid "-X Up"
@@ -17622,6 +17550,18 @@ msgid "Use Laplacian method for relaxation"
 msgstr "Koristi Laplasov metod za opuštanje"
 
 
+msgid "Channel to place this strip into"
+msgstr "Kanal na koji postavljate traku"
+
+
+msgid "Allow Overlap"
+msgstr "Dozvoli preklapanje"
+
+
+msgid "Replace Selection"
+msgstr "Zameni izbor"
+
+
 msgctxt "Operator"
 msgid "Change Effect Type"
 msgstr "Izmeni vrstu efekata"
@@ -17707,30 +17647,6 @@ msgstr "Dodaj traku sa efektom"
 
 msgid "Add an effect to the sequencer, most are applied on top of existing strips"
 msgstr "Dodaj efekat na sekvencer, većina se dodaje na vrh postojećih traka"
-
-
-msgid "Channel to place this strip into"
-msgstr "Kanal na koji postavljate traku"
-
-
-msgid "End frame for the color strip"
-msgstr "Krajnji kadar trake bojenja"
-
-
-msgid "Start frame of the sequence strip"
-msgstr "Početni kadar trake sekvence"
-
-
-msgid "Allow Overlap"
-msgstr "Dozvoli preklapanje"
-
-
-msgid "Don't correct overlap on new sequence strips"
-msgstr "Ne ispravljaj preklapanje za nove trake sekvence"
-
-
-msgid "Replace Selection"
-msgstr "Zameni izbor"
 
 
 msgid "Sequencer effect type"
@@ -18660,6 +18576,14 @@ msgstr "Statična ostrva"
 msgctxt "Operator"
 msgid "Unwrap"
 msgstr "Rastvori"
+
+
+msgid "Angle Based"
+msgstr "Na osnovu ugla"
+
+
+msgid "Conformal"
+msgstr "Zaštitni"
 
 
 msgctxt "Operator"
@@ -19855,10 +19779,6 @@ msgid "Target Particle System"
 msgstr "Sistem čestica mete"
 
 
-msgid "Cache Compression"
-msgstr "Kompresija"
-
-
 msgid "Cache file path"
 msgstr "Putanja do skladišta"
 
@@ -20575,10 +20495,6 @@ msgid "Case"
 msgstr "Velika/mala slova"
 
 
-msgid "When using volume rendering, assume volume has the same density everywhere (not using any textures), for faster rendering"
-msgstr "Pri renderovanju zapremine, računaj da je gustina svuda ista (ne koristi teksture), radi bržeg renderinga"
-
-
 msgid "Use Motion Blur"
 msgstr "Zamućenje pokreta"
 
@@ -20641,10 +20557,6 @@ msgstr "Veličina pločice"
 
 msgid "Layer Samples"
 msgstr "Uzoraka sloja"
-
-
-msgid "Max Steps"
-msgstr "Maks. koraka"
 
 
 msgid "Diffuse Direct"
@@ -20765,22 +20677,6 @@ msgstr "Renderuj nebo u ovom sloju"
 
 msgid "Strand"
 msgstr "Štrafta"
-
-
-msgid "Bias"
-msgstr "Pristrasnost"
-
-
-msgid "Number of samples used for ambient occlusion baking from multires"
-msgstr "Broj uzoraka korišćenih za pečenje ambijentalnog senčenja za višerezolucijone objekte"
-
-
-msgid "Choose shading information to bake into the image"
-msgstr "Izaberite informaciju senčenja za pretvaranje (pečenje) u sliku"
-
-
-msgid "Bake normals"
-msgstr "Ispeci normale"
 
 
 msgid "Engine"
@@ -21065,6 +20961,10 @@ msgstr "Faktor poluprečnika"
 
 msgid "Number of samples"
 msgstr "Broj uzoraka"
+
+
+msgid "Bias"
+msgstr "Pristrasnost"
 
 
 msgid "YCbCr (ITU 601)"
@@ -22079,20 +21979,20 @@ msgid "Strips Selected"
 msgstr "Izabrane trake"
 
 
-msgid "Theme Console"
-msgstr "Tema konzole"
-
-
-msgid "Theme settings for the Console"
-msgstr "Podešavanje teme konzole"
+msgid "Channel Group"
+msgstr "Grupa kanala"
 
 
 msgid "Active Channel Group"
 msgstr "Aktivna grupa kanala"
 
 
-msgid "Channel Group"
-msgstr "Grupa kanala"
+msgid "Theme Console"
+msgstr "Tema konzole"
+
+
+msgid "Theme settings for the Console"
+msgstr "Podešavanje teme konzole"
 
 
 msgid "Channels Selected"
@@ -22109,14 +22009,6 @@ msgstr "Rezime"
 
 msgid "Color of summary channel"
 msgstr "Boja kanala rezimea"
-
-
-msgid "Value Sliders"
-msgstr "Klizači vrednosti"
-
-
-msgid "View Sliders"
-msgstr "Klizači pogleda"
 
 
 msgid "Selected File"
@@ -22167,10 +22059,6 @@ msgid "Vertex Size"
 msgstr "Veličina temena"
 
 
-msgid "Window Sliders"
-msgstr "Klizači prozora"
-
-
 msgid "Edge Select"
 msgstr "Izbor ivice"
 
@@ -22181,10 +22069,6 @@ msgstr "Izabrana tačka stranice"
 
 msgid "Face Dot Size"
 msgstr "Veličina tačke stranice"
-
-
-msgid "Freestyle Face Mark"
-msgstr "Slobodoručne oznake stranica"
 
 
 msgid "Wire Edit"
@@ -22247,16 +22131,8 @@ msgid "Matte Node"
 msgstr "Mat čvor"
 
 
-msgid "Pattern Node"
-msgstr "Čvor šare"
-
-
 msgid "Script Node"
 msgstr "Čvor skripte"
-
-
-msgid "Selected Text"
-msgstr "Izabrani tekst"
 
 
 msgid "Vector Node"
@@ -22287,16 +22163,16 @@ msgid "Audio Strip"
 msgstr "Zvučna traka"
 
 
-msgid "Draw Action"
-msgstr "Crtaj akciju"
-
-
 msgid "Clip Strip"
 msgstr "Traka isečka"
 
 
 msgid "Preview Background"
 msgstr "Pozadina pregleda"
+
+
+msgid "Selected Text"
+msgstr "Izabrani tekst"
 
 
 msgid "Window Background"
@@ -22397,6 +22273,10 @@ msgstr "Tekst ugla stranice"
 
 msgid "Freestyle Edge Mark"
 msgstr "Slobodoručne oznake ivica"
+
+
+msgid "Freestyle Face Mark"
+msgstr "Slobodoručne oznake stranica"
 
 
 msgid "Grease Pencil Vertex"
@@ -23640,6 +23520,21 @@ msgid "Movie"
 msgstr "Film"
 
 
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "Ukloni ključni kadar..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "Očisti ključne kadrove"
+
+
+msgctxt "Operator"
+msgid "Interactive Mirror"
+msgstr "Interaktivno ogledalo"
+
+
 msgid "Storage"
 msgstr "Skladište"
 
@@ -23810,11 +23705,6 @@ msgstr "Lokacija:"
 
 
 msgctxt "Operator"
-msgid "Interactive Mirror"
-msgstr "Interaktivno ogledalo"
-
-
-msgctxt "Operator"
 msgid "Cursor to Active"
 msgstr "Kursor na aktivno"
 
@@ -23982,16 +23872,6 @@ msgstr "Zvučnik"
 msgctxt "Operator"
 msgid "Make Local..."
 msgstr "Stvori veze..."
-
-
-msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "Ukloni ključni kadar..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "Očisti ključne kadrove"
 
 
 msgctxt "Operator"
@@ -24881,10 +24761,6 @@ msgid "Not a valid selection for extrude"
 msgstr "Postavlja ugaoni indeks odsjaja"
 
 
-msgid "Cannot rip selected faces"
-msgstr "Sakriva izabrane stranice"
-
-
 msgid "Must be in vertex selection mode"
 msgstr "Morate biti u režimu izbora temena"
 
@@ -25259,6 +25135,10 @@ msgid "Unsupported audio format"
 msgstr "Nepodržan fotmat zvuka"
 
 
+msgid "Composite"
+msgstr "Spojeno"
+
+
 msgid "Select Slot"
 msgstr "Izaberi slot"
 
@@ -25269,10 +25149,6 @@ msgstr "Izabrani sloj"
 
 msgid "Select Pass"
 msgstr "Izaberi prolaz"
-
-
-msgid "Can't Load Image"
-msgstr "Ne mogu da učitam sliku"
 
 
 msgid "unsupported image format"
@@ -25621,10 +25497,6 @@ msgid "Bright"
 msgstr "Svetlina"
 
 
-msgid "Layer:"
-msgstr "Slojevi:"
-
-
 msgid "Use feather information from the mask"
 msgstr "Koristi informacije umekšavanja sa maske"
 
@@ -25811,10 +25683,6 @@ msgstr "Format slike"
 
 msgid "Cannot render, no camera"
 msgstr "Očisti grupu temena"
-
-
-msgid "No render output node in scene"
-msgstr "Bez čvora izlaza renderinga u sceni"
 
 
 msgid "All render layers are disabled"

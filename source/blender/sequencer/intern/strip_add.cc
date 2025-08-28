@@ -185,7 +185,7 @@ Strip *add_effect_strip(Scene *scene, ListBase *seqbase, LoadData *load_data)
   if (strip->input1 == nullptr) {
     strip->len = 1; /* Effect is generator, set non zero length. */
     strip->flag |= SEQ_SINGLE_FRAME_CONTENT;
-    time_right_handle_frame_set(scene, strip, load_data->effect.end_frame);
+    time_right_handle_frame_set(scene, strip, load_data->start_frame + load_data->effect.length);
   }
 
   strip_add_set_name(scene, strip, load_data);
@@ -240,9 +240,9 @@ Strip *add_image_strip(Main *bmain, Scene *scene, ListBase *seqbase, LoadData *l
 {
   Strip *strip = strip_alloc(
       seqbase, load_data->start_frame, load_data->channel, STRIP_TYPE_IMAGE);
-  strip->len = load_data->image.len;
+  strip->len = load_data->image.count;
   StripData *data = strip->data;
-  data->stripdata = MEM_calloc_arrayN<StripElem>(load_data->image.len, "stripelem");
+  data->stripdata = MEM_calloc_arrayN<StripElem>(load_data->image.count, "stripelem");
 
   if (strip->len == 1) {
     strip->flag |= SEQ_SINGLE_FRAME_CONTENT;
@@ -268,7 +268,7 @@ Strip *add_image_strip(Main *bmain, Scene *scene, ListBase *seqbase, LoadData *l
     /* Set image resolution. Assume that all images in sequence are same size. This fields are only
      * informative. */
     StripElem *strip_elem = data->stripdata;
-    for (int i = 0; i < load_data->image.len; i++) {
+    for (int i = 0; i < load_data->image.count; i++) {
       strip_elem->orig_width = ibuf->x;
       strip_elem->orig_height = ibuf->y;
       strip_elem++;
@@ -295,9 +295,10 @@ void add_sound_av_sync(Main *bmain, Scene *scene, Strip *strip, LoadData *load_d
   }
 
   const double av_stream_offset = sound_stream.start - load_data->r_video_stream_start;
-  const int frame_offset = av_stream_offset * FPS;
+  const int frame_offset = av_stream_offset * scene->frames_per_second();
   /* Set sub-frame offset. */
-  strip->sound->offset_time = (double(frame_offset) / FPS) - av_stream_offset;
+  strip->sound->offset_time = (double(frame_offset) / scene->frames_per_second()) -
+                              av_stream_offset;
   transform_translate_strip(scene, strip, frame_offset);
 }
 
@@ -327,7 +328,8 @@ Strip *add_sound_strip(Main *bmain, Scene *scene, ListBase *seqbase, LoadData *l
    * nearest frame as the audio track usually overshoots or undershoots the
    * end frame of the video by a little bit.
    * See #47135 for under shoot example. */
-  strip->len = std::max(1, int(round((info.length - sound->offset_time) * FPS)));
+  strip->len = std::max(
+      1, int(round((info.length - sound->offset_time) * scene->frames_per_second())));
 
   StripData *data = strip->data;
   /* We only need 1 element to store the filename. */
@@ -669,7 +671,8 @@ void add_reload_new_file(Main *bmain, Scene *scene, Strip *strip, const bool loc
       if (!strip->sound) {
         return;
       }
-      strip->len = ceil(double(BKE_sound_get_length(bmain, strip->sound)) * FPS);
+      strip->len = ceil(double(BKE_sound_get_length(bmain, strip->sound)) *
+                        scene->frames_per_second());
       strip->len -= strip->anim_startofs;
       strip->len -= strip->anim_endofs;
       strip->len = std::max(strip->len, 0);

@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-07-21 00:59+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-08-23 04:59+0000\n"
 "Last-Translator: Dominic Iastrebschi <domjotebit@gmail.com>\n"
 "Language-Team: Romanian <https://translate.blender.org/projects/blender-ui/ui/ro/>\n"
 "Language: ro\n"
@@ -2070,6 +2070,10 @@ msgid "Edit"
 msgstr "Editare"
 
 
+msgid "Sculpt"
+msgstr "Sculptare"
+
+
 msgid "Tool"
 msgstr "Instrument"
 
@@ -2120,6 +2124,10 @@ msgstr "Spațiu de lucru"
 
 msgid "Animation"
 msgstr "Animație"
+
+
+msgid "Simulation"
+msgstr "Simulare"
 
 
 msgid "Color Management"
@@ -2231,10 +2239,6 @@ msgstr "Lume"
 
 msgid "Starting"
 msgstr "Pornire"
-
-
-msgid "Composite"
-msgstr "Compozit"
 
 
 msgid "Combined"
@@ -3631,6 +3635,10 @@ msgid "No F-Modifiers to paste"
 msgstr "Niciun F-Modificator de lipit"
 
 
+msgid "Composite"
+msgstr "Compozit"
+
+
 msgid "Select Slot"
 msgstr "Selectare Slot"
 
@@ -3641,10 +3649,6 @@ msgstr "Selectare Strat"
 
 msgid "Select Pass"
 msgstr "Selectare Pass"
-
-
-msgid "Can't Load Image"
-msgstr "Nu s-a putut încărca imaginea"
 
 
 msgid " RGBA float"
@@ -3818,26 +3822,6 @@ msgstr "Tonuri Mijlocii"
 
 msgid "Bokeh Type:"
 msgstr "Tip Bokeh:"
-
-
-msgid "Path:"
-msgstr "Cale:"
-
-
-msgid "Base Path:"
-msgstr "Cale de Bază:"
-
-
-msgid "Add Input"
-msgstr "Adăugare Intrare"
-
-
-msgid "Layer:"
-msgstr "Strat:"
-
-
-msgid "Format:"
-msgstr "Format:"
 
 
 msgid "Blender File View"

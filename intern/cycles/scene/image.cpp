@@ -461,8 +461,8 @@ bool ImageManager::file_load_image(Device *device, ImageSingle *img, const int t
     while (max_size * scale_factor > texture_limit) {
       scale_factor *= 0.5f;
     }
-    LOG_WORK << "Scaling image " << img->loader->name() << " by a factor of " << scale_factor
-             << ".";
+    LOG_DEBUG << "Scaling image " << img->loader->name() << " by a factor of " << scale_factor
+              << ".";
     vector<StorageType> scaled_pixels;
     int64_t scaled_width;
     int64_t scaled_height;

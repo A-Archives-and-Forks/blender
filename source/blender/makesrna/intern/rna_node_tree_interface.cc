@@ -100,8 +100,10 @@ static const EnumPropertyItem node_default_input_items[] = {
 #  include "NOD_socket.hh"
 
 #  include "DNA_material_types.h"
-#  include "ED_node.hh"
+
 #  include "WM_api.hh"
+
+#  include "ED_node.hh"
 
 /* Internal RNA function declarations, used to invoke registered callbacks. */
 extern FunctionRNA rna_NodeTreeInterfaceSocket_draw_func;
@@ -117,7 +119,7 @@ static void rna_NodeTreeInterfaceItem_update(Main *bmain, Scene * /*scene*/, Poi
     /* This can happen because of the dummy socket in #rna_NodeTreeInterfaceSocket_register. */
     return;
   }
-  ntree->tree_interface.tag_items_changed();
+  ntree->tree_interface.tag_item_property_changed();
   BKE_main_ensure_invariants(*bmain, ntree->id);
 }
 
@@ -429,12 +431,6 @@ static bool is_socket_type_supported(blender::bke::bNodeTreeType *ntreetype,
     }
   }
 
-  if (!U.experimental.use_bundle_and_closure_nodes) {
-    if (ELEM(socket_type->type, SOCK_BUNDLE, SOCK_CLOSURE)) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -514,31 +510,25 @@ static const EnumPropertyItem *rna_NodeTreeInterfaceSocket_structure_type_itemf(
         break;
       }
       case NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_DYNAMIC: {
-        if (U.experimental.use_socket_structure_type) {
-          if (supports_fields || supports_grids) {
-            RNA_enum_item_add(&items, &items_count, item);
-          }
+        if (supports_fields || supports_grids) {
+          RNA_enum_item_add(&items, &items_count, item);
         }
         break;
       }
       case NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_FIELD: {
-        if (U.experimental.use_socket_structure_type) {
-          if (supports_fields) {
-            RNA_enum_item_add(&items, &items_count, item);
-          }
+        if (supports_fields) {
+          RNA_enum_item_add(&items, &items_count, item);
         }
         break;
       }
       case NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_GRID: {
-        if (U.experimental.use_socket_structure_type) {
-          if (supports_grids) {
-            RNA_enum_item_add(&items, &items_count, item);
-          }
+        if (supports_grids) {
+          RNA_enum_item_add(&items, &items_count, item);
         }
         break;
       }
       case NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_LIST: {
-        if (U.experimental.use_socket_structure_type && U.experimental.use_geometry_nodes_lists) {
+        if (U.experimental.use_geometry_nodes_lists) {
           if (supports_lists) {
             RNA_enum_item_add(&items, &items_count, item);
           }
@@ -918,13 +908,6 @@ static const EnumPropertyItem *rna_NodeTreeInterfaceSocketString_subtype_itemf(
   return rna_subtype_filter_itemf({PROP_FILEPATH, PROP_NONE}, r_free);
 }
 
-/* using a context update function here, to avoid searching the node if possible */
-static void rna_NodeTreeInterfaceSocket_value_update(Main *bmain, Scene *scene, PointerRNA *ptr)
-{
-  /* default update */
-  rna_NodeTreeInterfaceItem_update(bmain, scene, ptr);
-}
-
 /* If the dimensions of the vector socket changed, we need to update the socket type, since each
  * dimensions value has its own sub-type. */
 static void rna_NodeTreeInterfaceSocketVector_dimensions_update(Main *bmain,
@@ -947,7 +930,7 @@ static void rna_NodeTreeInterfaceSocketVector_dimensions_update(Main *bmain,
   /* Restore existing default value. */
   *static_cast<bNodeSocketValueVector *>(socket->socket_data) = default_value;
 
-  rna_NodeTreeInterfaceSocket_value_update(bmain, scene, ptr);
+  rna_NodeTreeInterfaceItem_update(bmain, scene, ptr);
 }
 
 static bool rna_NodeTreeInterfaceSocketMaterial_default_value_poll(PointerRNA * /*ptr*/,

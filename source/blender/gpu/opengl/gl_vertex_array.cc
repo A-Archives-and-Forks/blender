@@ -81,8 +81,7 @@ static uint16_t vbo_bind(const ShaderInterface *interface,
 
 void GLVertArray::update_bindings(const GLuint vao,
                                   const Batch *batch_, /* Should be GLBatch. */
-                                  const ShaderInterface *interface,
-                                  const int base_instance)
+                                  const ShaderInterface *interface)
 {
   const GLBatch *batch = static_cast<const GLBatch *>(batch_);
   uint16_t attr_mask = interface->enabled_attr_mask_;
@@ -95,32 +94,6 @@ void GLVertArray::update_bindings(const GLuint vao,
     if (vbo) {
       vbo->bind();
       attr_mask &= ~vbo_bind(interface, &vbo->format, 0, vbo->vertex_len, false);
-    }
-  }
-
-  for (int v = GPU_BATCH_INST_VBO_MAX_LEN - 1; v > -1; v--) {
-    GLVertBuf *vbo = batch->inst_(v);
-    if (vbo) {
-      vbo->bind();
-      attr_mask &= ~vbo_bind(interface, &vbo->format, base_instance, vbo->vertex_len, true);
-    }
-  }
-
-  if (batch->resource_id_buf) {
-    const ShaderInput *input = interface->attr_get("drw_ResourceID");
-    int component_len = 1;
-    if (input == nullptr) {
-      /* Uses Custom IDs */
-      input = interface->attr_get("vertex_in_drw_ResourceID");
-      component_len = 2;
-    }
-    if (input) {
-      dynamic_cast<GLStorageBuf *>(unwrap(batch->resource_id_buf))->bind_as(GL_ARRAY_BUFFER);
-      glEnableVertexAttribArray(input->location);
-      glVertexAttribDivisor(input->location, 1);
-      glVertexAttribIPointer(
-          input->location, component_len, to_gl(GPU_COMP_I32), 0, (GLvoid *)nullptr);
-      attr_mask &= ~(1 << input->location);
     }
   }
 

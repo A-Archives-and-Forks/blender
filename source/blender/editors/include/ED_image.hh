@@ -112,6 +112,7 @@ bool ED_image_slot_cycle(Image *image, int direction);
 
 bool ED_space_image_show_render(const SpaceImage *sima);
 bool ED_space_image_show_paint(const SpaceImage *sima);
+bool ED_space_image_show_mask(const SpaceImage *sima);
 bool ED_space_image_show_uvedit(const SpaceImage *sima, Object *obedit);
 
 bool ED_space_image_paint_curve(const bContext *C);
@@ -194,14 +195,21 @@ struct ImageFrameRange {
   /** Absolute file path of the first file in the range. */
   char filepath[FILE_MAX];
   /* Sequence parameters. */
-  int length;
+  int length; /* Does not include placeholders, stops at gaps in sequence. */
   int offset;
+  int max_framenr; /* Allows for calculating length including placeholders. */
+
   /* UDIM tiles. */
   bool udims_detected;
   ListBase udim_tiles;
 
   /* Temporary data. */
-  ListBase frames;
+  ListBase frames; /* ImageFrame. */
+};
+
+struct ImageFrame {
+  ImageFrame *next, *prev;
+  int framenr;
 };
 
 /**

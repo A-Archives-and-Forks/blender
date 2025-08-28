@@ -1543,7 +1543,7 @@ void OBJECT_OT_grease_pencil_add(wmOperatorType *ot)
                 0.0f,
                 0.5f);
   RNA_def_boolean(
-      ot->srna, "use_lights", false, "Use Lights", "Use lights for this Grease Pencil object");
+      ot->srna, "use_lights", true, "Use Lights", "Use lights for this Grease Pencil object");
   RNA_def_enum(
       ot->srna,
       "stroke_depth_order",
@@ -2342,7 +2342,7 @@ static void copy_object_set_idnew(bContext *C)
   Main *bmain = CTX_data_main(C);
 
   CTX_DATA_BEGIN (C, Object *, ob, selected_editable_objects) {
-    BKE_libblock_relink_to_newid(bmain, &ob->id, 0);
+    BKE_libblock_relink_to_newid(bmain, &ob->id, ID_REMAP_SKIP_USER_CLEAR);
   }
   CTX_DATA_END;
 
@@ -3299,8 +3299,6 @@ static Object *convert_mesh_to_grease_pencil(Base &base,
     fill_colors = mesh_to_grease_pencil_get_material_list(*ob_eval, *mesh_eval, material_remap);
   }
 
-  Mesh *newob_mesh = static_cast<Mesh *>(newob->data);
-  BKE_id_material_clear(info.bmain, &newob_mesh->id);
   BKE_object_free_derived_caches(newob);
   BKE_object_free_modifiers(newob, 0);
 
@@ -3308,12 +3306,11 @@ static Object *convert_mesh_to_grease_pencil(Base &base,
   newob->data = grease_pencil;
   newob->type = OB_GREASE_PENCIL;
 
-  /* Reset `ob->totcol` and `ob->actcol` since currently the generic / grease pencil material
+  /* Reset object material array and count since currently the generic / grease pencil material
    * functions still depend on this value being coherent (The same value as
    * `GreasePencil::material_array_num`).
    */
-  newob->totcol = 0;
-  newob->actcol = 0;
+  BKE_object_material_resize(info.bmain, newob, 0, true);
 
   mesh_to_grease_pencil_add_material(
       *info.bmain, *newob, DATA_("Stroke"), float4(0.0f, 0.0f, 0.0f, 1.0f), {});
@@ -3601,9 +3598,10 @@ static Object *convert_font_to_curve_legacy_generic(Object *ob,
 
   Object *ob_eval = DEG_get_evaluated(info.depsgraph, ob);
   BKE_vfont_to_curve_ex(ob_eval,
-                        static_cast<Curve *>(ob_eval->data),
+                        *static_cast<const Curve *>(ob_eval->data),
                         FO_EDIT,
                         &cu->nurb,
+                        nullptr,
                         nullptr,
                         nullptr,
                         nullptr,

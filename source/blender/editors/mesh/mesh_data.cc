@@ -162,12 +162,12 @@ static void mesh_uv_reset_bmface(BMFace *f, const int cd_loop_uv_offset)
   mesh_uv_reset_array(fuv.data(), f->len);
 }
 
-static void mesh_uv_reset_mface(const blender::IndexRange face, float2 *mloopuv)
+static void mesh_uv_reset_mface(const blender::IndexRange face, float2 *uv_map)
 {
   Array<float *, BM_DEFAULT_NGON_STACK_SIZE> fuv(face.size());
 
   for (int i = 0; i < face.size(); i++) {
-    fuv[i] = mloopuv[face[i]];
+    fuv[i] = uv_map[face[i]];
   }
 
   mesh_uv_reset_array(fuv.data(), face.size());
@@ -196,12 +196,12 @@ void ED_mesh_uv_loop_reset_ex(Mesh *mesh, const int layernum)
   else {
     /* Collect Mesh UVs */
     BLI_assert(CustomData_has_layer(&mesh->corner_data, CD_PROP_FLOAT2));
-    float2 *mloopuv = static_cast<float2 *>(CustomData_get_layer_n_for_write(
+    float2 *uv_map = static_cast<float2 *>(CustomData_get_layer_n_for_write(
         &mesh->corner_data, CD_PROP_FLOAT2, layernum, mesh->corners_num));
 
     const blender::OffsetIndices polys = mesh->faces();
     for (const int i : polys.index_range()) {
-      mesh_uv_reset_mface(polys[i], mloopuv);
+      mesh_uv_reset_mface(polys[i], uv_map);
     }
   }
 
@@ -1088,7 +1088,7 @@ void ED_mesh_geometry_clear(Mesh *mesh)
 
 /** \} */
 
-void ED_mesh_report_mirror_ex(wmOperator *op, int totmirr, int totfail, char selectmode)
+void ED_mesh_report_mirror_ex(ReportList &reports, int totmirr, int totfail, char selectmode)
 {
   const char *elem_type;
 
@@ -1103,17 +1103,16 @@ void ED_mesh_report_mirror_ex(wmOperator *op, int totmirr, int totfail, char sel
   }
 
   if (totfail) {
-    BKE_reportf(
-        op->reports, RPT_WARNING, "%d %s mirrored, %d failed", totmirr, elem_type, totfail);
+    BKE_reportf(&reports, RPT_WARNING, "%d %s mirrored, %d failed", totmirr, elem_type, totfail);
   }
   else {
-    BKE_reportf(op->reports, RPT_INFO, "%d %s mirrored", totmirr, elem_type);
+    BKE_reportf(&reports, RPT_INFO, "%d %s mirrored", totmirr, elem_type);
   }
 }
 
-void ED_mesh_report_mirror(wmOperator *op, int totmirr, int totfail)
+void ED_mesh_report_mirror(ReportList &reports, int totmirr, int totfail)
 {
-  ED_mesh_report_mirror_ex(op, totmirr, totfail, SCE_SELECT_VERTEX);
+  ED_mesh_report_mirror_ex(reports, totmirr, totfail, SCE_SELECT_VERTEX);
 }
 
 KeyBlock *ED_mesh_get_edit_shape_key(const Mesh *me)

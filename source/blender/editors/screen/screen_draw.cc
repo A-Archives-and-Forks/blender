@@ -220,7 +220,10 @@ void ED_screen_draw_edges(wmWindow *win)
   GPU_scissor_test(false);
 }
 
-void screen_draw_move_highlight(const wmWindow *win, bScreen *screen, eScreenAxis dir_axis)
+void screen_draw_move_highlight(const wmWindow *win,
+                                bScreen *screen,
+                                eScreenAxis dir_axis,
+                                float anim_factor)
 {
   rctf rect = {SHRT_MAX, SHRT_MIN, SHRT_MAX, SHRT_MIN};
 
@@ -239,39 +242,21 @@ void screen_draw_move_highlight(const wmWindow *win, bScreen *screen, eScreenAxi
     };
   }
 
-  /* Pull in ends not at window edges. */
   rcti window_rect;
   WM_window_screen_rect_calc(win, &window_rect);
   const float offset = U.border_width * UI_SCALE_FAC;
+  const float width = std::min(2.0f * offset, 5.0f * UI_SCALE_FAC);
   if (dir_axis == SCREEN_AXIS_H) {
-    if (rect.xmin > (window_rect.xmin + 2)) {
-      rect.xmin += offset;
-    }
-    if (rect.xmax < (window_rect.xmax - 2)) {
-      rect.xmax -= offset;
-    }
+    BLI_rctf_pad(&rect, -offset, width);
   }
   else {
-    if (rect.ymin > (window_rect.ymin + 2)) {
-      rect.ymin += offset;
-    }
-    if (rect.ymax < (window_rect.ymax - 2)) {
-      rect.ymax -= offset;
-    }
+    BLI_rctf_pad(&rect, width, -offset);
   }
 
-  const float width = std::min(2.0f * U.border_width * UI_SCALE_FAC, 5.0f * UI_SCALE_FAC);
-
-  if (dir_axis == SCREEN_AXIS_H) {
-    BLI_rctf_pad(&rect, 0.0f, width);
-  }
-  else {
-    BLI_rctf_pad(&rect, width, 0.0f);
-  }
-
-  float inner[4] = {1.0f, 1.0f, 1.0f, 0.4f};
+  float inner[4] = {1.0f, 1.0f, 1.0f, 0.4f * anim_factor};
   float outline[4];
   UI_GetThemeColor4fv(TH_EDITOR_BORDER, outline);
+  outline[3] *= anim_factor;
 
   UI_draw_roundbox_corner_set(UI_CNR_ALL);
   UI_draw_roundbox_4fv_ex(
@@ -380,21 +365,23 @@ static void screen_draw_area_drag_tip(
   BLF_draw(fstyle->uifont_id, area_name, BLF_DRAW_STR_DUMMY_MAX);
 }
 
-static void screen_draw_area_closed(int xmin, int xmax, int ymin, int ymax)
+static void screen_draw_area_closed(int xmin, int xmax, int ymin, int ymax, float anim_factor)
 {
   /* Darken the area. */
   rctf rect = {float(xmin), float(xmax), float(ymin), float(ymax)};
-  float darken[4] = {0.0f, 0.0f, 0.0f, 0.7f};
+  float darken[4] = {0.0f, 0.0f, 0.0f, 0.7f * anim_factor};
   UI_draw_roundbox_corner_set(UI_CNR_ALL);
   UI_draw_roundbox_4fv_ex(&rect, darken, nullptr, 1.0f, nullptr, U.pixelsize, EDITORRADIUS);
 }
 
-void screen_draw_join_highlight(const wmWindow *win, ScrArea *sa1, ScrArea *sa2, eScreenDir dir)
+void screen_draw_join_highlight(
+    const wmWindow *win, ScrArea *sa1, ScrArea *sa2, eScreenDir dir, float anim_factor)
 {
   if (dir == SCREEN_DIR_NONE || !sa2) {
-    /* Darken source if docking. Done here because it might be a different window. */
+    /* Darken source if docking. Done here because it might be a different window.
+     * Do not animate this as we don't want to reset every time we change areas. */
     screen_draw_area_closed(
-        sa1->totrct.xmin, sa1->totrct.xmax, sa1->totrct.ymin, sa1->totrct.ymax);
+        sa1->totrct.xmin, sa1->totrct.xmax, sa1->totrct.ymin, sa1->totrct.ymax, 1.0f);
     return;
   }
 
@@ -418,45 +405,45 @@ void screen_draw_join_highlight(const wmWindow *win, ScrArea *sa1, ScrArea *sa2,
     if (vertical) {
       if (sa1->totrct.xmin < combined.xmin) {
         screen_draw_area_closed(
-            sa1->totrct.xmin, combined.xmin, sa1->totrct.ymin, sa1->totrct.ymax);
+            sa1->totrct.xmin, combined.xmin, sa1->totrct.ymin, sa1->totrct.ymax, anim_factor);
       }
       if (sa2->totrct.xmin < combined.xmin) {
         screen_draw_area_closed(
-            sa2->totrct.xmin, combined.xmin, sa2->totrct.ymin, sa2->totrct.ymax);
+            sa2->totrct.xmin, combined.xmin, sa2->totrct.ymin, sa2->totrct.ymax, anim_factor);
       }
       if (sa1->totrct.xmax > combined.xmax) {
         screen_draw_area_closed(
-            combined.xmax, sa1->totrct.xmax, sa1->totrct.ymin, sa1->totrct.ymax);
+            combined.xmax, sa1->totrct.xmax, sa1->totrct.ymin, sa1->totrct.ymax, anim_factor);
       }
       if (sa2->totrct.xmax > combined.xmax) {
         screen_draw_area_closed(
-            combined.xmax, sa2->totrct.xmax, sa2->totrct.ymin, sa2->totrct.ymax);
+            combined.xmax, sa2->totrct.xmax, sa2->totrct.ymin, sa2->totrct.ymax, anim_factor);
       }
     }
     else {
       if (sa1->totrct.ymin < combined.ymin) {
         screen_draw_area_closed(
-            sa1->totrct.xmin, sa1->totrct.xmax, sa1->totrct.ymin, combined.ymin);
+            sa1->totrct.xmin, sa1->totrct.xmax, sa1->totrct.ymin, combined.ymin, anim_factor);
       }
       if (sa2->totrct.ymin < combined.ymin) {
         screen_draw_area_closed(
-            sa2->totrct.xmin, sa2->totrct.xmax, sa2->totrct.ymin, combined.ymin);
+            sa2->totrct.xmin, sa2->totrct.xmax, sa2->totrct.ymin, combined.ymin, anim_factor);
       }
       if (sa1->totrct.ymax > combined.ymax) {
         screen_draw_area_closed(
-            sa1->totrct.xmin, sa1->totrct.xmax, combined.ymax, sa1->totrct.ymax);
+            sa1->totrct.xmin, sa1->totrct.xmax, combined.ymax, sa1->totrct.ymax, anim_factor);
       }
       if (sa2->totrct.ymax > combined.ymax) {
         screen_draw_area_closed(
-            sa2->totrct.xmin, sa2->totrct.xmax, combined.ymax, sa2->totrct.ymax);
+            sa2->totrct.xmin, sa2->totrct.xmax, combined.ymax, sa2->totrct.ymax, anim_factor);
       }
     }
   }
 
   /* Outline the combined area. */
   UI_draw_roundbox_corner_set(UI_CNR_ALL);
-  float outline[4] = {1.0f, 1.0f, 1.0f, 0.4f};
-  float inner[4] = {1.0f, 1.0f, 1.0f, 0.10f};
+  float outline[4] = {1.0f, 1.0f, 1.0f, 0.4f * anim_factor};
+  float inner[4] = {1.0f, 1.0f, 1.0f, 0.10f * anim_factor};
   UI_draw_roundbox_4fv_ex(&combined, inner, nullptr, 1.0f, outline, U.pixelsize, EDITORRADIUS);
 
   screen_draw_area_drag_tip(
@@ -537,16 +524,18 @@ void screen_draw_dock_preview(const wmWindow *win,
                               AreaDockTarget dock_target,
                               float factor,
                               int x,
-                              int y)
+                              int y,
+                              float anim_factor)
 {
   if (dock_target == AreaDockTarget::None) {
     return;
   }
 
-  float outline[4] = {1.0f, 1.0f, 1.0f, 0.4f};
-  float inner[4] = {1.0f, 1.0f, 1.0f, 0.1f};
+  float outline[4] = {1.0f, 1.0f, 1.0f, 0.4f * anim_factor};
+  float inner[4] = {1.0f, 1.0f, 1.0f, 0.1f * anim_factor};
   float border[4];
   UI_GetThemeColor4fv(TH_EDITOR_BORDER, border);
+  border[3] *= anim_factor;
   UI_draw_roundbox_corner_set(UI_CNR_ALL);
   float half_line_width = float(U.border_width) * UI_SCALE_FAC;
 

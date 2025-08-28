@@ -19,8 +19,9 @@
 #include "BLI_mutex.hh"
 #include "BLI_vector.hh"
 
+#include "GPU_shader_shared.hh"
+#include "GPU_storage_buffer.hh"
 #include "GPU_texture.hh"
-#include "GPU_vertex_buffer.hh"
 
 #include <ft2build.h>
 
@@ -35,9 +36,9 @@ class VertBuf;
 struct GPUVertBufRaw;
 
 namespace blender::ocio {
-class Display;
+class ColorSpace;
 }  // namespace blender::ocio
-using ColorManagedDisplay = blender::ocio::Display;
+using ColorSpace = blender::ocio::ColorSpace;
 
 #include FT_MULTIPLE_MASTERS_H /* Variable font support. */
 
@@ -99,7 +100,7 @@ inline ft_pix ft_pix_from_float(float v)
 
 /** \} */
 
-#define BLF_BATCH_DRAW_LEN_MAX 2048 /* in glyph */
+#define BLF_BATCH_DRAW_LEN_MAX 128 /* in glyph */
 
 /** Number of characters in #KerningCacheBLF.table. */
 #define KERNING_CACHE_TABLE_SIZE 128
@@ -111,16 +112,16 @@ struct BatchBLF {
   /** Can only batch glyph from the same font. */
   FontBLF *font;
   blender::gpu::Batch *batch;
-  blender::gpu::VertBuf *verts;
-  GPUVertBufRaw pos_step, col_step, offset_step, glyph_size_step, glyph_flags_step;
-  unsigned int pos_loc, col_loc, offset_loc, glyph_size_loc, glyph_flags_loc;
-  unsigned int glyph_len;
+  blender::gpu::StorageBuf *glyph_buf;
+  int glyph_len;
   /** Copy of `font->pos`. */
   int ofs[2];
-  /* Previous call `modelmatrix`. */
+  /** Previous call `modelmatrix`. */
   float mat[4][4];
   bool enabled, active, simple_shader;
   GlyphCacheBLF *glyph_cache;
+
+  GlyphQuad glyph_data[BLF_BATCH_DRAW_LEN_MAX];
 };
 
 extern BatchBLF g_batch;
@@ -230,8 +231,8 @@ struct FontBufInfoBLF {
   /** Buffer size, keep signed so comparisons with negative values work. */
   int dims[2];
 
-  /** Display device used for color management. */
-  const ColorManagedDisplay *display;
+  /** Colorspace of the byte buffer (float is scene linear). */
+  const ColorSpace *colorspace;
 
   /** The color, the alphas is get from the glyph! (color is sRGB space). */
   float col_init[4];
@@ -307,10 +308,10 @@ struct FontMetrics {
 };
 
 struct FontBLF {
-  /** Full path to font file or NULL if from memory. */
+  /** The full path to font file or NULL when from memory. */
   char *filepath;
 
-  /** Pointer to in-memory font, or NULL if from file. */
+  /** Pointer to in-memory font, or NULL when from a file. */
   void *mem;
   size_t mem_size;
   /** Handle for in-memory fonts to avoid loading them multiple times. */
@@ -361,21 +362,26 @@ struct FontBLF {
   /** Axes data for Adobe MM, TrueType GX, or OpenType variation fonts. */
   FT_MM_Var *variations;
 
-  /** Character variations. */
-  int char_weight;    /* 100 - 900, 400 = normal. */
-  float char_slant;   /* Slant in clockwise degrees. 0.0 = upright. */
-  float char_width;   /* Factor of normal character width. 1.0 = normal. */
-  float char_spacing; /* Factor of normal character spacing. 0.0 = normal. */
+  /* Character variations. */
+
+  /** Wight in range: 100 - 900, 400 = normal. */
+  int char_weight;
+  /** Slant in clockwise degrees. 0.0 = upright. */
+  float char_slant;
+  /** Factor of normal character width. 1.0 = normal. */
+  float char_width;
+  /** Factor of normal character spacing. 0.0 = normal. */
+  float char_spacing;
 
   /** Max texture size. */
   int tex_size_max;
 
   /** Font options. */
-  int flags;
+  FontFlags flags;
 
   /**
    * List of glyph caches (#GlyphCacheBLF) for this font for size, DPI, bold, italic.
-   * Use blf_glyph_cache_acquire(font) and blf_glyph_cache_release(font) to access cache!
+   * Use `blf_glyph_cache_acquire(font)` and `blf_glyph_cache_release(font)` to access cache!
    */
   blender::Vector<std::unique_ptr<GlyphCacheBLF>> cache;
 

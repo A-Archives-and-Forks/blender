@@ -195,31 +195,6 @@ void kernel_gpu_##name::run(thread MetalKernelContext& context, \
 
 // clang-format on
 
-/* volumetric lambda functions - use function objects for lambda-like functionality */
-#define VOLUME_READ_LAMBDA(function_call) \
-  struct FnObjectRead { \
-    KernelGlobals kg; \
-    ccl_private MetalKernelContext *context; \
-    int state; \
-\
-    VolumeStack operator()(const int i) const \
-    { \
-      return context->function_call; \
-    } \
-  } volume_read_lambda_pass{kg, this, state};
-
-#define VOLUME_WRITE_LAMBDA(function_call) \
-  struct FnObjectWrite { \
-    KernelGlobals kg; \
-    ccl_private MetalKernelContext *context; \
-    int state; \
-\
-    void operator()(const int i, VolumeStack entry) const \
-    { \
-      context->function_call; \
-    } \
-  } volume_write_lambda_pass{kg, this, state};
-
 /* make_type definitions with Metal style element initializers */
 ccl_device_forceinline float2 make_float2(const float x, const float y)
 {
@@ -292,6 +267,7 @@ ccl_device_forceinline uchar4 make_uchar4(const uchar x,
 #define atanf(x) atan(float(x))
 #define floorf(x) floor(float(x))
 #define ceilf(x) ceil(float(x))
+#define roundf(x) round(float(x))
 #define hypotf(x, y) hypot(float(x), float(y))
 #define atan2f(x, y) atan2(float(x), float(y))
 #define fmaxf(x, y) fmax(float(x), float(y))
@@ -301,6 +277,7 @@ ccl_device_forceinline uchar4 make_uchar4(const uchar x,
 #define coshf(x) cosh(float(x))
 #define tanhf(x) tanh(float(x))
 #define saturatef(x) saturate(float(x))
+#define ldexpf(x, y) ldexp(float(x), int(y))
 
 /* Use native functions with possibly lower precision for performance,
  * no issues found so far. */

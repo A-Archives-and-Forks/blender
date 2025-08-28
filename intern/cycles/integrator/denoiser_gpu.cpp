@@ -54,7 +54,7 @@ bool DenoiserGPU::denoise_buffer(const BufferParams &buffer_params,
     task.render_buffers = render_buffers;
   }
   else {
-    LOG_WORK << "Creating temporary buffer on denoiser device.";
+    LOG_DEBUG << "Creating temporary buffer on denoiser device.";
 
     /* Create buffer which is available by the device used by denoiser. */
 
@@ -316,7 +316,7 @@ void DenoiserGPU::denoise_color_read(const DenoiseContext &context, const Denois
   const PassAccessorGPU pass_accessor(
       denoiser_queue_.get(), pass_access_info, 1.0f, context.num_samples);
 
-  PassAccessor::Destination destination(pass_access_info.type);
+  PassAccessor::Destination destination(pass_access_info.type, pass_access_info.mode);
   destination.d_pixels = context.render_buffers->buffer.device_pointer;
   destination.num_components = 3;
   destination.pixel_offset = pass.denoised_offset;

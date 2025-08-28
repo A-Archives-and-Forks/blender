@@ -9,6 +9,7 @@
 #include "BKE_curves.hh"
 #include "BKE_grease_pencil.hh"
 #include "BKE_paint.hh"
+#include "BKE_paint_types.hh"
 
 #include "DNA_brush_enums.h"
 #include "DNA_brush_types.h"
@@ -116,7 +117,7 @@ void SmoothOperation::on_stroke_extended(const bContext &C, const InputSample &e
   const Brush &brush = [&]() -> const Brush & {
     if (temp_smooth_) {
       const Brush *brush = BKE_paint_brush_from_essentials(
-          CTX_data_main(&C), OB_MODE_SCULPT_GREASE_PENCIL, "Smooth");
+          CTX_data_main(&C), PaintMode::SculptGPencil, "Smooth");
       BLI_assert(brush != nullptr);
       return *brush;
     }
@@ -147,16 +148,14 @@ void SmoothOperation::on_stroke_extended(const bContext &C, const InputSample &e
 
         bool changed = false;
         if (sculpt_mode_flag & GP_SCULPT_FLAGMODE_APPLY_POSITION) {
-          MutableSpan<float3> positions = curves.positions_for_write();
-          geometry::smooth_curve_attribute(curves.curves_range(),
-                                           points_by_curve,
+          geometry::smooth_curve_positions(curves,
+                                           curves.curves_range(),
                                            selection_varray,
-                                           cyclic,
                                            iterations,
                                            influences,
                                            false,
-                                           false,
-                                           positions);
+                                           false);
+
           params.drawing.tag_positions_changed();
           changed = true;
         }

@@ -333,6 +333,11 @@ IndexRange ShadowDirectional::cascade_level_range(const Light &light, const Came
     min_diagonal_tilemap_size *= cam_data.clip_far / cam_data.clip_near;
   }
 
+  /* TODO(fclem): Zoomed in camera can have very small diagonal size which will then result in
+   * negative lod_level. Since negative ranges are not supported inside `IndexRange` we have to
+   * ensure this doesn't happen. */
+  min_diagonal_tilemap_size = max(min_diagonal_tilemap_size, 0.5f);
+
   /* Level of detail (or size) of every tile-maps of this light. */
   /* TODO(fclem): Add support for lod bias from light. */
   int lod_level = ceil(log2(max_ff(min_depth_tilemap_size, min_diagonal_tilemap_size)) + 0.5);
@@ -1250,7 +1255,7 @@ void ShadowModule::ShadowView::compute_visibility(ObjectBoundsBuf &bounds,
   GPU_storagebuf_clear(visibility_buf_, data);
 
   if (do_visibility_) {
-    GPUShader *shader = inst_.shaders.static_shader_get(SHADOW_VIEW_VISIBILITY);
+    gpu::Shader *shader = inst_.shaders.static_shader_get(SHADOW_VIEW_VISIBILITY);
     GPU_shader_bind(shader);
     GPU_shader_uniform_1i(shader, "resource_len", resource_len);
     GPU_shader_uniform_1i(shader, "view_len", view_len_);

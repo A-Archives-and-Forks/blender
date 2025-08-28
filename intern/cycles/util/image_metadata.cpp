@@ -192,7 +192,7 @@ bool ImageMetaData::load_metadata(OIIO::string_view filepath, OIIO::ImageSpec *r
     return false;
   }
   if (OIIO::Filesystem::is_directory(filepath)) {
-    LOG_WARNING << "File " << filepath << " is a directory, can't use as image.";
+    LOG_WARNING << "File " << filepath << " is a directory, cannot use as image.";
     return false;
   }
 

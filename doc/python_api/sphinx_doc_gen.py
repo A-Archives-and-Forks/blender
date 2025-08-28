@@ -84,6 +84,10 @@ USE_ONLY_BUILTIN_RNA_TYPES = True
 # `source/blender/makesrna/RNA_enum_items.hh` so the enums can be linked to instead of being expanded everywhere.
 USE_SHARED_RNA_ENUM_ITEMS_STATIC = True
 
+# Generate a list of types which support custom properties.
+# This isn't listed anywhere, it's just linked to.
+USE_RNA_TYPES_WITH_CUSTOM_PROPERTY_INDEX = True
+
 # Other types are assumed to be `bpy.types.*`.
 PRIMITIVE_TYPE_NAMES = {"bool", "bytearray", "bytes", "dict", "float", "int", "list", "set", "str", "tuple"}
 
@@ -787,7 +791,7 @@ def pyfunc2sphinx(ident, fw, module_name, type_name, identifier, py_func, is_cla
         # would be listed in documentation which isn't useful.
         #
         # However, excluding all of them is also incorrect as it means class methods defined
-        # in `bpy_types.py` for example are excluded, making some utility functions entirely hidden.
+        # in `_bpy_types.py` for example are excluded, making some utility functions entirely hidden.
         if (bl_rna := getattr(py_func.__self__, "bl_rna", None)) is not None:
             if bl_rna.functions.get(identifier) is not None:
                 return
@@ -1256,6 +1260,7 @@ context_type_map = {
     "selected_visible_actions": [("Action", True)],
     "selected_visible_fcurves": [("FCurve", True)],
     "sequences": [("Strip", True)],
+    "sequencer_scene": [("Scene", False)],
     "strips": [("Strip", True)],
     "soft_body": [("SoftBodyModifier", False)],
     "speaker": [("Speaker", False)],
@@ -1264,6 +1269,7 @@ context_type_map = {
     "texture_slot": [("TextureSlot", False)],
     "texture_user": [("ID", False)],
     "texture_user_property": [("Property", False)],
+    "tool_settings": [("ToolSettings", False)],
     "ui_list": [("UIList", False)],
     "vertex_paint_object": [("Object", False)],
     "view_layer": [("ViewLayer", False)],
@@ -1338,6 +1344,8 @@ def pycontext2sphinx(basepath):
             fw(".. data:: {:s}\n\n".format(prop.identifier))
             if prop.description:
                 fw("   {:s}\n\n".format(prop.description))
+            if (deprecated := prop.deprecated) is not None:
+                fw(pyrna_deprecated_directive("   ", deprecated))
 
             # Special exception, can't use generic code here for enums.
             if prop.type == "enum":
@@ -1447,6 +1455,23 @@ def pyrna_enum2sphinx(prop, use_empty_descriptions=False):
             for identifier, name, description in prop.enum_items
         ])
     return ""
+
+
+def pyrna_deprecated_directive(ident, deprecated):
+    note, version, removal_version = deprecated
+
+    # Show a short 2 number version where possible to reduce noise.
+    version_str = "{:d}.{:d}.{:d}".format(*version).removesuffix(".0")
+    removal_version_str = "{:d}.{:d}.{:d}".format(*removal_version).removesuffix(".0")
+
+    return (
+        "{:s}.. deprecated:: {:s} removal planned in version {:s}\n"
+        "\n"
+        "{:s}   {:s}\n"
+    ).format(
+        ident, version_str, removal_version_str,
+        ident, note,
+    )
 
 
 def pyrna2sphinx(basepath):
@@ -1640,6 +1665,9 @@ def pyrna2sphinx(basepath):
             if prop.description:
                 write_indented_lines("      ", fw, prop.description, False)
                 fw("\n")
+            if (deprecated := prop.deprecated) is not None:
+                fw(pyrna_deprecated_directive("      ", deprecated))
+                fw("\n")
 
             # Special exception, can't use generic code here for enums.
             if prop.type == "enum":
@@ -1715,10 +1743,14 @@ def pyrna2sphinx(basepath):
                     if not descr:
                         descr = prop.name
                     # In rare cases `descr` may be empty.
-                    fw("         `{:s}`, {:s}\n\n".format(
+                    fw("         ``{:s}``, {:s}\n\n".format(
                         prop.identifier,
                         ", ".join((val for val in (descr, type_descr) if val))
                     ))
+                    if (deprecated := prop.deprecated) is not None:
+                        fw(pyrna_deprecated_directive("      ", deprecated))
+                        fw("\n")
+
                 fw("      :rtype: ({:s})\n".format(", ".join(type_descrs)))
 
             write_example_ref("      ", fw, struct_module_name + "." + struct_id + "." + func.identifier)
@@ -2110,6 +2142,13 @@ def write_rst_types_index(basepath):
             fw("   :maxdepth: 1\n\n")
             fw("   Shared Enum Types <bpy_types_enum_items/index>\n\n")
 
+        # This needs to be included somewhere, while it's hidden, list to avoid warnings.
+        if USE_RNA_TYPES_WITH_CUSTOM_PROPERTY_INDEX:
+            fw(".. toctree::\n")
+            fw("   :hidden:\n")
+            fw("   :maxdepth: 1\n\n")
+            fw("   Types with Custom Property Support <bpy_types_custom_properties>\n\n")
+
 
 def write_rst_ops_index(basepath):
     """
@@ -2274,6 +2313,49 @@ def write_rst_enum_items_and_index(basepath):
             key_no_prefix = key.removeprefix("rna_enum_")
             write_rst_enum_items(basepath_bpy_types_rna_enum, key, key_no_prefix, enum_items)
         fw("\n")
+
+
+def write_rst_rna_types_with_custom_property_support(basepath):
+    from bpy.types import bpy_struct_meta_idprop
+
+    types_exclude = {
+        "IDPropertyWrapPtr",  # Internal type, exclude form public docs.
+    }
+    types_found = []
+
+    for ty_id in dir(bpy.types):
+        if ty_id.startswith("_"):
+            continue
+        if ty_id in types_exclude:
+            continue
+
+        ty = getattr(bpy.types, ty_id)
+        if not isinstance(ty, bpy_struct_meta_idprop):
+            continue
+
+        # Don't include every sub-type as it's very noisy and not helpful.
+        if any((isinstance(ty_base, bpy_struct_meta_idprop) for ty_base in ty.__bases__)):
+            continue
+
+        types_found.append(ty_id)
+
+    types_found.sort()
+
+    with open(os.path.join(basepath, "bpy_types_custom_properties.rst"), "w", encoding="utf-8") as fh:
+        fw = fh.write
+
+        fw(".. _bpy_types-custom_properties:\n\n")
+
+        fw(title_string("Types with Custom Property Support", "="))
+        fw("\n")
+        fw("The following types (and their sub-types) have custom-property access.\n\n")
+
+        fw("For examples on using custom properties see the quick-start section on\n")
+        fw(":ref:`info_quickstart-custom_properties`.\n")
+
+        fw("\n")
+        for ty_id in types_found:
+            fw("- :class:`bpy.types.{:s}`\n".format(ty_id))
 
 
 def write_rst_importable_modules(basepath):
@@ -2466,6 +2548,9 @@ def rna2sphinx(basepath):
     # `bpy_types_enum_items/*` (referenced from `bpy.types`).
     if USE_SHARED_RNA_ENUM_ITEMS_STATIC:
         write_rst_enum_items_and_index(basepath)
+
+    if USE_RNA_TYPES_WITH_CUSTOM_PROPERTY_INDEX:
+        write_rst_rna_types_with_custom_property_support(basepath)
 
     # Copy the other RST files.
     copy_handwritten_rsts(basepath)

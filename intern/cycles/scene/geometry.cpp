@@ -347,6 +347,7 @@ void GeometryManager::device_update_preprocess(Device *device, Scene *scene, Pro
   bool volume_images_updated = false;
 
   for (Geometry *geom : scene->geometry) {
+    const bool prev_has_volume = geom->has_volume;
     geom->has_volume = false;
 
     update_attribute_realloc_flags(device_update_flags, geom->attributes);
@@ -429,10 +430,20 @@ void GeometryManager::device_update_preprocess(Device *device, Scene *scene, Pro
       device_update_flags |= DEVICE_MESH_DATA_NEEDS_REALLOC;
     }
 
+    if (geom->has_volume) {
+      if (geom->is_modified()) {
+        scene->volume_manager->tag_update(geom);
+      }
+      if (!prev_has_volume) {
+        scene->volume_manager->tag_update();
+      }
+    }
+    else if (prev_has_volume) {
+      scene->volume_manager->tag_update(geom);
+    }
+
     if (geom->is_hair()) {
-      /* Set curve shape, still a global scene setting for now. */
       Hair *hair = static_cast<Hair *>(geom);
-      hair->curve_shape = scene->params.hair_shape;
 
       if (hair->need_update_rebuild) {
         device_update_flags |= DEVICE_CURVE_DATA_NEEDS_REALLOC;
@@ -784,7 +795,10 @@ void GeometryManager::device_update(Device *device,
     /* Apply generated attribute if needed or remove if not needed */
     mesh->update_generated(scene);
     /* Apply tangents for generated and UVs (if any need them) or remove if not needed */
-    mesh->update_tangents(scene);
+    mesh->update_tangents(scene, true);
+    if (!mesh->has_true_displacement()) {
+      mesh->update_tangents(scene, false);
+    }
 
     if (progress.get_cancel()) {
       return;
@@ -956,7 +970,7 @@ void GeometryManager::device_update(Device *device,
 
     TaskPool::Summary summary;
     pool.wait_work(&summary);
-    LOG_WORK << "Objects BVH build pool statistics:\n" << summary.full_report();
+    LOG_DEBUG << "Objects BVH build pool statistics:\n" << summary.full_report();
   }
 
   for (Shader *shader : scene->shaders) {

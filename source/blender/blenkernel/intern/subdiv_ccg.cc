@@ -109,7 +109,7 @@ static void subdiv_ccg_eval_grid_element_limit(Subdiv &subdiv,
                                                const int element)
 {
   if (subdiv.displacement_evaluator != nullptr) {
-    eval_final_point(&subdiv, ptex_face_index, u, v, subdiv_ccg.positions[element]);
+    subdiv_ccg.positions[element] = eval_final_point(&subdiv, ptex_face_index, u, v);
   }
   else if (!subdiv_ccg.normals.is_empty()) {
     eval_limit_point_and_normal(&subdiv,
@@ -120,7 +120,7 @@ static void subdiv_ccg_eval_grid_element_limit(Subdiv &subdiv,
                                 subdiv_ccg.normals[element]);
   }
   else {
-    eval_limit_point(&subdiv, ptex_face_index, u, v, subdiv_ccg.positions[element]);
+    subdiv_ccg.positions[element] = eval_limit_point(&subdiv, ptex_face_index, u, v);
   }
 }
 
@@ -416,7 +416,7 @@ Mesh *BKE_subdiv_to_ccg_mesh(Subdiv &subdiv,
 {
   /* Make sure evaluator is ready. */
   stats_begin(&subdiv.stats, SUBDIV_STATS_SUBDIV_TO_CCG);
-  if (!eval_begin_from_mesh(&subdiv, &coarse_mesh, {}, SUBDIV_EVALUATOR_TYPE_CPU, nullptr)) {
+  if (!eval_begin_from_mesh(&subdiv, &coarse_mesh, SUBDIV_EVALUATOR_TYPE_CPU)) {
     if (coarse_mesh.faces_num) {
       return nullptr;
     }
@@ -1183,7 +1183,7 @@ static int adjacent_edge_point_index_from_coord(const SubdivCCG &subdiv_ccg,
       topology_refiner->base_level().GetEdgeVertices(adjacent_edge_index);
 
   /* Vertex index of an edge which is used to see whether edge points in the right direction.
-   * Tricky part here is that depending whether input coordinate is are maximum X or Y coordinate
+   * Tricky part here is that depending whether input coordinate is a maximum X or Y coordinate
    * of the grid we need to use different edge direction.
    * Basically, the edge adjacent to a previous loop needs to point opposite direction. */
   int directional_edge_vertex_index = -1;
@@ -1209,7 +1209,7 @@ static int adjacent_edge_point_index_from_coord(const SubdivCCG &subdiv_ccg,
   return adjacent_edge_point_index;
 }
 
-/* Adjacent edge has two points in the middle which corresponds to grid  corners, but which are
+/* Adjacent edge has two points in the middle which corresponds to grid corners, but which are
  * the same point in the final geometry.
  * So need to use extra step when calculating next/previous points, so we don't go from a corner
  * of one grid to a corner of adjacent grid. */
@@ -1443,37 +1443,6 @@ void BKE_subdiv_ccg_neighbor_coords_get(const SubdivCCG &subdiv_ccg,
 #endif
 }
 
-const int *BKE_subdiv_ccg_start_face_grid_index_ensure(SubdivCCG &subdiv_ccg)
-{
-#ifdef WITH_OPENSUBDIV
-  if (subdiv_ccg.cache_.start_face_grid_index.is_empty()) {
-    const Subdiv *subdiv = subdiv_ccg.subdiv;
-    const blender::opensubdiv::TopologyRefinerImpl *topology_refiner = subdiv->topology_refiner;
-    if (topology_refiner == nullptr) {
-      return nullptr;
-    }
-
-    const int num_coarse_faces = topology_refiner->base_level().GetNumFaces();
-
-    subdiv_ccg.cache_.start_face_grid_index.reinitialize(num_coarse_faces);
-
-    int start_grid_index = 0;
-    for (int face_index = 0; face_index < num_coarse_faces; face_index++) {
-      const int num_face_grids = topology_refiner->base_level().GetFaceVertices(face_index).size();
-      subdiv_ccg.cache_.start_face_grid_index[face_index] = start_grid_index;
-      start_grid_index += num_face_grids;
-    }
-  }
-#endif
-
-  return subdiv_ccg.cache_.start_face_grid_index.data();
-}
-
-const int *BKE_subdiv_ccg_start_face_grid_index_get(const SubdivCCG &subdiv_ccg)
-{
-  return subdiv_ccg.cache_.start_face_grid_index.data();
-}
-
 static void adjacent_vertices_index_from_adjacent_edge(const SubdivCCG &subdiv_ccg,
                                                        const SubdivCCGCoord &coord,
                                                        const blender::Span<int> corner_verts,
@@ -1600,17 +1569,6 @@ static void subdiv_ccg_coord_to_ptex_coord(const SubdivCCG &subdiv_ccg,
   }
 }
 
-void BKE_subdiv_ccg_eval_limit_point(const SubdivCCG &subdiv_ccg,
-                                     const SubdivCCGCoord &coord,
-                                     float3 &r_point)
-{
-  Subdiv *subdiv = subdiv_ccg.subdiv;
-  int ptex_face_index;
-  float u, v;
-  subdiv_ccg_coord_to_ptex_coord(subdiv_ccg, coord, ptex_face_index, u, v);
-  eval_limit_point(subdiv, ptex_face_index, u, v, r_point);
-}
-
 void BKE_subdiv_ccg_eval_limit_positions(const SubdivCCG &subdiv_ccg,
                                          const CCGKey &key,
                                          const int grid_index,
@@ -1623,7 +1581,12 @@ void BKE_subdiv_ccg_eval_limit_positions(const SubdivCCG &subdiv_ccg,
       const int i = CCG_grid_xy_to_index(key.grid_size, x, y);
       coord.x = x;
       coord.y = y;
-      BKE_subdiv_ccg_eval_limit_point(subdiv_ccg, coord, r_limit_positions[i]);
+
+      int ptex_face_index;
+      float u, v;
+      subdiv_ccg_coord_to_ptex_coord(subdiv_ccg, coord, ptex_face_index, u, v);
+
+      r_limit_positions[i] = eval_limit_point(subdiv_ccg.subdiv, ptex_face_index, u, v);
     }
   }
 }

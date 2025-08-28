@@ -307,13 +307,13 @@ void GeoTreeLogger::log_value(const bNode &node, const bNodeSocket &socket, cons
     store_logged_value(this->allocator->construct<GenericValueLog>(GMutablePointer{type, buffer}));
   };
 
-  if (type.is<bke::GeometrySet>()) {
-    const bke::GeometrySet &geometry = *value.get<bke::GeometrySet>();
-    store_logged_value(this->allocator->construct<GeometryInfoLog>(geometry));
-  }
-  else if (type.is<bke::SocketValueVariant>()) {
+  if (type.is<bke::SocketValueVariant>()) {
     bke::SocketValueVariant value_variant = *value.get<bke::SocketValueVariant>();
-    if (value_variant.is_context_dependent_field()) {
+    if (value_variant.valid_for_socket(SOCK_GEOMETRY)) {
+      const bke::GeometrySet &geometry = value_variant.get<bke::GeometrySet>();
+      store_logged_value(this->allocator->construct<GeometryInfoLog>(geometry));
+    }
+    else if (value_variant.is_context_dependent_field()) {
       const GField field = value_variant.extract<GField>();
       store_logged_value(this->allocator->construct<FieldInfoLog>(field));
     }
@@ -331,7 +331,16 @@ void GeoTreeLogger::log_value(const bNode &node, const bNodeSocket &socket, cons
       Vector<BundleValueLog::Item> items;
       if (const BundlePtr bundle = value_variant.extract<BundlePtr>()) {
         for (const Bundle::StoredItem &item : bundle->items()) {
-          items.append({item.key, item.type});
+          if (const BundleItemSocketValue *socket_value = std::get_if<BundleItemSocketValue>(
+                  &item.value.value))
+          {
+            items.append({item.key, {socket_value->type}});
+          }
+          if (const BundleItemInternalValue *internal_value = std::get_if<BundleItemInternalValue>(
+                  &item.value.value))
+          {
+            items.append({item.key, {internal_value->value->type_name()}});
+          }
         }
       }
       store_logged_value(this->allocator->construct<BundleValueLog>(std::move(items)));
@@ -898,7 +907,7 @@ Map<const bNodeTreeZone *, ComputeContextHash> GeoNodesLog::
 
 static GeoNodesLog *get_root_log(const SpaceNode &snode)
 {
-  switch (SpaceNodeGeometryNodesType(snode.geometry_nodes_type)) {
+  switch (SpaceNodeGeometryNodesType(snode.node_tree_sub_type)) {
     case SNODE_GEOMETRY_MODIFIER: {
       std::optional<ed::space_node::ObjectAndModifier> object_and_modifier =
           ed::space_node::get_modifier_for_node_editor(snode);
@@ -910,7 +919,7 @@ static GeoNodesLog *get_root_log(const SpaceNode &snode)
     case SNODE_GEOMETRY_TOOL: {
       const ed::geometry::GeoOperatorLog &log =
           ed::geometry::node_group_operator_static_eval_log();
-      if (snode.geometry_nodes_tool_tree->id.name + 2 != log.node_group_name) {
+      if (snode.selected_node_group->id.name + 2 != log.node_group_name) {
         return {};
       }
       return log.log.get();

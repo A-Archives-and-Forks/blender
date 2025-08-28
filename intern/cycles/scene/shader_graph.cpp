@@ -134,6 +134,14 @@ ShaderOutput *ShaderNode::output(ustring name)
   return nullptr;
 }
 
+void ShaderNode::disconnect_unused_input(const char *name)
+{
+  ShaderInput *socket = input(name);
+  if (socket && socket->link) {
+    socket->disconnect();
+  }
+}
+
 void ShaderNode::remove_input(ShaderInput *input)
 {
   assert(input->link == nullptr);
@@ -659,7 +667,7 @@ void ShaderGraph::deduplicate_nodes()
   }
 
   if (num_deduplicated > 0) {
-    LOG_DEBUG << "Deduplicated " << num_deduplicated << " nodes.";
+    LOG_TRACE << "Deduplicated " << num_deduplicated << " nodes.";
   }
 }
 
@@ -713,19 +721,19 @@ void ShaderGraph::optimize_volume_output()
     }
   }
 
-  if (LOG_IS_ON(LOG_LEVEL_DEBUG)) {
+  if (LOG_IS_ON(LOG_LEVEL_TRACE)) {
     for (ShaderNode *node : nodes) {
       if (node->type == AttributeNode::get_node_type() &&
           static_cast<AttributeNode *>(node)->stochastic_sample)
       {
-        LOG_DEBUG << "Volume attribute node " << node->name << " uses stochastic sampling";
+        LOG_TRACE << "Volume attribute node " << node->name << " uses stochastic sampling";
       }
     }
   }
 
   if (!has_valid_volume) {
     /* We can remove the entire volume shader. */
-    LOG_DEBUG << "Disconnect meaningless volume output.";
+    LOG_TRACE << "Disconnect meaningless volume output.";
     disconnect(volume_in->link);
   }
 }

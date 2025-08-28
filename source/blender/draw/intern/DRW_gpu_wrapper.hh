@@ -167,7 +167,7 @@ class DataBuffer {
 template<typename T, int64_t len, bool device_only>
 class UniformCommon : public DataBuffer<T, len, false>, NonMovable, NonCopyable {
  protected:
-  GPUUniformBuf *ubo_;
+  gpu::UniformBuf *ubo_;
 
 #ifndef NDEBUG
   const char *name_ = typeid(T).name();
@@ -195,13 +195,13 @@ class UniformCommon : public DataBuffer<T, len, false>, NonMovable, NonCopyable 
   }
 
   /* To be able to use it with DRW_shgroup_*_ref(). */
-  operator GPUUniformBuf *() const
+  operator gpu::UniformBuf *() const
   {
     return ubo_;
   }
 
   /* To be able to use it with DRW_shgroup_*_ref(). */
-  GPUUniformBuf **operator&()
+  gpu::UniformBuf **operator&()
   {
     return &ubo_;
   }
@@ -210,7 +210,7 @@ class UniformCommon : public DataBuffer<T, len, false>, NonMovable, NonCopyable 
 template<typename T, int64_t len, bool device_only>
 class StorageCommon : public DataBuffer<T, len, false>, NonMovable, NonCopyable {
  protected:
-  GPUStorageBuf *ssbo_;
+  gpu::StorageBuf *ssbo_;
 
 #ifndef NDEBUG
   const char *name_ = typeid(T).name();
@@ -255,12 +255,12 @@ class StorageCommon : public DataBuffer<T, len, false>, NonMovable, NonCopyable 
     GPU_storagebuf_read(ssbo_, this->data_);
   }
 
-  operator GPUStorageBuf *() const
+  operator gpu::StorageBuf *() const
   {
     return ssbo_;
   }
   /* To be able to use it with DRW_shgroup_*_ref(). */
-  GPUStorageBuf **operator&()
+  gpu::StorageBuf **operator&()
   {
     return &ssbo_;
   }
@@ -303,7 +303,7 @@ template<
     /* bool device_only = false */>
 class UniformBuffer : public T, public detail::UniformCommon<T, 1, false> {
  public:
-  UniformBuffer(const char *name = nullptr) : detail::UniformCommon<T, 1, false>(name)
+  UniformBuffer(const char *name = nullptr) : T{}, detail::UniformCommon<T, 1, false>(name)
   {
     /* TODO(@fclem): How could we map this? */
     this->data_ = static_cast<T *>(this);
@@ -496,7 +496,7 @@ template<
     bool device_only = false>
 class StorageBuffer : public T, public detail::StorageCommon<T, 1, device_only> {
  public:
-  StorageBuffer(const char *name = nullptr) : detail::StorageCommon<T, 1, device_only>(name)
+  StorageBuffer(const char *name = nullptr) : T{}, detail::StorageCommon<T, 1, device_only>(name)
   {
     /* TODO(@fclem): How could we map this? */
     this->data_ = static_cast<T *>(this);
@@ -814,10 +814,10 @@ class Texture : NonCopyable {
 
   /**
    * Layer range view cover only the given range.
-   * This can only called to create one range.
+   * This can only be called to create one range.
    * View is recreated if:
    * - The source texture is recreated.
-   * - The layer_len is different from the last call the this function.
+   * - The layer_len is different from the last call to this function.
    * IMPORTANT: It is not recreated if the layer_start is different from the last call.
    * IMPORTANT: If this view is recreated any reference to it should be updated.
    */

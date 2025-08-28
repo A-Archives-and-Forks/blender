@@ -286,7 +286,8 @@ static bNodeSocket *best_socket_input(bNodeTree *ntree, bNode *node, int num, in
   return nullptr;
 }
 
-static bool snode_autoconnect_input(SpaceNode &snode,
+static bool snode_autoconnect_input(bContext &C,
+                                    SpaceNode &snode,
                                     bNode *node_fr,
                                     bNodeSocket *sock_fr,
                                     bNode *node_to,
@@ -302,13 +303,15 @@ static bool snode_autoconnect_input(SpaceNode &snode,
   bNodeLink &link = bke::node_add_link(*ntree, *node_fr, *sock_fr, *node_to, *sock_to);
 
   if (link.fromnode->typeinfo->insert_link) {
-    if (!link.fromnode->typeinfo->insert_link(ntree, link.fromnode, &link)) {
+    bke::NodeInsertLinkParams params{*ntree, *link.fromnode, link, &C};
+    if (!link.fromnode->typeinfo->insert_link(params)) {
       bke::node_remove_link(ntree, link);
       return false;
     }
   }
   if (link.tonode->typeinfo->insert_link) {
-    if (!link.tonode->typeinfo->insert_link(ntree, link.tonode, &link)) {
+    bke::NodeInsertLinkParams params{*ntree, *link.tonode, link, &C};
+    if (!link.tonode->typeinfo->insert_link(params)) {
       bke::node_remove_link(ntree, link);
       return false;
     }
@@ -363,7 +366,10 @@ void update_multi_input_indices_for_removed_links(bNode &node)
   }
 }
 
-static void snode_autoconnect(SpaceNode &snode, const bool allow_multiple, const bool replace)
+static void snode_autoconnect(bContext &C,
+                              SpaceNode &snode,
+                              const bool allow_multiple,
+                              const bool replace)
 {
   bNodeTree *ntree = snode.edittree;
   Vector<bNode *> sorted_nodes = get_selected_nodes(*ntree).extract_vector();
@@ -399,7 +405,7 @@ static void snode_autoconnect(SpaceNode &snode, const bool allow_multiple, const
           continue;
         }
 
-        if (snode_autoconnect_input(snode, node_fr, sock_fr, node_to, sock_to, replace)) {
+        if (snode_autoconnect_input(C, snode, node_fr, sock_fr, node_to, sock_to, replace)) {
           // numlinks++;
         }
       }
@@ -423,7 +429,7 @@ static void snode_autoconnect(SpaceNode &snode, const bool allow_multiple, const
           continue;
         }
 
-        if (snode_autoconnect_input(snode, node_fr, sock_fr, node_to, sock_to, replace)) {
+        if (snode_autoconnect_input(C, snode, node_fr, sock_fr, node_to, sock_to, replace)) {
           // numlinks++;
           break;
         }
@@ -907,7 +913,7 @@ static bool node_active_link_viewer_poll(bContext *C)
     return true;
   }
   if (ED_node_is_geometry(snode)) {
-    if (snode->geometry_nodes_type == SNODE_GEOMETRY_TOOL) {
+    if (snode->node_tree_sub_type == SNODE_GEOMETRY_TOOL) {
       /* The viewer node is not supported in the "Tool" context. */
       return false;
     }
@@ -1258,13 +1264,15 @@ static void add_dragged_links_to_tree(bContext &C, bNodeLinkDrag &nldrag)
     bNodeLink *new_link = MEM_mallocN<bNodeLink>(__func__);
     *new_link = link;
     if (link.fromnode->typeinfo->insert_link) {
-      if (!link.fromnode->typeinfo->insert_link(&ntree, link.fromnode, new_link)) {
+      bke::NodeInsertLinkParams params{ntree, *link.fromnode, *new_link, &C};
+      if (!link.fromnode->typeinfo->insert_link(params)) {
         MEM_freeN(new_link);
         continue;
       }
     }
     if (link.tonode->typeinfo->insert_link) {
-      if (!link.tonode->typeinfo->insert_link(&ntree, link.tonode, new_link)) {
+      bke::NodeInsertLinkParams params{ntree, *link.tonode, *new_link, &C};
+      if (!link.tonode->typeinfo->insert_link(params)) {
         MEM_freeN(new_link);
         continue;
       }
@@ -1656,7 +1664,7 @@ static wmOperatorStatus node_make_link_exec(bContext *C, wmOperator *op)
 
   ED_preview_kill_jobs(CTX_wm_manager(C), &bmain);
 
-  snode_autoconnect(snode, true, replace);
+  snode_autoconnect(*C, snode, true, replace);
 
   /* Deselect sockets after linking. */
   node_deselect_all_input_sockets(node_tree, false);
@@ -2596,16 +2604,18 @@ static int get_main_socket_priority(const bNodeSocket *socket)
   switch (eNodeSocketDatatype(socket->type)) {
     case SOCK_CUSTOM:
       return 0;
-    case SOCK_BOOLEAN:
+    case SOCK_MENU:
       return 1;
-    case SOCK_INT:
+    case SOCK_BOOLEAN:
       return 2;
-    case SOCK_FLOAT:
+    case SOCK_INT:
       return 3;
-    case SOCK_VECTOR:
+    case SOCK_FLOAT:
       return 4;
-    case SOCK_RGBA:
+    case SOCK_VECTOR:
       return 5;
+    case SOCK_RGBA:
+      return 6;
     case SOCK_STRING:
     case SOCK_SHADER:
     case SOCK_OBJECT:
@@ -2616,10 +2626,9 @@ static int get_main_socket_priority(const bNodeSocket *socket)
     case SOCK_COLLECTION:
     case SOCK_TEXTURE:
     case SOCK_MATERIAL:
-    case SOCK_MENU:
     case SOCK_BUNDLE:
     case SOCK_CLOSURE:
-      return 6;
+      return 7;
   }
   return -1;
 }

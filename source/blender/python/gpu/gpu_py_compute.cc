@@ -95,7 +95,7 @@ static PyObject *pygpu_compute_dispatch(PyObject * /*self*/, PyObject *args, PyO
       return nullptr;
     }
 
-    GPUShader *shader = py_shader->shader;
+    blender::gpu::Shader *shader = py_shader->shader;
     GPU_compute_dispatch(shader, groups_x_len, groups_y_len, groups_z_len);
     GPU_memory_barrier(GPU_BARRIER_TEXTURE_FETCH | GPU_BARRIER_SHADER_IMAGE_ACCESS);
   }
@@ -135,7 +135,7 @@ static PyMethodDef pygpu_compute__tp_methods[] = {
 PyDoc_STRVAR(
     /* Wrap. */
     pygpu_compute__tp_doc,
-    "This module provides access to the global GPU compute functions");
+    "This module provides access to the global GPU compute functions.");
 static PyModuleDef pygpu_compute_module_def = {
     /*m_base*/ PyModuleDef_HEAD_INIT,
     /*m_name*/ "gpu.compute",

@@ -49,6 +49,34 @@ struct UvElement;
 struct UvElementMap;
 
 /* `editmesh_utils.cc` */
+class EditMeshSymmetryHelper {
+ public:
+  static std::optional<EditMeshSymmetryHelper> create_if_needed(Object *ob, uchar htype);
+
+  bool any_mirror_vert_selected(BMVert *v, char hflag) const;
+  bool any_mirror_edge_selected(BMEdge *e, char hflag) const;
+  bool any_mirror_face_selected(BMFace *f, char hflag) const;
+
+  void set_hflag_on_mirror_verts(BMVert *v, char hflag, bool value) const;
+  void set_hflag_on_mirror_edges(BMEdge *e, char hflag, bool value) const;
+  void set_hflag_on_mirror_faces(BMFace *f, char hflag, bool value) const;
+
+  void apply_on_mirror_verts(BMVert *v, blender::FunctionRef<void(BMVert *)> op) const;
+  void apply_on_mirror_edges(BMEdge *e, blender::FunctionRef<void(BMEdge *)> op) const;
+  void apply_on_mirror_faces(BMFace *f, blender::FunctionRef<void(BMFace *)> op) const;
+
+ private:
+  EditMeshSymmetryHelper(Object *ob, uchar htype);
+
+  BMEditMesh *em_;
+  Mesh *mesh_;
+  uchar htype_;
+  bool use_topology_mirror_;
+
+  blender::Map<BMVert *, blender::Vector<BMVert *>> vert_to_mirror_map_;
+  blender::Map<BMEdge *, blender::Vector<BMEdge *>> edge_to_mirror_map_;
+  blender::Map<BMFace *, blender::Vector<BMFace *>> face_to_mirror_map_;
+};
 
 /**
  * \param em: Edit-mesh used for generating mirror data.
@@ -191,8 +219,13 @@ void EDBM_project_snap_verts(
 
 /* `editmesh_automerge.cc` */
 
-void EDBM_automerge(Object *obedit, bool update, char hflag, float dist);
-void EDBM_automerge_and_split(
+/** \return true if a change is made. */
+bool EDBM_automerge(Object *obedit, bool update, char hflag, float dist);
+/** \return true if a change is made. */
+bool EDBM_automerge_connected(Object *obedit, bool update, char hflag, float dist);
+
+/** \return true if a change is made. */
+bool EDBM_automerge_and_split(
     Object *obedit, bool split_edges, bool split_faces, bool update, char hflag, float dist);
 
 /* `editmesh_undo.cc` */
@@ -204,6 +237,14 @@ void ED_mesh_undosys_type(UndoType *ut);
 
 void EDBM_select_mirrored(
     BMEditMesh *em, const Mesh *mesh, int axis, bool extend, int *r_totmirr, int *r_totfail);
+
+/**
+ * Select mirrored elements on all enabled axis.
+ * Does nothing if selection symmetry isn't enabled.
+ *
+ * \return true if the selection changed.
+ */
+bool EDBM_select_mirrored_extend_all(Object *obedit, BMEditMesh *em);
 
 /**
  * Nearest vertex under the cursor.
@@ -493,8 +534,8 @@ bool ED_mesh_color_ensure(Mesh *mesh, const char *name);
 int ED_mesh_color_add(
     Mesh *mesh, const char *name, bool active_set, bool do_init, ReportList *reports);
 
-void ED_mesh_report_mirror(wmOperator *op, int totmirr, int totfail);
-void ED_mesh_report_mirror_ex(wmOperator *op, int totmirr, int totfail, char selectmode);
+void ED_mesh_report_mirror(ReportList &reports, int totmirr, int totfail);
+void ED_mesh_report_mirror_ex(ReportList &reports, int totmirr, int totfail, char selectmode);
 
 KeyBlock *ED_mesh_get_edit_shape_key(const Mesh *me);
 

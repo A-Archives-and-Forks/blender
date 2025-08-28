@@ -560,9 +560,12 @@ static void create_trans_seq_clamp_data(TransInfo *t, const Scene *scene)
   }
 }
 
-static void createTransSeqData(bContext * /*C*/, TransInfo *t)
+static void createTransSeqData(bContext *C, TransInfo *t)
 {
-  Scene *scene = CTX_data_sequencer_scene(t->context);
+  Scene *scene = CTX_data_sequencer_scene(C);
+  if (!scene) {
+    return;
+  }
   Editing *ed = seq::editing_get(scene);
   TransData *td = nullptr;
   TransData2D *td2d = nullptr;
@@ -586,7 +589,7 @@ static void createTransSeqData(bContext * /*C*/, TransInfo *t)
   tc->custom.type.free_cb = freeSeqData;
   t->frame_side = transform_convert_frame_side_dir_get(t, float(scene->r.cfra));
 
-  count = SeqTransCount(t, ed->seqbasep);
+  count = SeqTransCount(t, ed->current_strips());
 
   /* Allocate memory for data. */
   tc->data_len = count;
@@ -615,7 +618,7 @@ static void createTransSeqData(bContext * /*C*/, TransInfo *t)
   ts->initial_v2d_cur = t->region->v2d.cur;
 
   /* Loop 2: build transdata array. */
-  SeqToTransData_build(t, ed->seqbasep, td, td2d, tdsq);
+  SeqToTransData_build(t, ed->current_strips(), td, td2d, tdsq);
 
   create_trans_seq_clamp_data(t, scene);
 
@@ -829,7 +832,7 @@ static void special_aftertrans_update__sequencer(bContext *C, TransInfo *t)
   sseq->flag &= ~SPACE_SEQ_DESELECT_STRIP_HANDLE;
 
   /* #freeSeqData in `transform_conversions.cc` does this
-   * keep here so the else at the end won't run. */
+   * keep here so the `else` at the end won't run. */
   if (t->state == TRANS_CANCEL) {
     return;
   }
@@ -861,7 +864,7 @@ bool transform_convert_sequencer_clamp(const TransInfo *t, float r_val[2])
 
   /* Unconditional channel, retiming key, and handle clamping. Should never be ignored. */
   if (BLI_rcti_clamp_pt_v(&ts->offset_clamp, val)) {
-    r_val[0] = static_cast<float>(val[0]);
+    r_val[0] = float(val[0]);
     r_val[1] = float(val[1]);
     clamped = true;
   }

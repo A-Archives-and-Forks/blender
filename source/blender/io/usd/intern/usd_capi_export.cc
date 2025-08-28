@@ -359,20 +359,19 @@ std::string get_image_cache_file(const std::string &file_name, bool mkdir)
 
 std::string cache_image_color(const float color[4])
 {
-  char name[128];
-  SNPRINTF(name,
-           "color_%02d%02d%02d.hdr",
-           int(color[0] * 255),
-           int(color[1] * 255),
-           int(color[2] * 255));
+  std::string name = fmt::format("color_{:02X}{:02X}{:02X}.exr",
+                                 int(color[0] * 255),
+                                 int(color[1] * 255),
+                                 int(color[2] * 255));
   std::string file_path = get_image_cache_file(name);
   if (BLI_exists(file_path.c_str())) {
     return file_path;
   }
 
-  ImBuf *ibuf = IMB_allocImBuf(4, 4, 32, IB_float_data);
+  ImBuf *ibuf = IMB_allocImBuf(1, 1, 32, IB_float_data);
   IMB_rectfill(ibuf, color);
-  ibuf->ftype = IMB_FTYPE_RADHDR;
+  ibuf->ftype = IMB_FTYPE_OPENEXR;
+  ibuf->foptions.flag = R_IMF_EXR_CODEC_RLE;
 
   if (IMB_save_image(ibuf, file_path.c_str(), IB_float_data)) {
     CLOG_INFO(&LOG, "%s", file_path.c_str());
@@ -503,7 +502,7 @@ pxr::UsdStageRefPtr export_to_stage(const USDExportParams &params,
 
   /* Set up the stage for animated data. */
   if (params.export_animation) {
-    usd_stage->SetTimeCodesPerSecond(FPS);
+    usd_stage->SetTimeCodesPerSecond(scene->frames_per_second());
     usd_stage->SetStartTimeCode(scene->r.sfra);
     usd_stage->SetEndTimeCode(scene->r.efra);
   }
@@ -617,7 +616,7 @@ static void export_startjob(void *customdata, wmJobWorkerStatus *worker_status)
 
   G.is_rendering = true;
   if (data->wm) {
-    WM_set_locked_interface(data->wm, true);
+    WM_locked_interface_set(data->wm, true);
   }
   G.is_break = false;
 
@@ -725,7 +724,7 @@ static void export_endjob(void *customdata)
 
   G.is_rendering = false;
   if (data->wm) {
-    WM_set_locked_interface(data->wm, false);
+    WM_locked_interface_set(data->wm, false);
   }
   report_job_duration(data);
 }
@@ -813,8 +812,12 @@ bool USD_export(const bContext *C,
 
   bool export_ok = false;
   if (as_background_job) {
-    wmJob *wm_job = WM_jobs_get(
-        job->wm, CTX_wm_window(C), scene, "USD Export", WM_JOB_PROGRESS, WM_JOB_TYPE_USD_EXPORT);
+    wmJob *wm_job = WM_jobs_get(job->wm,
+                                CTX_wm_window(C),
+                                scene,
+                                "Exporting USD...",
+                                WM_JOB_PROGRESS,
+                                WM_JOB_TYPE_USD_EXPORT);
 
     /* setup job */
     WM_jobs_customdata_set(wm_job, job, [](void *j) {

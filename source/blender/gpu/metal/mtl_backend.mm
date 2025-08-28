@@ -520,7 +520,6 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
 
   /* Feature support */
   GCaps.mem_stats_support = false;
-  GCaps.shader_draw_parameters_support = true;
   GCaps.hdr_viewport_support = true;
 
   GCaps.geometry_shader_support = false;
@@ -551,12 +550,10 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   GCaps.max_work_group_size[2] = max_threads_per_threadgroup_per_dim;
 
   GCaps.stencil_export_support = true;
-  GCaps.clip_control_support = true;
 
   /* OPENGL Related workarounds -- none needed for Metal. */
   GCaps.extensions_len = 0;
   GCaps.extension_get = mtl_extensions_get_null;
-  GCaps.mip_render_workaround = false;
   GCaps.depth_blitting_workaround = false;
   GCaps.use_main_context_workaround = false;
   GCaps.broken_amd_driver = false;

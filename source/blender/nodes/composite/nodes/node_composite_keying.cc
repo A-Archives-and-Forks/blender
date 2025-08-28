@@ -11,8 +11,7 @@
 
 #include "DNA_scene_types.h"
 
-#include "UI_interface_layout.hh"
-#include "UI_resources.hh"
+#include "RNA_enum_types.hh"
 
 #include "GPU_shader.hh"
 
@@ -24,11 +23,7 @@
 
 #include "node_composite_util.hh"
 
-/* **************** Keying  ******************** */
-
 namespace blender::nodes::node_composite_keying_cc {
-
-NODE_STORAGE_FUNCS(NodeKeyingData)
 
 static void cmp_node_keying_declare(NodeDeclarationBuilder &b)
 {
@@ -136,9 +131,9 @@ static void cmp_node_keying_declare(NodeDeclarationBuilder &b)
           "Dilate or erode the computed matte using an inverse distance operation evaluated at "
           "the given falloff of the specified size. Negative sizes means erosion while positive "
           "means dilation");
-  postprocess_panel.add_layout([](uiLayout *layout, bContext * /*C*/, PointerRNA *ptr) {
-    layout->prop(ptr, "feather_falloff", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
-  });
+  postprocess_panel.add_input<decl::Menu>("Feather Falloff")
+      .default_value(PROP_SMOOTH)
+      .static_items(rna_enum_proportional_falloff_curve_only_items);
 
   PanelDeclarationBuilder &despill_panel = b.add_panel("Despill").default_closed(true);
   despill_panel.add_input<decl::Float>("Strength", "Despill Strength")
@@ -160,6 +155,7 @@ static void cmp_node_keying_declare(NodeDeclarationBuilder &b)
 
 static void node_composit_init_keying(bNodeTree * /*ntree*/, bNode *node)
 {
+  /* Unused, only kept for forward compatibility. */
   NodeKeyingData *data = MEM_callocN<NodeKeyingData>(__func__);
   node->storage = data;
 }
@@ -172,7 +168,7 @@ class KeyingOperation : public NodeOperation {
 
   void execute() override
   {
-    const Result &input_image = get_result("Image");
+    const Result &input_image = get_input("Image");
     Result &output_image = get_result("Image");
     Result &output_matte = get_result("Matte");
     Result &output_edges = get_result("Edges");
@@ -264,7 +260,7 @@ class KeyingOperation : public NodeOperation {
 
   Result extract_input_chroma_gpu()
   {
-    GPUShader *shader = context().get_shader("compositor_keying_extract_chroma");
+    gpu::Shader *shader = context().get_shader("compositor_keying_extract_chroma");
     GPU_shader_bind(shader);
 
     Result &input = get_input("Image");
@@ -319,7 +315,7 @@ class KeyingOperation : public NodeOperation {
 
   Result replace_input_chroma_gpu(Result &new_chroma)
   {
-    GPUShader *shader = context().get_shader("compositor_keying_replace_chroma");
+    gpu::Shader *shader = context().get_shader("compositor_keying_replace_chroma");
     GPU_shader_bind(shader);
 
     Result &input = get_input("Image");
@@ -389,7 +385,7 @@ class KeyingOperation : public NodeOperation {
 
   Result compute_matte_gpu(Result &input)
   {
-    GPUShader *shader = context().get_shader("compositor_keying_compute_matte");
+    gpu::Shader *shader = context().get_shader("compositor_keying_compute_matte");
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1f(shader, "key_balance", this->get_key_balance());
@@ -504,7 +500,7 @@ class KeyingOperation : public NodeOperation {
 
   Result compute_tweaked_matte_gpu(Result &input_matte)
   {
-    GPUShader *shader = context().get_shader(this->get_tweak_matte_shader_name());
+    gpu::Shader *shader = context().get_shader(this->get_tweak_matte_shader_name());
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1i(shader, "edge_search_radius", this->get_edge_search_size());
@@ -687,7 +683,7 @@ class KeyingOperation : public NodeOperation {
 
   int get_postprocess_dilate_size()
   {
-    return math::max(0, this->get_input("Postprocess Dilate Size").get_single_value_default(0));
+    return this->get_input("Postprocess Dilate Size").get_single_value_default(0);
   }
 
   Result compute_feathered_matte(Result &input_matte)
@@ -704,14 +700,22 @@ class KeyingOperation : public NodeOperation {
 
     Result feathered_matte = context().create_result(ResultType::Float);
     morphological_distance_feather(
-        context(), input_matte, feathered_matte, distance, node_storage(bnode()).feather_falloff);
+        context(), input_matte, feathered_matte, distance, this->get_feather_falloff());
 
     return feathered_matte;
   }
 
   int get_postprocess_feather_size()
   {
-    return math::max(0, this->get_input("Postprocess Feather Size").get_single_value_default(0));
+    return this->get_input("Postprocess Feather Size").get_single_value_default(0);
+  }
+
+  int get_feather_falloff()
+  {
+    const Result &input = this->get_input("Feather Falloff");
+    const MenuValue default_menu_value = MenuValue(PROP_SMOOTH);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    return menu_value.value;
   }
 
   void compute_image(Result &matte)
@@ -726,7 +730,7 @@ class KeyingOperation : public NodeOperation {
 
   void compute_image_gpu(Result &matte)
   {
-    GPUShader *shader = context().get_shader("compositor_keying_compute_image");
+    gpu::Shader *shader = context().get_shader("compositor_keying_compute_image");
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1f(shader, "despill_factor", this->get_despill_strength());

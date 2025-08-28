@@ -25,11 +25,11 @@
 #endif
 
 struct CurveMapping;
-struct GPUUniformBuf;
-struct GPUShader;
 namespace blender::gpu {
+class Shader;
+class UniformBuf;
 class Texture;
-}
+}  // namespace blender::gpu
 
 namespace blender::ocio {
 
@@ -81,7 +81,7 @@ class GPUTextures : NonCopyable, NonMovable {
 
   /* Uniforms */
   Vector<GPUUniform> uniforms;
-  GPUUniformBuf *uniforms_buffer = nullptr;
+  gpu::UniformBuf *uniforms_buffer = nullptr;
 
   ~GPUTextures();
 
@@ -99,7 +99,7 @@ class GPUCurveMappping : NonCopyable, NonMovable {
   int lut_size = 0;
   float *lut = nullptr;
 
-  GPUUniformBuf *buffer = nullptr;
+  gpu::UniformBuf *buffer = nullptr;
   blender::gpu::Texture *texture = nullptr;
   size_t cache_id = 0;
 
@@ -123,23 +123,26 @@ class GPUCurveMappping : NonCopyable, NonMovable {
 
 class GPUDisplayShader : NonCopyable, NonMovable {
  public:
-  /* Cache variables. */
+  /* Cached display parameters. */
   std::string from_colorspace;
   std::string view;
   std::string display;
   std::string look;
   bool use_curve_mapping = false;
+  bool use_hdr_buffer = false;
+  bool use_hdr_display = false;
+  bool use_display_emulation = false;
 
   /* The shader is valid and can be bound.
    * Note that the cache might contain invalid shaders to prevent Blender from attempting to keep
    * re-trying to build the same failing shader. */
   bool is_valid = false;
 
-  GPUShader *shader = nullptr;
+  gpu::Shader *shader = nullptr;
 
   /* Uniform parameters. */
   OCIO_GPUParameters parameters = {};
-  GPUUniformBuf *parameters_buffer = nullptr;
+  gpu::UniformBuf *parameters_buffer = nullptr;
 
   GPUTextures textures;
   GPUCurveMappping curve_mapping;

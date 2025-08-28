@@ -20,6 +20,7 @@ struct GlyphCacheBLF;
 struct ListBase;
 struct ResultBLF;
 struct rcti;
+struct rctf;
 enum class BLFWrapMode;
 
 /**
@@ -153,6 +154,7 @@ int blf_font_height_max(FontBLF *font);
 int blf_font_width_max(FontBLF *font);
 int blf_font_descender(FontBLF *font);
 int blf_font_ascender(FontBLF *font);
+bool blf_font_bounds_max(FontBLF *font, rctf *r_bounds);
 
 char *blf_display_name(FontBLF *font);
 
@@ -202,12 +204,14 @@ GlyphBLF *blf_glyph_ensure_icon(
 
 /**
  * Convert a character's outlines into curves.
+ * \return success if the character was found and converted.
  */
-float blf_character_to_curves(FontBLF *font,
-                              unsigned int unicode,
-                              ListBase *nurbsbase,
-                              const float scale,
-                              bool use_fallback);
+bool blf_character_to_curves(FontBLF *font,
+                             unsigned int unicode,
+                             ListBase *nurbsbase,
+                             const float scale,
+                             bool use_fallback,
+                             float *r_advance);
 
 void blf_glyph_draw(FontBLF *font, GlyphCacheBLF *gc, GlyphBLF *g, int x, int y);
 

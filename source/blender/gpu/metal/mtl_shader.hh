@@ -234,7 +234,6 @@ class MTLShader : public Shader {
   ~MTLShader();
 
   void init(const shader::ShaderCreateInfo & /*info*/, bool is_batch_compilation) override;
-  void init() override {}
 
   /* Assign GLSL source. */
   void vertex_shader_from_glsl(MutableSpan<StringRefNull> sources) override;
@@ -332,7 +331,7 @@ class MTLShaderCompiler : public ShaderCompiler {
 
 /* Vertex format conversion.
  * Determines whether it is possible to resize a vertex attribute type
- * during input assembly. A conversion is implied by the  difference
+ * during input assembly. A conversion is implied by the difference
  * between the input vertex descriptor (from MTLBatch/MTLImmediate)
  * and the type specified in the shader source.
  *

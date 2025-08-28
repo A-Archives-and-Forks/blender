@@ -65,7 +65,7 @@ static std::string process_test_string(std::string str,
       "test.glsl",
       true,
       true,
-      [&](const std::smatch & /*match*/, const char *err_msg) {
+      [&](int /*err_line*/, int /*err_char*/, const std::string & /*line*/, const char *err_msg) {
         if (first_error.empty()) {
           first_error = err_msg;
         }
@@ -226,11 +226,15 @@ static void test_preprocess_template()
     string input = R"(
 template<typename T>
 void func(T a) {a;}
-template void func<float>(float a);)";
+template void func<float>(float a);
+)";
     string expect = R"(
-#define func_TEMPLATE(T) \
-void func(T a) {a;}
-func_TEMPLATE(float)/*float a*/)";
+
+
+#line 3
+void func(float a) {a;}
+#line 5
+)";
     string error;
     string output = process_test_string(input, error);
     EXPECT_EQ(output, expect);
@@ -242,33 +246,55 @@ template<typename T, int i>
 void func(T a) {
   a;
 }
-template void func<float, 1>(float a);)";
+template void func<float, 1>(float a);
+)";
     string expect = R"(
-#define func_TEMPLATE(T, i) \
-void func_##T##_##i##_(T a) { \
-  a; \
+
+
+
+
+#line 3
+void func_float_1_(float a) {
+  a;
 }
-func_TEMPLATE(float, 1)/*float a*/)";
+#line 7
+)";
     string error;
     string output = process_test_string(input, error);
     EXPECT_EQ(output, expect);
     EXPECT_EQ(error, "");
   }
   {
-    string input = R"(template<typename T, int i = 0> void func(T a) {a;)";
+    string input = R"(
+template<> void func<T, Q>(T a) {a}
+)";
+    string expect = R"(
+ void func_T_Q_(T a) {a}
+)";
     string error;
     string output = process_test_string(input, error);
-    EXPECT_EQ(error, "Template declaration unsupported syntax");
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
   }
   {
-    string input = R"(template void func(float a);)";
+    string input = R"(
+template<typename T, int i = 0> void func(T a) {a;}
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(error, "Default arguments are not supported inside template declaration");
+  }
+  {
+    string input = R"(
+template void func(float a);
+)";
     string error;
     string output = process_test_string(input, error);
     EXPECT_EQ(error, "Template instantiation unsupported syntax");
   }
   {
     string input = R"(func<float, 1>(a);)";
-    string expect = R"(TEMPLATE_GLUE2(func, float, 1)(a);)";
+    string expect = R"(func_float_1_(a);)";
     string error;
     string output = process_test_string(input, error);
     EXPECT_EQ(output, expect);
@@ -276,6 +302,62 @@ func_TEMPLATE(float, 1)/*float a*/)";
   }
 }
 GPU_TEST(preprocess_template);
+
+static void test_preprocess_template_struct()
+{
+  using namespace shader;
+  using namespace std;
+
+  {
+    string input = R"(
+template<typename T>
+struct A { T a; };
+template struct A<float>;
+)";
+    string expect = R"(
+
+
+#line 3
+struct A_float_{ float a; };
+#line 4
+#line 5
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+  {
+    string input = R"(
+template<> struct A<float>{
+    float a;
+};
+)";
+    string expect = R"(
+ struct A_float_{
+    float a;
+};
+#line 5
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+  {
+    string input = R"(
+void func(A<float> a) {}
+)";
+    string expect = R"(
+void func(A_float_ a) {}
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+}
+GPU_TEST(preprocess_template_struct);
 
 static void test_preprocess_reference()
 {
@@ -363,7 +445,7 @@ int func(int a, int b = 0)
 }
 )";
     string expect = R"(
-int func(int a, int b)
+int func(int a, int b )
 {
   return a + b;
 }
@@ -388,7 +470,7 @@ int func(int a = 0, const int b = 0)
 }
 )";
     string expect = R"(
-int func(int a, const int b)
+int func(int a , const int b )
 {
   return a + b;
 }
@@ -418,7 +500,7 @@ int2 func(int2 a = int2(0, 0)) {
 }
 )";
     string expect = R"(
-int2 func(int2 a) {
+int2 func(int2 a ) {
   return a;
 }
 #line 2
@@ -427,7 +509,7 @@ int2 func()
 #line 2
   return func(int2(0, 0));
 }
-#line 6
+#line 5
 )";
     string error;
     string output = process_test_string(input, error);
@@ -441,7 +523,7 @@ void func(int a = 0) {
 }
 )";
     string expect = R"(
-void func(int a) {
+void func(int a ) {
   a;
 }
 #line 2
@@ -450,7 +532,7 @@ void func()
 #line 2
   func(0);
 }
-#line 6
+#line 5
 )";
     string error;
     string output = process_test_string(input, error);
@@ -485,7 +567,8 @@ int func2(int a)
 )";
     string expect = R"(
 
-struct A_S {};
+struct A_S {int _pad;};
+#line 4
 int A_func(int a)
 {
   A_S s;
@@ -622,7 +705,8 @@ void test() {
     string expect = R"(
 
 void A_B_func() {}
-struct A_B_S {};
+struct A_B_S {int _pad;};
+#line 5
 
 
 
@@ -700,11 +784,16 @@ float write(float a){ return a; }
 
     string expect = R"(
 
-#define NS_read_TEMPLATE(T) T NS_read(T a) \
-{ \
-  return a; \
+
+
+
+
+#line 3
+float NS_read(float a)
+{
+  return a;
 }
-NS_read_TEMPLATE(float)/*float*/
+#line 8
 float NS_write(float a){ return a; }
 
 )";
@@ -731,6 +820,45 @@ static void test_preprocess_swizzle()
   }
 }
 GPU_TEST(preprocess_swizzle);
+
+static void test_preprocess_enum()
+{
+  using namespace shader;
+  using namespace std;
+
+  {
+    string input = R"(
+enum class enum_class : int {
+  VALUE = 0,
+};
+)";
+    string expect = R"(
+
+
+
+#line 2
+#define enum_class int
+#line 3
+constant static constexpr int enum_class_VALUE = 0;
+#line 5
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+  {
+    string input = R"(
+enum class enum_class {
+  VALUE = 0,
+};
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(error, "enum declaration must explicitly use an underlying type");
+  }
+}
+GPU_TEST(preprocess_enum);
 
 #ifdef __APPLE__ /* This processing is only done for metal compatibility. */
 static void test_preprocess_matrix_constructors()
@@ -827,10 +955,8 @@ uint my_func() {
 )";
     string error;
     string output = process_test_string(input, error);
-    // EXPECT_EQ(output, expect); /* TODO: Add support. */
-    EXPECT_EQ(error,
-              "Return statement with values are not supported inside the same scope as "
-              "resource access function.");
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
   }
   {
     string input = R"(
@@ -894,7 +1020,264 @@ uint my_func() {
     EXPECT_EQ(output, expect);
     EXPECT_EQ(error, "");
   }
+  {
+    /* Guard in template. */
+    string input = R"(
+template<> uint my_func<uint>(uint i) {
+  return buffer_get(draw_resource_id, resource_id_buf)[i];
+}
+)";
+    string expect = R"(
+ uint my_func_uint_(uint i) {
+#if defined(CREATE_INFO_draw_resource_id)
+#line 3
+  return buffer_get(draw_resource_id, resource_id_buf)[i];
+#else
+#line 3
+  return uint(0);
+#endif
+#line 4
+}
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
 }
 GPU_TEST(preprocess_resource_guard);
+
+static void test_preprocess_empty_struct()
+{
+  using namespace shader;
+  using namespace std;
+
+  {
+    string input = R"(
+class S {};
+struct T {};
+struct U {
+  static void fn() {}
+};
+)";
+    string expect = R"(
+struct S {int _pad;};
+#line 3
+struct T {int _pad;};
+#line 4
+struct U {
+
+int _pad;};
+#line 5
+  static void U_fn() {}
+#line 7
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+}
+GPU_TEST(preprocess_empty_struct);
+
+static void test_preprocess_struct_methods()
+{
+  using namespace shader;
+  using namespace std;
+
+  {
+    string input = R"(
+class S {
+ private:
+  int member;
+  int this_member;
+
+ public:
+  static S construct()
+  {
+    S a;
+    a.member = 0;
+    a.this_member = 0;
+    return a;
+  }
+
+  int another_member;
+
+  S function(int i)
+  {
+    this->member = i;
+    this_member++;
+    return *this;
+  }
+
+  int size() const
+  {
+    return this->member;
+  }
+};
+
+void main()
+{
+  S s = S::construct();
+  f.f();
+  f(0).f();
+  f().f();
+  l.o.t();
+  l.o(0).t();
+  l.o().t();
+  l[0].o();
+  l.o[0].t();
+  l.o().t[0];
+}
+)";
+    string expect = R"(
+struct S {
+
+  int member;
+  int this_member;
+
+
+
+
+
+
+
+
+
+
+  int another_member;
+
+
+
+
+
+
+
+
+
+
+
+
+};
+#line 8
+  static S S_construct()
+  {
+    S a;
+    a.member = 0;
+    a.this_member = 0;
+    return a;
+  }
+#line 18
+  S function(inout S _inout_sta this_ _inout_end, int i)
+  {
+    this_.member = i;
+    this_member++;
+    return this_;
+  }
+#line 25
+  int size(const S this_) 
+  {
+    return this_.member;
+  }
+#line 30
+
+void main()
+{
+  S s = S_construct();
+  f(f);
+  f(f(0));
+  f(f());
+  t(l.o);
+  t(o(l, 0));
+  t(o(l));
+  o(l[0]);
+  t(l.o[0]);
+  o(l).t[0];
+}
+)";
+    string error;
+    string output = process_test_string(input, error);
+    EXPECT_EQ(output, expect);
+    EXPECT_EQ(error, "");
+  }
+}
+GPU_TEST(preprocess_struct_methods);
+
+static void test_preprocess_parser()
+{
+  using namespace std;
+  using namespace shader::parser;
+
+  ParserData::report_callback no_err_report = [](int, int, string, const char *) {};
+
+  {
+    string input = R"(
+1;
+1.0;
+2e10;
+2e10f;
+2.e10f;
+2.0e-1f;
+2.0e-1;
+2.0e-1f;
+0xFF;
+0xFFu;
+)";
+    string expect = R"(
+0;0;0;0;0;0;0;0;0;0;)";
+    EXPECT_EQ(Parser(input, no_err_report).data_get().token_types, expect);
+  }
+  {
+    string input = R"(
+struct T {
+    int t = 1;
+};
+class B {
+    T t;
+};
+)";
+    string expect = R"(
+sw{ww=0;};Sw{ww;};)";
+    EXPECT_EQ(Parser(input, no_err_report).data_get().token_types, expect);
+  }
+  {
+    string input = R"(
+void f(int t = 0) {
+  int i = 0, u = 2, v = {1.0f};
+  {
+    v = i = u, v++;
+    if (v == i) {
+      return;
+    }
+  }
+}
+)";
+    string expect = R"(
+ww(ww=0){ww=0,w=0,w={0};{w=w=w,wP;i(wEw){r;}}})";
+    EXPECT_EQ(Parser(input, no_err_report).data_get().token_types, expect);
+  }
+  {
+    Parser parser("float i;", no_err_report);
+    parser.insert_after(Token::from_position(&parser.data_get(), 0), "A ");
+    parser.insert_after(Token::from_position(&parser.data_get(), 0), "B  ");
+    EXPECT_EQ(parser.result_get(), "float A B  i;");
+  }
+  {
+    string input = R"(
+A
+#line 100
+B
+)";
+    Parser parser(input, no_err_report);
+    Token A = Token::from_position(&parser.data_get(), 1);
+    Token B = Token::from_position(&parser.data_get(), 5);
+
+    EXPECT_EQ(A.str(), "A");
+    EXPECT_EQ(B.str(), "B");
+    EXPECT_EQ(A.line_number(), 2);
+    EXPECT_EQ(B.line_number(), 100);
+  }
+}
+GPU_TEST(preprocess_parser);
 
 }  // namespace blender::gpu::tests

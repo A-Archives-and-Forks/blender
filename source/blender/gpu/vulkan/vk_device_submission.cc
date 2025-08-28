@@ -149,6 +149,7 @@ void VKDevice::submission_runner(TaskPool *__restrict pool, void *task_data)
   Vector<VkSubmitInfo> submit_infos;
   submit_infos.reserve(2);
   std::optional<render_graph::VKCommandBufferWrapper> command_buffer;
+  uint64_t previous_gc_timeline = 0;
 
   CLOG_TRACE(&LOG, "Submission runner initialized");
   while (!BLI_task_pool_current_canceled(pool)) {
@@ -156,6 +157,10 @@ void VKDevice::submission_runner(TaskPool *__restrict pool, void *task_data)
         BLI_thread_queue_pop_timeout(device->submitted_render_graphs_, 1));
     if (submit_task == nullptr) {
       continue;
+    }
+    uint64_t current_timeline = device->submission_finished_timeline_get();
+    if (assign_if_different(previous_gc_timeline, current_timeline)) {
+      device->orphaned_data.destroy_discarded_resources(*device);
     }
 
     /* End current command buffer when we need to wait for a semaphore. In this case all previous
@@ -170,7 +175,6 @@ void VKDevice::submission_runner(TaskPool *__restrict pool, void *task_data)
     if (!command_buffer.has_value()) {
       /* Check for completed command buffers that can be reused. */
       if (command_buffers_unused.is_empty()) {
-        uint64_t current_timeline = device->submission_finished_timeline_get();
         command_buffers_in_use.remove_old(current_timeline,
                                           [&](VkCommandBuffer vk_command_buffer) {
                                             command_buffers_unused.append(vk_command_buffer);
@@ -296,7 +300,6 @@ void VKDevice::init_submission_pool()
 {
   CLOG_TRACE(&LOG, "Create submission pool");
   submission_pool_ = BLI_task_pool_create_background_serial(this, TASK_PRIORITY_HIGH);
-  BLI_task_pool_push(submission_pool_, VKDevice::submission_runner, nullptr, false, nullptr);
   submitted_render_graphs_ = BLI_thread_queue_init();
   unused_render_graphs_ = BLI_thread_queue_init();
 
@@ -305,6 +308,8 @@ void VKDevice::init_submission_pool()
   VkSemaphoreCreateInfo vk_semaphore_create_info = {
       VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &vk_semaphore_type_create_info, 0};
   vkCreateSemaphore(vk_device_, &vk_semaphore_create_info, nullptr, &vk_timeline_semaphore_);
+
+  BLI_task_pool_push(submission_pool_, VKDevice::submission_runner, nullptr, false, nullptr);
 }
 
 void VKDevice::deinit_submission_pool()

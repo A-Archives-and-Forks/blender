@@ -39,19 +39,23 @@ void VKExtensions::log() const
              " - [%c] fragment shader barycentric\n"
              "Device extensions\n"
              " - [%c] descriptor buffer\n"
-             " - [%c] dynamic rendering\n"
              " - [%c] dynamic rendering local read\n"
              " - [%c] dynamic rendering unused attachments\n"
              " - [%c] external memory\n"
+             " - [%c] maintenance4\n"
+             " - [%c] memory priority\n"
+             " - [%c] pageable device local memory\n"
              " - [%c] shader stencil export",
              shader_output_viewport_index ? 'X' : ' ',
              shader_output_layer ? 'X' : ' ',
              fragment_shader_barycentric ? 'X' : ' ',
              descriptor_buffer ? 'X' : ' ',
-             dynamic_rendering ? 'X' : ' ',
              dynamic_rendering_local_read ? 'X' : ' ',
              dynamic_rendering_unused_attachments ? 'X' : ' ',
              external_memory ? 'X' : ' ',
+             maintenance4 ? 'X' : ' ',
+             memory_priority ? 'X' : ' ',
+             pageable_device_local_memory ? 'X' : ' ',
              GPU_stencil_export_support() ? 'X' : ' ');
 }
 
@@ -71,11 +75,13 @@ void VKDevice::deinit()
 
   dummy_buffer.free();
   samplers_.free();
+  GPU_SHADER_FREE_SAFE(vk_backbuffer_blit_sh_);
 
+  orphaned_data_render.deinit(*this);
+  orphaned_data.deinit(*this);
   {
     while (!thread_data_.is_empty()) {
       VKThreadData *thread_data = thread_data_.pop_last();
-      thread_data->deinit(*this);
       delete thread_data;
     }
     thread_data_.clear();
@@ -83,8 +89,6 @@ void VKDevice::deinit()
   pipelines.write_to_disk();
   pipelines.free_data();
   descriptor_set_layouts_.deinit();
-  orphaned_data_render.deinit(*this);
-  orphaned_data.deinit(*this);
   vmaDestroyPool(mem_allocator_, vma_pools.external_memory);
   vmaDestroyAllocator(mem_allocator_);
   mem_allocator_ = VK_NULL_HANDLE;
@@ -140,7 +144,6 @@ void VKDevice::init(void *ghost_context)
   debug::object_label(vk_queue_, "GenericQueue");
   init_glsl_patch();
 
-  resources.use_dynamic_rendering = extensions_.dynamic_rendering;
   resources.use_dynamic_rendering_local_read = extensions_.dynamic_rendering_local_read;
   orphaned_data.timeline_ = 0;
 
@@ -266,6 +269,12 @@ void VKDevice::init_memory_allocator()
   if (extensions_.descriptor_buffer) {
     info.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   }
+  if (extensions_.memory_priority) {
+    info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT;
+  }
+  if (extensions_.maintenance4) {
+    info.flags |= VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT;
+  }
   vmaCreateAllocator(&info, &mem_allocator_);
 
   if (!extensions_.external_memory) {
@@ -312,6 +321,7 @@ void VKDevice::init_memory_allocator()
   VmaPoolCreateInfo pool_create_info = {};
   pool_create_info.memoryTypeIndex = memory_type_index;
   pool_create_info.pMemoryAllocateNext = &vma_pools.external_memory_info;
+  pool_create_info.priority = 1.0f;
   vmaCreatePool(mem_allocator_, &pool_create_info, &vma_pools.external_memory);
 }
 
@@ -321,7 +331,8 @@ void VKDevice::init_dummy_buffer()
                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                       VkMemoryPropertyFlags(0),
-                      VmaAllocationCreateFlags(0));
+                      VmaAllocationCreateFlags(0),
+                      1.0f);
   debug::object_label(dummy_buffer.vk_handle(), "DummyBuffer");
   /* Default dummy buffer. Set the 4th element to 1 to fix missing orcos. */
   float data[16] = {
@@ -334,7 +345,8 @@ void VKDevice::init_glsl_patch()
   std::stringstream ss;
 
   ss << "#version 450\n";
-  if (GPU_shader_draw_parameters_support()) {
+  {
+    /* Required extension. */
     ss << "#extension GL_ARB_shader_draw_parameters : enable\n";
     ss << "#define GPU_ARB_shader_draw_parameters\n";
     ss << "#define gpu_BaseInstance (gl_BaseInstanceARB)\n";
@@ -502,13 +514,6 @@ VKThreadData::VKThreadData(VKDevice &device, pthread_t thread_id) : thread_id(th
   }
 }
 
-void VKThreadData::deinit(VKDevice &device)
-{
-  for (VKResourcePool &resource_pool : resource_pools) {
-    resource_pool.deinit(device);
-  }
-}
-
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -629,8 +634,8 @@ void VKDevice::debug_print()
   BLI_assert_msg(BLI_thread_is_main(),
                  "VKDevice::debug_print can only be called from the main thread.");
 
+  resources.debug_print();
   std::ostream &os = std::cout;
-
   os << "Pipelines\n";
   os << " Graphics: " << pipelines.graphic_pipelines_.size() << "\n";
   os << " Compute: " << pipelines.compute_pipelines_.size() << "\n";

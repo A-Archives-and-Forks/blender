@@ -3132,19 +3132,19 @@ static void do_version_blur_defocus_nodes_remove_gamma(bNodeTree *node_tree)
       continue;
     }
 
-    bNode *gamma_node = blender::bke::node_add_static_node(nullptr, *node_tree, CMP_NODE_GAMMA);
+    bNode *gamma_node = blender::bke::node_add_static_node(nullptr, *node_tree, SH_NODE_GAMMA);
     gamma_node->parent = link->tonode->parent;
     gamma_node->location[0] = link->tonode->location[0] - link->tonode->width - 20.0f;
     gamma_node->location[1] = link->tonode->location[1];
 
-    bNodeSocket *image_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Image");
-    bNodeSocket *image_output = blender::bke::node_find_socket(*gamma_node, SOCK_OUT, "Image");
+    bNodeSocket *color_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Color");
+    bNodeSocket *color_output = blender::bke::node_find_socket(*gamma_node, SOCK_OUT, "Color");
 
     bNodeSocket *gamma_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Gamma");
     gamma_input->default_value_typed<bNodeSocketValueFloat>()->value = 2.0f;
 
-    version_node_add_link(*node_tree, *link->fromnode, *link->fromsock, *gamma_node, *image_input);
-    version_node_add_link(*node_tree, *gamma_node, *image_output, *link->tonode, *link->tosock);
+    version_node_add_link(*node_tree, *link->fromnode, *link->fromsock, *gamma_node, *color_input);
+    version_node_add_link(*node_tree, *gamma_node, *color_output, *link->tonode, *link->tosock);
 
     blender::bke::node_remove_link(node_tree, *link);
   }
@@ -3166,19 +3166,19 @@ static void do_version_blur_defocus_nodes_remove_gamma(bNodeTree *node_tree)
       continue;
     }
 
-    bNode *gamma_node = blender::bke::node_add_static_node(nullptr, *node_tree, CMP_NODE_GAMMA);
+    bNode *gamma_node = blender::bke::node_add_static_node(nullptr, *node_tree, SH_NODE_GAMMA);
     gamma_node->parent = link->fromnode->parent;
     gamma_node->location[0] = link->fromnode->location[0] + link->fromnode->width + 20.0f;
     gamma_node->location[1] = link->fromnode->location[1];
 
-    bNodeSocket *image_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Image");
-    bNodeSocket *image_output = blender::bke::node_find_socket(*gamma_node, SOCK_OUT, "Image");
+    bNodeSocket *color_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Color");
+    bNodeSocket *color_output = blender::bke::node_find_socket(*gamma_node, SOCK_OUT, "Color");
 
     bNodeSocket *gamma_input = blender::bke::node_find_socket(*gamma_node, SOCK_IN, "Gamma");
     gamma_input->default_value_typed<bNodeSocketValueFloat>()->value = 0.5f;
 
-    version_node_add_link(*node_tree, *link->fromnode, *link->fromsock, *gamma_node, *image_input);
-    version_node_add_link(*node_tree, *gamma_node, *image_output, *link->tonode, *link->tosock);
+    version_node_add_link(*node_tree, *link->fromnode, *link->fromsock, *gamma_node, *color_input);
+    version_node_add_link(*node_tree, *gamma_node, *color_output, *link->tonode, *link->tosock);
 
     blender::bke::node_remove_link(node_tree, *link);
   }
@@ -3201,8 +3201,8 @@ static void version_escape_curly_braces_in_compositor_file_output_nodes(bNodeTre
       continue;
     }
 
-    NodeImageMultiFile *node_data = static_cast<NodeImageMultiFile *>(node->storage);
-    version_escape_curly_braces(node_data->base_path, FILE_MAX);
+    NodeCompositorFileOutput *node_data = static_cast<NodeCompositorFileOutput *>(node->storage);
+    version_escape_curly_braces(node_data->directory, FILE_MAX);
 
     LISTBASE_FOREACH (bNodeSocket *, sock, &node->inputs) {
       NodeImageMultiFileSocket *socket_data = static_cast<NodeImageMultiFileSocket *>(
@@ -4606,7 +4606,7 @@ void do_versions_after_linking_450(FileData * /*fd*/, Main *bmain)
     FOREACH_NODETREE_BEGIN (bmain, node_tree, id) {
       if (node_tree->type == NTREE_COMPOSIT) {
         LISTBASE_FOREACH (bNode *, node, &node_tree->nodes) {
-          if (node->type_legacy == CMP_NODE_SUNBEAMS) {
+          if (node->type_legacy == CMP_NODE_SUNBEAMS_DEPRECATED) {
             do_version_sun_beams_node_options_to_inputs_animation(node_tree, node);
           }
         }
@@ -4681,7 +4681,8 @@ void do_versions_after_linking_450(FileData * /*fd*/, Main *bmain)
   }
 
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 405, 76)) {
-    ToolSettings toolsettings_default = *DNA_struct_default_get(ToolSettings);
+    ToolSettings toolsettings_default = blender::dna::shallow_copy(
+        *DNA_struct_default_get(ToolSettings));
     LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
       scene->toolsettings->snap_playhead_mode = toolsettings_default.snap_playhead_mode;
       scene->toolsettings->snap_step_frames = toolsettings_default.snap_step_frames;
@@ -5637,7 +5638,7 @@ void blo_do_versions_450(FileData * /*fd*/, Library * /*lib*/, Main *bmain)
     FOREACH_NODETREE_BEGIN (bmain, node_tree, id) {
       if (node_tree->type == NTREE_COMPOSIT) {
         LISTBASE_FOREACH (bNode *, node, &node_tree->nodes) {
-          if (node->type_legacy == CMP_NODE_SUNBEAMS) {
+          if (node->type_legacy == CMP_NODE_SUNBEAMS_DEPRECATED) {
             do_version_sun_beams_node_options_to_inputs(node_tree, node);
           }
         }

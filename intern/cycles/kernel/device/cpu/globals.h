@@ -8,7 +8,6 @@
 
 #include "kernel/types.h"
 #include "kernel/util/profiler.h"
-#include <functional>
 
 #ifdef __OSL__
 #  include "kernel/osl/globals.h"

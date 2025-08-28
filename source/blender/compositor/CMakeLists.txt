@@ -78,6 +78,7 @@ set(SRC
   algorithms/intern/pad.cc
   algorithms/intern/parallel_reduction.cc
   algorithms/intern/recursive_gaussian_blur.cc
+  algorithms/intern/sample_pixel.cc
   algorithms/intern/smaa.cc
   algorithms/intern/summed_area_table.cc
   algorithms/intern/symmetric_separable_blur.cc
@@ -94,6 +95,7 @@ set(SRC
   algorithms/COM_algorithm_pad.hh
   algorithms/COM_algorithm_parallel_reduction.hh
   algorithms/COM_algorithm_recursive_gaussian_blur.hh
+  algorithms/COM_algorithm_sample_pixel.hh
   algorithms/COM_algorithm_smaa.hh
   algorithms/COM_algorithm_summed_area_table.hh
   algorithms/COM_algorithm_symmetric_separable_blur.hh
@@ -200,6 +202,7 @@ set(GLSL_SRC
   shaders/compositor_glare_simple_star_vertical_pass.glsl
   shaders/compositor_glare_streaks_accumulate.glsl
   shaders/compositor_glare_streaks_filter.glsl
+  shaders/compositor_glare_sun_beams.glsl
   shaders/compositor_glare_write_glare_output.glsl
   shaders/compositor_glare_write_highlights_output.glsl
   shaders/compositor_horizontal_lens_distortion.glsl
@@ -244,6 +247,7 @@ set(GLSL_SRC
   shaders/compositor_radial_lens_distortion.glsl
   shaders/compositor_read_input.glsl
   shaders/compositor_realize_on_domain.glsl
+  shaders/compositor_sample_pixel.glsl
   shaders/compositor_scale_variable.glsl
   shaders/compositor_smaa_blending_weight_calculation.glsl
   shaders/compositor_smaa_edge_detection.glsl
@@ -253,7 +257,6 @@ set(GLSL_SRC
   shaders/compositor_summed_area_table_compute_complete_x_prologues.glsl
   shaders/compositor_summed_area_table_compute_complete_y_prologues.glsl
   shaders/compositor_summed_area_table_compute_incomplete_prologues.glsl
-  shaders/compositor_sun_beams.glsl
   shaders/compositor_symmetric_blur.glsl
   shaders/compositor_symmetric_blur_variable_size.glsl
   shaders/compositor_symmetric_separable_blur.glsl
@@ -282,7 +285,6 @@ set(GLSL_SRC
   shaders/library/gpu_shader_compositor_difference_matte.glsl
   shaders/library/gpu_shader_compositor_distance_matte.glsl
   shaders/library/gpu_shader_compositor_exposure.glsl
-  shaders/library/gpu_shader_compositor_gamma.glsl
   shaders/library/gpu_shader_compositor_hue_correct.glsl
   shaders/library/gpu_shader_compositor_hue_saturation_value.glsl
   shaders/library/gpu_shader_compositor_image_diagonals.glsl

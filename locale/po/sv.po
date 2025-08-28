@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-07-13 16:59+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-08-12 06:21+0000\n"
 "Last-Translator: Daniel Nylander <blender@danielnylander.se>\n"
 "Language-Team: Swedish <https://translate.blender.org/projects/blender-ui/ui/sv/>\n"
 "Language: sv\n"
@@ -1307,6 +1307,14 @@ msgid "Array"
 msgstr "Array"
 
 
+msgid "Store a value for every element"
+msgstr "Lagra ett värde för varje element"
+
+
+msgid "Store a single value for the entire domain"
+msgstr "Lagra ett enstaka värde för hela domänen"
+
+
 msgid "Bool Attribute"
 msgstr "Boolesk attribut"
 
@@ -1487,8 +1495,24 @@ msgid "Image Textures"
 msgstr "Bildtexturer"
 
 
+msgid "Bake Type"
+msgstr "Bakningstyp"
+
+
+msgid "Normals"
+msgstr "Normaler"
+
+
 msgid "Clear"
 msgstr "Nollställ"
+
+
+msgid "Low Resolution Mesh"
+msgstr "Lågupplöst mesh"
+
+
+msgid "Calculate heights against unsubdivided low resolution mesh"
+msgstr "Beräkna höjder mot icke-uppdelat lågupplöst mesh"
 
 
 msgid "View From"
@@ -2857,10 +2881,6 @@ msgstr "Avsluta partiklar"
 
 msgid "Kill collided particles"
 msgstr "Ta bort krockade partiklar"
-
-
-msgid "Display device name"
-msgstr "Visa enhetens namn"
 
 
 msgid "Is Data"
@@ -4445,14 +4465,6 @@ msgid "File Extensions"
 msgstr "Filändelse"
 
 
-msgid ""
-"Formatted string of file extensions supported by the file handler, each extension should start with a \".\" and be separated by \";\".\n"
-"For Example: `\".blend;.ble\"`"
-msgstr ""
-"Formaterad sträng av filändelser som stöds av filhanteraren, varje filändelse ska börja med \".\" och separeras med \";\".\n"
-"Till exempel: `\".blend;.ble\"`"
-
-
 msgid "Label"
 msgstr "Etikett"
 
@@ -5149,6 +5161,10 @@ msgstr "Uttagstyp"
 
 msgid "Menu"
 msgstr "Meny"
+
+
+msgid "Shader"
+msgstr "Shader"
 
 
 msgid "Collection"
@@ -6237,10 +6253,6 @@ msgid "Fast Editing"
 msgstr "Snabbredigera"
 
 
-msgid "Normals"
-msgstr "Normaler"
-
-
 msgid "Active Texture"
 msgstr "Aktiv textur"
 
@@ -6330,40 +6342,36 @@ msgid "Color Space Settings"
 msgstr "Inställningar för färgrymd"
 
 
-msgid "BMP"
-msgstr "BMP"
+msgid "Output image in JPEG format"
+msgstr "Resultatbild i JPEG-format"
 
 
-msgid "Output image in bitmap format"
-msgstr "Resultatbild som pixelbild"
-
-
-msgid "Iris"
-msgstr "Iris"
+msgid "Output image in OpenEXR format"
+msgstr "Resultatbild i OpenEXR-format"
 
 
 msgid "Output image in PNG format"
 msgstr "Resultatbild i PNG-format"
 
 
-msgid "JPEG"
-msgstr "JPEG"
+msgid "Output image in bitmap format"
+msgstr "Resultatbild som pixelbild"
 
 
-msgid "Output image in JPEG format"
-msgstr "Resultatbild i JPEG-format"
+msgid "Output image in Cineon format"
+msgstr "Resultatbild i Cineon-format"
 
 
-msgid "JPEG 2000"
-msgstr "JPEG 2000"
+msgid "Output image in DPX format"
+msgstr "Resultatbild i DPX-format"
 
 
 msgid "Output image in JPEG 2000 format"
 msgstr "Resultatbild i JPEG 2000-format"
 
 
-msgid "Targa"
-msgstr "Targa"
+msgid "Output image in Radiance HDR format"
+msgstr "Resultatbild i Radiance HDR-format"
 
 
 msgid "Output image in Targa format"
@@ -6374,48 +6382,16 @@ msgid "Output image in uncompressed Targa format"
 msgstr "Resultatbild i okomprimerat TARGA-format"
 
 
-msgid "Cineon"
-msgstr "Cineon"
-
-
-msgid "Output image in Cineon format"
-msgstr "Resultatbild i Cineon-format"
-
-
-msgid "DPX"
-msgstr "DPX"
-
-
-msgid "Output image in DPX format"
-msgstr "Resultatbild i DPX-format"
-
-
-msgid "OpenEXR MultiLayer"
-msgstr "OpenEXR MultiLayer"
-
-
-msgid "Output image in multilayer OpenEXR format"
-msgstr "Resultatbild i flerlagers OpenEXR-format"
-
-
-msgid "Output image in OpenEXR format"
-msgstr "Resultatbild i OpenEXR-format"
-
-
-msgid "Output image in Radiance HDR format"
-msgstr "Resultatbild i Radiance HDR-format"
-
-
-msgid "TIFF"
-msgstr "TIFF"
+msgid "TIFF (.tif)"
+msgstr "TIFF (.tif)"
 
 
 msgid "Output image in TIFF format"
 msgstr "Resultatbild i TIFF-format"
 
 
-msgid "WebP"
-msgstr "WebP"
+msgid "Output image in multilayer OpenEXR format"
+msgstr "Resultatbild i flerlagers OpenEXR-format"
 
 
 msgid "True if the image data is loaded into memory"
@@ -6718,10 +6694,6 @@ msgstr "Filter"
 
 msgid "Script"
 msgstr "Skript"
-
-
-msgid "Shader"
-msgstr "Shader"
 
 
 msgid "Pattern"
@@ -7919,10 +7891,6 @@ msgid "Mist"
 msgstr "Dimma"
 
 
-msgid "Use shader nodes to render the world"
-msgstr "Använd shadernoder för att rendera världen"
-
-
 msgid "Use Shadow"
 msgstr "Använd skugga"
 
@@ -8049,6 +8017,10 @@ msgstr "JP2"
 
 msgid "J2K"
 msgstr "J2K"
+
+
+msgid "Video"
+msgstr "Video"
 
 
 msgid "LZW"
@@ -8939,10 +8911,6 @@ msgstr "Klick"
 
 msgid "Double Click"
 msgstr "Dubbelklick"
-
-
-msgid "Click Drag"
-msgstr "Klicka och dra"
 
 
 msgctxt "Action"
@@ -10682,6 +10650,10 @@ msgid "ITU 709"
 msgstr "ITU 709"
 
 
+msgid "JPEG"
+msgstr "JPEG"
+
+
 msgid "Combine Color"
 msgstr "Kombinera färg"
 
@@ -10808,16 +10780,6 @@ msgstr "Blå kanal"
 
 msgid "Luminance"
 msgstr "Luminans"
-
-
-msgctxt "NodeTree"
-msgid "Nearest"
-msgstr "Närmast"
-
-
-msgctxt "NodeTree"
-msgid "Anisotropic"
-msgstr "Anisotropisk"
 
 
 msgid "Write image file to disk"
@@ -11193,10 +11155,6 @@ msgid "Generate a mesh on the XY plane with faces on the inside of input curves"
 msgstr "Generera en mesh på XY-planet med ytor på insidan av input-kurvorna"
 
 
-msgid "Triangles"
-msgstr "Trianglar"
-
-
 msgid "Geometry to Instance"
 msgstr "Geometri till instans"
 
@@ -11300,6 +11258,10 @@ msgid "N-Gon"
 msgstr "N-Gon"
 
 
+msgid "Triangles"
+msgstr "Trianglar"
+
+
 msgid "Generate a cone mesh"
 msgstr "Generera en kon-mesh"
 
@@ -11352,10 +11314,6 @@ msgid "Create a fog volume with the shape of the input mesh's surface"
 msgstr "Skapa en dim-volym med formen av input-meshens yta"
 
 
-msgid "How the voxel size is specified"
-msgstr "Hur voxel-storleken anges"
-
-
 msgid "UV Sphere"
 msgstr "UV-sfär"
 
@@ -11400,10 +11358,6 @@ msgid "Delete an attribute with a specified name from a geometry. Typically used
 msgstr "Ta bort en attribut med ett angivet namn från en geometri. Används oftast för att optimera prestanda"
 
 
-msgid "Wildcard"
-msgstr "Jokertecken"
-
-
 msgid "Repeat Input"
 msgstr "Upprepa inmatning"
 
@@ -11436,10 +11390,6 @@ msgid "All Curves"
 msgstr "Alla kurvor"
 
 
-msgid "Trilinear"
-msgstr "Trilinjär"
-
-
 msgid "Scale Elements"
 msgstr "Skala element"
 
@@ -11458,18 +11408,6 @@ msgstr "Skala individuella ytor eller närliggande ytöar"
 
 msgid "Scale individual edges or neighboring edge islands"
 msgstr "Skala individuella kanter eller närliggande kantöar"
-
-
-msgid "Scale Mode"
-msgstr "Skalningsläge"
-
-
-msgid "Scale elements by the same factor in every direction"
-msgstr "Skala element med samma faktor i alla riktningar"
-
-
-msgid "Scale elements in a single direction"
-msgstr "Skala element i en enskild riktning"
 
 
 msgid "Scale Instances"
@@ -12536,10 +12474,6 @@ msgstr "Nodlänkar"
 
 msgid "Collection of Node Links"
 msgstr "Samling av nodlänkar"
-
-
-msgid "Use Node Format"
-msgstr "Använd nodformat"
 
 
 msgid "Node Outputs"
@@ -16560,6 +16494,10 @@ msgid "Update Scene FPS"
 msgstr "Uppdatera scenens bildfrekvens"
 
 
+msgid "Make Unique"
+msgstr "Gör unik"
+
+
 msgid "Import Animation"
 msgstr "Importera animering"
 
@@ -17938,6 +17876,10 @@ msgid "Replace with"
 msgstr "Ersätt med"
 
 
+msgid "BMP"
+msgstr "BMP"
+
+
 msgid "IRIS"
 msgstr "IRIS"
 
@@ -17954,8 +17896,16 @@ msgid "CINEON"
 msgstr "CINEON"
 
 
+msgid "DPX"
+msgstr "DPX"
+
+
 msgid "OPEN_EXR"
 msgstr "OPEN_EXR"
+
+
+msgid "TIFF"
+msgstr "TIFF"
 
 
 msgid "Toggle preview display for selected nodes"
@@ -19719,6 +19669,14 @@ msgid "Unmasked"
 msgstr "Omaskerad"
 
 
+msgid "Allow Overlap"
+msgstr "Tillåt överlappning"
+
+
+msgid "Replace Selection"
+msgstr "Ersätt markering"
+
+
 msgctxt "Sequence"
 msgid "Type"
 msgstr "Typ"
@@ -19785,14 +19743,6 @@ msgstr "Kopiera"
 
 msgid "Delete Data"
 msgstr "Ta bort data"
-
-
-msgid "Allow Overlap"
-msgstr "Tillåt överlappning"
-
-
-msgid "Replace Selection"
-msgstr "Ersätt markering"
 
 
 msgctxt "Operator"
@@ -20410,10 +20360,6 @@ msgid "Jump to Target"
 msgstr "Hoppa till mål"
 
 
-msgid "NoOp"
-msgstr "NoOp"
-
-
 msgctxt "Operator"
 msgid "Align"
 msgstr "Justera"
@@ -20832,10 +20778,6 @@ msgstr "Importera Wavefront OBJ"
 
 msgid "Load a Wavefront OBJ scene"
 msgstr "Läs in en Wavefront OBJ-scen"
-
-
-msgid "Make Unique"
-msgstr "Gör unik"
 
 
 msgctxt "Operator"
@@ -21750,10 +21692,6 @@ msgstr "Skuggor"
 
 msgid "Audio"
 msgstr "Ljud"
-
-
-msgid "Video"
-msgstr "Video"
 
 
 msgid "Views"
@@ -23020,14 +22958,6 @@ msgid "Automatic (Automatic)"
 msgstr "Automatiskt (automatiskt)"
 
 
-msgid "HDRI Preview Size"
-msgstr "HDRI förhandsvisningsstorlek"
-
-
-msgid "Diameter of the HDRI preview spheres"
-msgstr "Diameter på HDRI förhandsvisningssfärer"
-
-
 msgid "Brightness of the icon"
 msgstr "Ljushet av ikonen"
 
@@ -23457,10 +23387,6 @@ msgid "Use Motion Blur"
 msgstr "Använd rörelseoskärpa"
 
 
-msgid "Bake Type"
-msgstr "Bakningstyp"
-
-
 msgid "BVH2"
 msgstr "BVH2"
 
@@ -23665,14 +23591,6 @@ msgid "Render Passes"
 msgstr "Renderingspass"
 
 
-msgid "Bias"
-msgstr "Justering"
-
-
-msgid "Algorithm to generate the margin"
-msgstr "Algoritm för att generera marginalen"
-
-
 msgid "Engine"
 msgstr "Motor"
 
@@ -23735,18 +23653,6 @@ msgstr "Global maximal uppdelningsnivå"
 
 msgid "Threads Mode"
 msgstr "Trådläge"
-
-
-msgid "Low Resolution Mesh"
-msgstr "Lågupplöst mesh"
-
-
-msgid "Calculate heights against unsubdivided low resolution mesh"
-msgstr "Beräkna höjder mot icke-uppdelat lågupplöst mesh"
-
-
-msgid "User Scale"
-msgstr "Användarskala"
 
 
 msgid "Render Region"
@@ -23827,6 +23733,10 @@ msgstr "Viskositet"
 
 msgid "Classical"
 msgstr "Klassisk"
+
+
+msgid "Bias"
+msgstr "Justering"
 
 
 msgid "Trace Precision"
@@ -24558,16 +24468,16 @@ msgid "Active Theme Area"
 msgstr "Aktiv temadel"
 
 
-msgid "Theme Console"
-msgstr "Temakonsol"
+msgid "Channel Group"
+msgstr "Kanalgrupp"
 
 
 msgid "Active Channel Group"
 msgstr "Aktiv kanalgrupp"
 
 
-msgid "Channel Group"
-msgstr "Kanalgrupp"
+msgid "Theme Console"
+msgstr "Temakonsol"
 
 
 msgid "Summary"
@@ -24602,10 +24512,6 @@ msgid "Transitions"
 msgstr "Övergångar"
 
 
-msgid "Layout Node"
-msgstr "Layoutnod"
-
-
 msgid "Repeat Zone"
 msgstr "Upprepa zon"
 
@@ -24632,10 +24538,6 @@ msgstr "Temainställningar för egenskaperna"
 
 msgid "Search Match"
 msgstr "Sökträff"
-
-
-msgid "Draw Action"
-msgstr "Ritningsåtgärd"
 
 
 msgid "Preview Background"
@@ -25745,6 +25647,16 @@ msgid "Age: {:s}"
 msgstr "Ålder: {:s}"
 
 
+msgctxt "Preferences"
+msgid "Legacy (User)"
+msgstr "Föråldrad (användare)"
+
+
+msgctxt "Preferences"
+msgid "Legacy (Other)"
+msgstr "Föråldrad (annan)"
+
+
 msgid "Missing Built-in Add-ons"
 msgstr "Saknade inbyggda tillägg"
 
@@ -25909,6 +25821,39 @@ msgid "Paste and Bake"
 msgstr "Klistra in och baka"
 
 
+msgid "HIP has known stability issues"
+msgstr "HIP har kända stabilitetsproblem"
+
+
+msgid "Do not use compute device"
+msgstr "Använd inte beräkningsenhet"
+
+
+msgctxt "Operator"
+msgid "#140278"
+msgstr "#140278"
+
+
+msgid "Use CUDA for GPU acceleration"
+msgstr "Använd CUDA för GPU-acceleration"
+
+
+msgid "Use OptiX for GPU acceleration"
+msgstr "Använd OptiX för GPU-acceleration"
+
+
+msgid "Use HIP for GPU acceleration"
+msgstr "Använd HIP för GPU-acceleration"
+
+
+msgid "Use Metal for GPU acceleration"
+msgstr "Använd Metal för GPU-acceleration"
+
+
+msgid "Use oneAPI for GPU acceleration"
+msgstr "Använd oneAPI för GPU-acceleration"
+
+
 msgid "and NVIDIA driver version %s or newer"
 msgstr "och NVIDIA-drivrutin version %s eller nyare"
 
@@ -25965,6 +25910,10 @@ msgid "Use GPU"
 msgstr "Använd GPU"
 
 
+msgid "Scatter"
+msgstr "Sprid"
+
+
 msgid "Cycles built without Embree support"
 msgstr "Cycles byggd utan Embree-stöd"
 
@@ -25993,6 +25942,11 @@ msgstr "Det går inte att uppdatera scenens bildfrekvens eftersom BVH-filen inne
 
 msgid "Unable to parse XML, %s:%s for file %r"
 msgstr "Det gick inte att tolka XML, %s:%s för filen %r"
+
+
+msgctxt "Operator"
+msgid "FBX (.fbx) (Legacy)"
+msgstr "FBX (.fbx) (föråldrad)"
 
 
 msgctxt "Operator"
@@ -26908,11 +26862,6 @@ msgstr "Pilstorlek"
 
 
 msgctxt "Operator"
-msgid "Delete All Shape Keys"
-msgstr "Ta bort alla formnycklar"
-
-
-msgctxt "Operator"
 msgid "Sort by Name"
 msgstr "Sortera efter namn"
 
@@ -26943,13 +26892,8 @@ msgstr "Ta bort alla grupper"
 
 
 msgctxt "Operator"
-msgid "Move to Top"
-msgstr "Flytta till toppen"
-
-
-msgctxt "Operator"
-msgid "Move to Bottom"
-msgstr "Flytta till botten"
+msgid "Flip"
+msgstr "Vänd"
 
 
 msgid "Name collisions: "
@@ -27764,6 +27708,16 @@ msgstr "Blender-ID:n"
 
 
 msgctxt "Operator"
+msgid "Move to Top"
+msgstr "Flytta till toppen"
+
+
+msgctxt "Operator"
+msgid "Move to Bottom"
+msgstr "Flytta till botten"
+
+
+msgctxt "Operator"
 msgid "Increase Number"
 msgstr "Öka siffra"
 
@@ -28051,11 +28005,6 @@ msgstr "Dela vertikalt"
 
 
 msgctxt "Operator"
-msgid "Toggle Fullscreen Area"
-msgstr "Växla till helskärmsområde"
-
-
-msgctxt "Operator"
 msgid "Transition"
 msgstr "Övergång"
 
@@ -28338,6 +28287,21 @@ msgid "Fade"
 msgstr "Tona"
 
 
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "Ta bort keyframes..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "Rensa keyframes..."
+
+
+msgctxt "Operator"
+msgid "Interactive Mirror"
+msgstr "Interaktiv spegel"
+
+
 msgid "Storage"
 msgstr "Lagring"
 
@@ -28480,6 +28444,10 @@ msgstr "Packa upp"
 
 msgid "Pack"
 msgstr "Packa"
+
+
+msgid "{:d} MB"
+msgstr "{:d} MB"
 
 
 msgid "dB"
@@ -28974,6 +28942,10 @@ msgid "Repository URL"
 msgstr "URL till förrådet"
 
 
+msgid "• Windows on ARM requires driver 31.0.112.0 or higher"
+msgstr "• Windows på ARM kräver drivrutin 31.0.112.0 eller högre"
+
+
 msgid "Enabled on startup, overriding the preference."
 msgstr "Aktiverad vid uppstart, åsidosätter inställningen."
 
@@ -29000,11 +28972,6 @@ msgstr "Läs in fabriksinställningar {:s}"
 
 msgid "Color {:d}"
 msgstr "Färg {:d}"
-
-
-msgctxt "Operator"
-msgid "Interactive Mirror"
-msgstr "Interaktiv spegel"
 
 
 msgctxt "Operator"
@@ -29222,16 +29189,6 @@ msgstr "Gör lokal..."
 
 
 msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "Ta bort keyframes..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "Rensa keyframes..."
-
-
-msgctxt "Operator"
 msgid "Change Shape"
 msgstr "Ändra form"
 
@@ -29421,11 +29378,6 @@ msgstr "Stark"
 
 
 msgctxt "Operator"
-msgid "Flip"
-msgstr "Vänd"
-
-
-msgctxt "Operator"
 msgid "Rotate..."
 msgstr "Rotera..."
 
@@ -29468,10 +29420,6 @@ msgstr "Statistik"
 
 msgid "Color Opacity"
 msgstr "Färgopacitet"
-
-
-msgid "Seams"
-msgstr "Sömmar"
 
 
 msgctxt "Operator"
@@ -30386,6 +30334,10 @@ msgid "Unable to open blend <memory>"
 msgstr "Går inte att öppna blend <memory>"
 
 
+msgid "Blend file '%s' created by a Big Endian version of Blender, support for these files has been removed in Blender 5.0, use an older version of Blender to open and convert it."
+msgstr "Blend-filen '%s' skapades av en Big Endian-version av Blender, stöd för dessa filer kommer att tas bort i Blender 5.0. Använd en äldre version av Blender för att öppna och konvertera den."
+
+
 msgid "Unable to read '%s': %s"
 msgstr "Det går inte att läsa '%s': %s"
 
@@ -30494,10 +30446,6 @@ msgstr "B"
 
 msgid "'%s' is not editable"
 msgstr "'%s' är inte redigerbar"
-
-
-msgid "Button doesn't appear to have any property information attached (ptr.data = %p, prop = %p)"
-msgstr "Knappen verkar inte ha någon egenskapsinformation kopplad till sig (ptr.data = %p, prop = %p)"
 
 
 msgid "Missing bone name"
@@ -30665,6 +30613,10 @@ msgstr "Automatisk komplettering"
 
 msgid "R"
 msgstr "R"
+
+
+msgid "Generating StudioLight icon..."
+msgstr "Genererar StudioLight-ikon..."
 
 
 msgid "OS"
@@ -31066,6 +31018,10 @@ msgid "Stop animation playback"
 msgstr "Stoppa uppspelning av animering"
 
 
+msgid "Canceling..."
+msgstr "Avbryter..."
+
+
 msgid "Resize Region"
 msgstr "Ändra storlek på region"
 
@@ -31133,6 +31089,10 @@ msgstr "Kon"
 
 msgid "Outer"
 msgstr "Yttre"
+
+
+msgid "Seams"
+msgstr "Sömmar"
 
 
 msgid "Close"
@@ -31258,6 +31218,10 @@ msgid "The selection included %d object type(s) which do not support conversion 
 msgstr "Valet innehöll %d objekttyp(er) som inte stöder konvertering till ”%s”"
 
 
+msgid "Baking nodes..."
+msgstr "Bakar noder..."
+
+
 msgid "Add IK"
 msgstr "Lägg till IK"
 
@@ -31300,6 +31264,10 @@ msgstr "Det går inte att överföra läget, käll- och/eller målobjekten är i
 
 msgid "Apply Modifier"
 msgstr "Tillämpa modifierare"
+
+
+msgid "Simulating ocean..."
+msgstr "Simulerar hav..."
 
 
 msgid "%d new levels rebuilt"
@@ -31430,12 +31398,28 @@ msgid "Time:"
 msgstr "Tid:"
 
 
+msgid "Mem:%dM, Peak %dM"
+msgstr "Minne:%dM, Högsta %dM"
+
+
+msgid "Mem:%dM, Peak: %dM"
+msgstr "Minne:%dM, Högsta: %dM"
+
+
+msgid "Rendering sequence..."
+msgstr "Renderar sekvens..."
+
+
 msgid "Scene has no camera"
 msgstr "Scenen har ingen kamera"
 
 
 msgid "Write error: cannot save %s"
 msgstr "Skrivfel: kan inte spara %s"
+
+
+msgid "Generating icon preview..."
+msgstr "Genererar ikonförhandsvisning..."
 
 
 msgid "Replace this area"
@@ -31446,8 +31430,8 @@ msgid "Select Area"
 msgstr "Välj område"
 
 
-msgid "Full Screen Area"
-msgstr "Område för helskärm"
+msgid "Set {} as active"
+msgstr "Ställ in {} som aktiv"
 
 
 msgid "No fullscreen areas were found"
@@ -31724,6 +31708,10 @@ msgid "Asset Catalogs"
 msgstr "Tillgångskataloger"
 
 
+msgid "Listing directories..."
+msgstr "Listar kataloger..."
+
+
 msgid "Home"
 msgstr "Hem"
 
@@ -31849,10 +31837,6 @@ msgid "Select Layer"
 msgstr "Välj lager"
 
 
-msgid "Can't Load Image"
-msgstr "Kan inte läsa in bilden"
-
-
 msgid "%d × %d, "
 msgstr "%d × %d, "
 
@@ -31895,22 +31879,6 @@ msgstr "%d bild(er) kommer sparas i %s"
 
 msgid "Saved %s"
 msgstr "Sparade %s"
-
-
-msgid "Image can't be saved, use a different file format: \"%s\""
-msgstr "Bild kunde inte sparas, använd ett annat filformat: \"%s\""
-
-
-msgid "Multiple images can't be saved to an identical path: \"%s\""
-msgstr "Flera bilder kan inte sparas till en identisk sökväg: \"%s\""
-
-
-msgid "Image can't be saved, no valid file path: \"%s\""
-msgstr "Bild kunde inte sparas, ingen giltig sökväg: \"%s\""
-
-
-msgid "can't save image while rendering"
-msgstr "kan inte spara bild när rendering pågår"
 
 
 msgid "No images available"
@@ -32065,8 +32033,20 @@ msgid "Cannot insert group '%s' in '%s'"
 msgstr "Kunde inte infoga gruppen '%s' i '%s'"
 
 
+msgid "Value: Unknown (not evaluated)"
+msgstr "Värde: Okänt (inte evaluerat)"
+
+
+msgid "Values: None"
+msgstr "Värden: Inga"
+
+
 msgid "True"
 msgstr "Sant"
+
+
+msgid "Type: List"
+msgstr "Typ: Lista"
 
 
 msgid "Disconnect"
@@ -32475,10 +32455,6 @@ msgid "Opacity: %3f"
 msgstr "Opacitet: %3f"
 
 
-msgid " or Alt) Even Thickness {}"
-msgstr " eller Alt) Jämn tjocklek {}"
-
-
 msgid "ScaleX: %s"
 msgstr "SkalaX: %s"
 
@@ -32579,18 +32555,6 @@ msgid "Unable to create new object"
 msgstr "Det går inte att skapa ett nytt objekt"
 
 
-msgid "%s: Can't resolve path %s"
-msgstr "%s: Kan inte slå upp sökvägen %s"
-
-
-msgid "%s: Can't write to asset %s: %s"
-msgstr "%s: Kan inte skriva till tillgången %s: %s"
-
-
-msgid "Can't write to asset %s:  %s"
-msgstr "Kan inte skriva till tillgång %s:  %s"
-
-
 msgid "One or more objects used as prototypes in 'Instance on Points' nodes either do not have 'As Instance' enabled in their 'Object Info' nodes, or the prototype is the base geometry input itself. Both cases prevent valid point instancer export. If it's the former, enable 'As Instance' to avoid incorrect self-referencing."
 msgstr "Ett eller flera objekt som används som prototyper i noder av typen ”Instans på punkter” har antingen inte alternativet ”Som instans” aktiverat i sina ’Objektinfo’-noder, eller så är prototypen själva basgeometrin som matats in. Båda fallen förhindrar export av giltiga punktinstanser. Om det är det förstnämnda fallet, aktivera ”Som instans” för att undvika felaktiga självreferenser."
 
@@ -32599,8 +32563,8 @@ msgid "Unhandled Gprim type: %s (%s)"
 msgstr "Ohanterad Gprim-typ: %s (%s)"
 
 
-msgid "Instances number '%d' doesn't match transforms size '%d'"
-msgstr "Instansnummer ’%d’ matchar inte transformeringsstorlek ’%d’"
+msgid "OBJ Export: No information to write"
+msgstr "OBJ-export: Ingen information att skriva"
 
 
 msgid "Built-in fonts cannot be renamed"
@@ -32613,14 +32577,6 @@ msgstr "'%s' är av en typ som inte kan vara en tillgång"
 
 msgid "'%s' does not contain '%s' with prefix and suffix"
 msgstr "'%s' innehåller inte '%s' med prefix och suffix"
-
-
-msgid "'%s' doesn't have upper case alpha-numeric prefix"
-msgstr "'%s' har inte ett alfanumeriskt prefix med versaler"
-
-
-msgid "'%s' doesn't have an alpha-numeric suffix"
-msgstr "'%s' har inte ett alfanumeriskt suffix"
 
 
 msgid "%s: expected %s type, not %s"
@@ -33084,18 +33040,6 @@ msgid "Image 2"
 msgstr "Bild 2"
 
 
-msgid "Path:"
-msgstr "Bana:"
-
-
-msgid "Add Input"
-msgstr "Lägg till inmatning"
-
-
-msgid "Layer:"
-msgstr "Lager:"
-
-
 msgid "Balance"
 msgstr "Balans"
 
@@ -33219,10 +33163,6 @@ msgid "Invalid format: \"{}\""
 msgstr "Ogiltigt format: \"{}\""
 
 
-msgid "Type \"{}\" can't be formatted"
-msgstr "Typen \"{}\" kan inte formateras"
-
-
 msgid "Line Break"
 msgstr "Radbrytning"
 
@@ -33262,10 +33202,6 @@ msgstr "Summa"
 
 msgid "Bake to Disk"
 msgstr "Baka till disk"
-
-
-msgid "Can't bake in zone"
-msgstr "Kan inte baka i zonen"
 
 
 msgid "Baked Frame {}"
@@ -33380,6 +33316,10 @@ msgid "The subdivision level is too large"
 msgstr "Subdivisionsnivån är för stor"
 
 
+msgid "How the voxel size is specified"
+msgstr "Hur voxel-storleken anges"
+
+
 msgid "As Instance"
 msgstr "Som instans"
 
@@ -33400,8 +33340,8 @@ msgid "Iteration"
 msgstr "Iteration"
 
 
-msgid "Value not found: \"{}\""
-msgstr "Värdet hittades inte: \"{}\""
+msgid "Scale Mode"
+msgstr "Skalningsläge"
 
 
 msgid "Inverted"
@@ -33494,10 +33434,6 @@ msgstr "BSSRDF"
 
 msgid "Diameter"
 msgstr "Diameter"
-
-
-msgid "Scatter"
-msgstr "Sprid"
 
 
 msgid "Coordinate 1"
@@ -33788,11 +33724,6 @@ msgstr "%d × %s: %.4f ms, genomsnitt: %.8f ms"
 
 
 msgctxt "WindowManager"
-msgid "Your graphics card or driver has limited support. It may work, but with issues."
-msgstr "Ditt grafikkort eller din drivrutin har begränsat stöd. Det kan fungera, men med problem."
-
-
-msgctxt "WindowManager"
 msgid "Your graphics card is not supported"
 msgstr "Ditt grafikkort stöds inte"
 
@@ -33805,16 +33736,6 @@ msgstr "Ditt grafikkort eller din macOS-version stöds inte"
 msgctxt "WindowManager"
 msgid "Upgrading to the latest macOS version may improve Blender support"
 msgstr "Uppgradering till den senaste macOS-versionen kan förbättra stödet för Blender"
-
-
-msgctxt "WindowManager"
-msgid "Your graphics card or driver is not supported."
-msgstr "Ditt grafikkort eller din drivrutin stöds inte."
-
-
-msgctxt "WindowManager"
-msgid "The program will now close."
-msgstr "Programmet kommer nu att avslutas."
 
 
 msgctxt "Operator"

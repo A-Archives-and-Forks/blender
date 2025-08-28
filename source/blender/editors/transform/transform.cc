@@ -1101,7 +1101,7 @@ wmOperatorStatus transformEvent(TransInfo *t, wmOperator *op, const wmEvent *eve
       case TFM_MODAL_TRACKBALL:
       case TFM_MODAL_ROTATE_NORMALS:
       case TFM_MODAL_VERT_EDGE_SLIDE:
-        /* Only switch when. */
+        /* Only switch when supported. */
         if (!transform_mode_is_changeable(t->mode)) {
           break;
         }
@@ -1967,7 +1967,7 @@ bool initTransform(bContext *C, TransInfo *t, wmOperator *op, const wmEvent *eve
 
   /* Needed to translate tweak events to mouse buttons. */
   t->launch_event = event ? WM_userdef_event_type_from_keymap_type(event->type) : -1;
-  t->is_launch_event_drag = event ? (event->val == KM_CLICK_DRAG) : false;
+  t->is_launch_event_drag = event ? (event->val == KM_PRESS_DRAG) : false;
 
   unit_m3(t->spacemtx);
 

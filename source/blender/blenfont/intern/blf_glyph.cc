@@ -811,15 +811,10 @@ static FT_UInt blf_glyph_index_from_charcode(FontBLF **font, const uint charcode
     }
   }
 
-  /* Next look in the rest. Also check if we have a last-resort font. */
-  FontBLF *last_resort = nullptr;
+  /* Next look in the rest. */
   for (int i = 0; i < BLF_MAX_FONT; i++) {
     FontBLF *f = global_font[i];
     if (!f || f == *font || !(f->flags & BLF_DEFAULT)) {
-      continue;
-    }
-    if (f->flags & BLF_LAST_RESORT) {
-      last_resort = f;
       continue;
     }
     if (coverage_bit >= 0 && !blf_font_has_coverage_bit(f, coverage_bit)) {
@@ -834,15 +829,6 @@ static FT_UInt blf_glyph_index_from_charcode(FontBLF **font, const uint charcode
 #ifndef NDEBUG
   printf("Unicode character U+%04X not found in loaded fonts. \n", charcode);
 #endif
-
-  /* Not found in the stack, return from Last Resort if there is one. */
-  if (last_resort) {
-    glyph_index = blf_get_char_index(last_resort, charcode);
-    if (glyph_index) {
-      *font = last_resort;
-      return glyph_index;
-    }
-  }
 
   return 0;
 }
@@ -1370,6 +1356,11 @@ GlyphBLF *blf_glyph_ensure(FontBLF *font, GlyphCacheBLF *gc, const uint charcode
   FontBLF *font_with_glyph = font;
   FT_UInt glyph_index = blf_glyph_index_from_charcode(&font_with_glyph, charcode);
 
+  if (!glyph_index) {
+    /* 1 = id of ICON_CHAR_NOTDEF */
+    return blf_glyph_ensure_icon(gc, 1, false, nullptr);
+  }
+
   if (!blf_ensure_face(font_with_glyph)) {
     return nullptr;
   }
@@ -1474,20 +1465,18 @@ static void blf_texture_draw(const GlyphBLF *g,
                              const int x2,
                              const int y2)
 {
+  using namespace blender;
+  BLI_assert(size_t(g_batch.glyph_len) < ARRAY_SIZE(g_batch.glyph_data));
+  GlyphQuad &glyph_data = g_batch.glyph_data[g_batch.glyph_len++];
   /* One vertex per glyph, instancing expands it into a quad. */
-  copy_v4_fl4(static_cast<float *>(GPU_vertbuf_raw_step(&g_batch.pos_step)),
-              float(x1 + g_batch.ofs[0]),
-              float(y1 + g_batch.ofs[1]),
-              float(x2 + g_batch.ofs[0]),
-              float(y2 + g_batch.ofs[1]));
-  copy_v4_v4_uchar(static_cast<uchar *>(GPU_vertbuf_raw_step(&g_batch.col_step)), color);
-  copy_v2_v2_int(static_cast<int *>(GPU_vertbuf_raw_step(&g_batch.glyph_size_step)), g->dims);
-  *((int *)GPU_vertbuf_raw_step(&g_batch.offset_step)) = g->offset;
+  glyph_data.position = int4(
+      x1 + g_batch.ofs[0], y1 + g_batch.ofs[1], x2 + g_batch.ofs[0], y2 + g_batch.ofs[1]);
+  glyph_data.glyph_color = float4(UNPACK4(color)) / 255.0f;
+  glyph_data.glyph_size = int2(g->dims);
+  glyph_data.offset = g->offset;
   /* Glyph flags packs color channel count and shadow type. */
-  uint32_t flags = uint32_t(shadow) | (uint32_t(g->num_channels) << 4);
-  *((uint32_t *)GPU_vertbuf_raw_step(&g_batch.glyph_flags_step)) = flags;
+  glyph_data.flags = uint32_t(shadow) | (uint32_t(g->num_channels) << 4);
 
-  g_batch.glyph_len++;
   /* Flush cache if it's full. */
   if (g_batch.glyph_len == BLF_BATCH_DRAW_LEN_MAX) {
     blf_batch_draw();
@@ -1863,6 +1852,11 @@ static FT_GlyphSlot blf_glyphslot_ensure_outline(FontBLF *font, uint charcode, b
   FontBLF *font_with_glyph = font;
   FT_UInt glyph_index = use_fallback ? blf_glyph_index_from_charcode(&font_with_glyph, charcode) :
                                        blf_get_char_index(font_with_glyph, charcode);
+
+  if (!glyph_index) {
+    return nullptr;
+  }
+
   if (!blf_ensure_face(font_with_glyph)) {
     return nullptr;
   }
@@ -1883,16 +1877,22 @@ static FT_GlyphSlot blf_glyphslot_ensure_outline(FontBLF *font, uint charcode, b
   return glyph;
 }
 
-float blf_character_to_curves(
-    FontBLF *font, uint unicode, ListBase *nurbsbase, const float scale, bool use_fallback)
+bool blf_character_to_curves(FontBLF *font,
+                             uint unicode,
+                             ListBase *nurbsbase,
+                             const float scale,
+                             bool use_fallback,
+                             float *r_advance)
 {
   FT_GlyphSlot glyph = blf_glyphslot_ensure_outline(font, unicode, use_fallback);
   if (!glyph) {
-    return 0.0f;
+    *r_advance = 0.0f;
+    return false;
   }
 
   blf_glyph_to_curves(glyph->outline, nurbsbase, scale);
-  return float(glyph->advance.x) * scale;
+  *r_advance = float(glyph->advance.x) * scale;
+  return true;
 }
 
 /** \} */

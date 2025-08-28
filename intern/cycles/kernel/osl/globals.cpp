@@ -23,9 +23,12 @@ OSLThreadData::OSLThreadData(OSLGlobals *osl_globals, const int thread_index)
   memset((void *)&shader_globals, 0, sizeof(shader_globals));
   shader_globals.tracedata = &tracedata;
 
-  osl_thread_info = ss->create_thread_info();
-  /* Dummy texture thread info, we don't need it. */
-  context = ss->get_context(osl_thread_info, reinterpret_cast<OSL::TextureSystem::Perthread *>(1));
+  if (ss) {
+    osl_thread_info = ss->create_thread_info();
+    /* Dummy texture thread info, we don't need it. */
+    context = ss->get_context(osl_thread_info,
+                              reinterpret_cast<OSL::TextureSystem::Perthread *>(1));
+  }
 }
 
 OSLThreadData::~OSLThreadData()

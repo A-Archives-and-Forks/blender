@@ -308,7 +308,7 @@ static PyObject *C_Vector_Range(PyObject *cls, PyObject *args)
 PyDoc_STRVAR(
     /* Wrap. */
     C_Vector_Linspace_doc,
-    ".. classmethod:: Linspace(start, stop, size. /)\n"
+    ".. classmethod:: Linspace(start, stop, size, /)\n"
     "\n"
     "   Create a vector of the specified size which is filled with linearly spaced "
     "values between start and stop values.\n"
@@ -497,16 +497,9 @@ static PyObject *Vector_resize(VectorObject *self, PyObject *value)
 {
   int vec_num;
 
-  if (self->flag & BASE_MATH_FLAG_IS_WRAP) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize(): "
-                    "cannot resize wrapped data - only Python vectors");
-    return nullptr;
-  }
-  if (self->cb_user) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize(): "
-                    "cannot resize a vector that has an owner");
+  if (UNLIKELY(BaseMathObject_Prepare_ForResize(self, "Vector.resize()") == -1)) {
+    /* An exception has been raised. */
+
     return nullptr;
   }
 
@@ -585,16 +578,8 @@ PyDoc_STRVAR(
     "   Resize the vector to 2D  (x, y).\n");
 static PyObject *Vector_resize_2d(VectorObject *self)
 {
-  if (self->flag & BASE_MATH_FLAG_IS_WRAP) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_2d(): "
-                    "cannot resize wrapped data - only Python vectors");
-    return nullptr;
-  }
-  if (self->cb_user) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_2d(): "
-                    "cannot resize a vector that has an owner");
+  if (UNLIKELY(BaseMathObject_Prepare_ForResize(self, "Vector.resize_2d()") == -1)) {
+    /* An exception has been raised. */
     return nullptr;
   }
 
@@ -618,16 +603,8 @@ PyDoc_STRVAR(
     "   Resize the vector to 3D  (x, y, z).\n");
 static PyObject *Vector_resize_3d(VectorObject *self)
 {
-  if (self->flag & BASE_MATH_FLAG_IS_WRAP) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_3d(): "
-                    "cannot resize wrapped data - only Python vectors");
-    return nullptr;
-  }
-  if (self->cb_user) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_3d(): "
-                    "cannot resize a vector that has an owner");
+  if (UNLIKELY(BaseMathObject_Prepare_ForResize(self, "Vector.resize_3d()") == -1)) {
+    /* An exception has been raised. */
     return nullptr;
   }
 
@@ -655,16 +632,8 @@ PyDoc_STRVAR(
     "   Resize the vector to 4D (x, y, z, w).\n");
 static PyObject *Vector_resize_4d(VectorObject *self)
 {
-  if (self->flag & BASE_MATH_FLAG_IS_WRAP) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_4d(): "
-                    "cannot resize wrapped data - only Python vectors");
-    return nullptr;
-  }
-  if (self->cb_user) {
-    PyErr_SetString(PyExc_TypeError,
-                    "Vector.resize_4d(): "
-                    "cannot resize a vector that has an owner");
+  if (UNLIKELY(BaseMathObject_Prepare_ForResize(self, "Vector.resize_4d()") == -1)) {
+    /* An exception has been raised. */
     return nullptr;
   }
 
@@ -971,7 +940,7 @@ static PyObject *Vector_orthogonal(VectorObject *self)
 PyDoc_STRVAR(
     /* Wrap. */
     Vector_reflect_doc,
-    ".. method:: reflect(mirror. /)\n"
+    ".. method:: reflect(mirror, /)\n"
     "\n"
     "   Return the reflection vector from the *mirror* argument.\n"
     "\n"
@@ -1624,6 +1593,59 @@ static PyObject *Vector_str(VectorObject *self)
   return mathutils_dynstr_to_py(ds); /* frees ds */
 }
 #endif
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Vector Type: Buffer Protocol
+ * \{ */
+
+static int Vector_getbuffer(PyObject *obj, Py_buffer *view, int flags)
+{
+  VectorObject *self = (VectorObject *)obj;
+  if (UNLIKELY(BaseMath_Prepare_ForBufferAccess(self, view, flags) == -1)) {
+    return -1;
+  }
+  if (UNLIKELY(BaseMath_ReadCallback(self) == -1)) {
+    return -1;
+  }
+
+  memset(view, 0, sizeof(*view));
+
+  view->obj = (PyObject *)self;
+  view->buf = (void *)self->vec;
+  view->len = Py_ssize_t(self->vec_num * sizeof(float));
+  view->itemsize = sizeof(float);
+  view->ndim = 1;
+  if ((flags & PyBUF_WRITABLE) == 0) {
+    view->readonly = 1;
+  }
+  if (flags & PyBUF_FORMAT) {
+    view->format = (char *)"f";
+  }
+
+  self->flag |= BASE_MATH_FLAG_HAS_BUFFER_VIEW;
+
+  Py_INCREF(self);
+  return 0;
+}
+
+static void Vector_releasebuffer(PyObject * /*exporter*/, Py_buffer *view)
+{
+  VectorObject *self = (VectorObject *)view->obj;
+  self->flag &= ~BASE_MATH_FLAG_HAS_BUFFER_VIEW;
+
+  if (view->readonly == 0) {
+    if (UNLIKELY(BaseMath_WriteCallback(self) == -1)) {
+      PyErr_Print();
+    }
+  }
+}
+
+static PyBufferProcs Vector_as_buffer = {
+    (getbufferproc)Vector_getbuffer,
+    (releasebufferproc)Vector_releasebuffer,
+};
 
 /** \} */
 
@@ -2528,25 +2550,25 @@ PyDoc_STRVAR(
     Vector_axis_x_doc,
     "Vector X axis.\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 PyDoc_STRVAR(
     /* Wrap. */
     Vector_axis_y_doc,
     "Vector Y axis.\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 PyDoc_STRVAR(
     /* Wrap. */
     Vector_axis_z_doc,
     "Vector Z axis (3D Vectors only).\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 PyDoc_STRVAR(
     /* Wrap. */
     Vector_axis_w_doc,
     "Vector W axis (4D Vectors only).\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 
 static PyObject *Vector_axis_get(VectorObject *self, void *type)
 {
@@ -2565,7 +2587,7 @@ PyDoc_STRVAR(
     Vector_length_doc,
     "Vector Length.\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 static PyObject *Vector_length_get(VectorObject *self, void * /*closure*/)
 {
   if (BaseMath_ReadCallback(self) == -1) {
@@ -2625,7 +2647,7 @@ PyDoc_STRVAR(
     Vector_length_squared_doc,
     "Vector length squared (v.dot(v)).\n"
     "\n"
-    ":type: float");
+    ":type: float\n");
 static PyObject *Vector_length_squared_get(VectorObject *self, void * /*closure*/)
 {
   if (BaseMath_ReadCallback(self) == -1) {
@@ -2640,7 +2662,6 @@ PyDoc_STRVAR(
     /* Wrap. */
     Vector_swizzle_doc,
     ":type: :class:`Vector`");
-
 /**
  * Python script used to make swizzle array:
  *
@@ -3443,7 +3464,7 @@ PyTypeObject vector_Type = {
     /*tp_str*/ (reprfunc)Vector_str,
     /*tp_getattro*/ nullptr,
     /*tp_setattro*/ nullptr,
-    /*tp_as_buffer*/ nullptr,
+    /*tp_as_buffer*/ &Vector_as_buffer,
     /*tp_flags*/ Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
     /*tp_doc*/ vector_doc,
     /*tp_traverse*/ (traverseproc)BaseMathObject_traverse,

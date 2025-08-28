@@ -87,8 +87,9 @@ CCL_NAMESPACE_BEGIN
 
 /* BVH/sampling kernel features. */
 #define KERNEL_FEATURE_POINTCLOUD (1U << 12U)
-#define KERNEL_FEATURE_HAIR (1U << 13U)
+#define KERNEL_FEATURE_HAIR_RIBBON (1U << 13U)
 #define KERNEL_FEATURE_HAIR_THICK (1U << 14U)
+#define KERNEL_FEATURE_HAIR (KERNEL_FEATURE_HAIR_RIBBON | KERNEL_FEATURE_HAIR_THICK)
 #define KERNEL_FEATURE_OBJECT_MOTION (1U << 15U)
 
 /* Denotes whether baking functionality is needed. */
@@ -158,19 +159,10 @@ CCL_NAMESPACE_BEGIN
    KERNEL_FEATURE_NODE_BUMP_STATE | KERNEL_FEATURE_NODE_PORTAL)
 #define KERNEL_FEATURE_NODE_MASK_BUMP KERNEL_FEATURE_NODE_MASK_DISPLACEMENT
 
-/* Must be constexpr on the CPU to avoid compile errors because the state types
- * are different depending on the main, shadow or null path. For GPU we don't have
- * C++17 everywhere so need to check it. */
-#if __cplusplus < 201703L
-#  define IF_KERNEL_FEATURE(feature) if ((node_feature_mask & (KERNEL_FEATURE_##feature)) != 0U)
-#  define IF_KERNEL_NODES_FEATURE(feature) \
-    if ((node_feature_mask & (KERNEL_FEATURE_NODE_##feature)) != 0U)
-#else
-#  define IF_KERNEL_FEATURE(feature) \
-    if constexpr ((node_feature_mask & (KERNEL_FEATURE_##feature)) != 0U)
-#  define IF_KERNEL_NODES_FEATURE(feature) \
-    if constexpr ((node_feature_mask & (KERNEL_FEATURE_NODE_##feature)) != 0U)
-#endif
+#define IF_KERNEL_FEATURE(feature) \
+  if constexpr ((node_feature_mask & (KERNEL_FEATURE_##feature)) != 0U)
+#define IF_KERNEL_NODES_FEATURE(feature) \
+  if constexpr ((node_feature_mask & (KERNEL_FEATURE_NODE_##feature)) != 0U)
 
 /* Kernel features */
 #define __AO__
@@ -299,9 +291,9 @@ enum PathTraceDimension {
 
   /* Volume */
   PRNG_VOLUME_PHASE = 3,
-  PRNG_VOLUME_COLOR_CHANNEL = 4,
+  PRNG_VOLUME_RESERVOIR = 4,
   PRNG_VOLUME_SCATTER_DISTANCE = 5,
-  PRNG_VOLUME_OFFSET = 6,
+  PRNG_VOLUME_EXPANSION_ORDER = 6,
   PRNG_VOLUME_SHADE_OFFSET = 7,
   PRNG_VOLUME_PHASE_GUIDING_DISTANCE = 8,
   PRNG_VOLUME_PHASE_GUIDING_EQUIANGULAR = 9,
@@ -316,6 +308,9 @@ enum PathTraceDimension {
   /* Subsurface disk bounce */
   PRNG_SUBSURFACE_DISK = 0,
   PRNG_SUBSURFACE_DISK_RESAMPLE = 1,
+
+  /* Volume density baking. */
+  PRNG_BAKE_VOLUME_DENSITY_EVAL = 0,
 
   /* High enough number so we don't need to change it when adding new dimensions,
    * low enough so there is no uint16_t overflow with many bounces. */
@@ -442,6 +437,13 @@ enum PathRayFlag : uint32_t {
 
   /* Path is evaluating background for an approximate shadow catcher with non-transparent film. */
   PATH_RAY_SHADOW_CATCHER_BACKGROUND = (1U << 31U),
+
+  /* TODO(weizhen): should add another flag to record only the primary scatter, but then we need to
+     change the flag to 64 bits or split path_flags in two. Right now we also write volume scatter
+     if the primary hit is surface, but that seems fine. */
+  /* Volume scattering probability guiding. This flag is added to path where the primary ray passed
+     through the volume without scattering. */
+  PATH_RAY_VOLUME_PRIMARY_TRANSMIT = (1U << 23U),
 };
 
 // 8bit enum, just in case we need to move more variables in it
@@ -511,6 +513,8 @@ enum PassType {
   PASS_VOLUME,
   PASS_VOLUME_DIRECT,
   PASS_VOLUME_INDIRECT,
+  PASS_VOLUME_SCATTER,
+  PASS_VOLUME_TRANSMIT,
   PASS_CATEGORY_LIGHT_END = 31,
 
   /* Data passes */
@@ -560,6 +564,10 @@ enum PassType {
   PASS_GUIDING_PROBABILITY,
   /* The avg. roughness at the first bounce. */
   PASS_GUIDING_AVG_ROUGHNESS,
+  /* The majorant optical depth along the ray, for volume scattering probability guiding.
+   * When reading this pass, it is converted to majorant transmittance */
+  PASS_VOLUME_MAJORANT,
+  PASS_VOLUME_MAJORANT_SAMPLE_COUNT,
   PASS_CATEGORY_DATA_END = 63,
 
   PASS_BAKE_PRIMITIVE,
@@ -817,6 +825,7 @@ enum PrimitiveType {
   PRIMITIVE_TRIANGLE = (1 << 0),
   PRIMITIVE_CURVE_THICK = (1 << 1),
   PRIMITIVE_CURVE_RIBBON = (1 << 2),
+  PRIMITIVE_CURVE_THICK_LINEAR = PRIMITIVE_CURVE_THICK | PRIMITIVE_CURVE_RIBBON,
   PRIMITIVE_POINT = (1 << 3),
   PRIMITIVE_VOLUME = (1 << 4),
   PRIMITIVE_LAMP = (1 << 5),
@@ -825,6 +834,7 @@ enum PrimitiveType {
   PRIMITIVE_MOTION_TRIANGLE = (PRIMITIVE_TRIANGLE | PRIMITIVE_MOTION),
   PRIMITIVE_MOTION_CURVE_THICK = (PRIMITIVE_CURVE_THICK | PRIMITIVE_MOTION),
   PRIMITIVE_MOTION_CURVE_RIBBON = (PRIMITIVE_CURVE_RIBBON | PRIMITIVE_MOTION),
+  PRIMITIVE_MOTION_CURVE_THICK_LINEAR = (PRIMITIVE_CURVE_THICK_LINEAR | PRIMITIVE_MOTION),
   PRIMITIVE_MOTION_POINT = (PRIMITIVE_POINT | PRIMITIVE_MOTION),
 
   PRIMITIVE_CURVE = (PRIMITIVE_CURVE_THICK | PRIMITIVE_CURVE_RIBBON),
@@ -848,6 +858,7 @@ enum PrimitiveType {
 enum CurveShapeType {
   CURVE_RIBBON = 0,
   CURVE_THICK = 1,
+  CURVE_THICK_LINEAR = 2,
 
   CURVE_NUM_SHAPE_TYPES,
 };
@@ -882,6 +893,8 @@ enum AttributeStandard {
   ATTR_STD_UV,
   ATTR_STD_UV_TANGENT,
   ATTR_STD_UV_TANGENT_SIGN,
+  ATTR_STD_UV_TANGENT_UNDISPLACED,
+  ATTR_STD_UV_TANGENT_SIGN_UNDISPLACED,
   ATTR_STD_VERTEX_COLOR,
   ATTR_STD_GENERATED,
   ATTR_STD_GENERATED_TRANSFORM,
@@ -960,6 +973,8 @@ struct AttributeMap {
 #endif
 
 #define MAX_VOLUME_CLOSURE 8  // NOLINT
+/* Set the maximal resolution to be 128 (2^7) to limit traversing overhead. */
+#define VOLUME_OCTREE_MAX_DEPTH 7
 
 /* This struct is the base class for all closures. The common members are
  * duplicated in all derived classes since we don't have C++ in the kernel
@@ -1020,7 +1035,7 @@ enum ShaderDataFlag {
   SD_HOLDOUT = (1 << 5),
   /* Shader has non-zero volume extinction. */
   SD_EXTINCTION = (1 << 6),
-  /* Shader has have volume phase (scatter) closure. */
+  /* Shader has a volume phase (scatter) closure. */
   SD_SCATTER = (1 << 7),
   /* Shader is being evaluated in a volume. */
   SD_IS_VOLUME_SHADER_EVAL = (1 << 8),
@@ -1039,6 +1054,8 @@ enum ShaderDataFlag {
 
   /* Shader flags. */
 
+  /* If Light Path Node is present in the shader graph. */
+  SD_HAS_LIGHT_PATH_NODE = (1 << 13),
   /* Apply a correction term to smooth illumination on grazing angles when using bump mapping. */
   SD_USE_BUMP_MAP_CORRECTION = (1 << 15),
   /* Use front side for direct light sampling. */
@@ -1692,6 +1709,27 @@ struct KernelLightTreeNode {
 };
 static_assert_align(KernelLightTreeNode, 16);
 
+struct KernelOctreeRoot {
+  packed_float3 scale;
+  int id;
+  packed_float3 translation;
+  int shader;
+};
+
+struct KernelOctreeNode {
+  /* Index of the parent node in device vector `volume_tree_nodes`. */
+  int parent;
+
+  /* Index of the first child node in device vector `volume_tree_nodes`. All children of the same
+   * node are stored in contiguous memory. */
+  int first_child;
+
+  /* Minimal and maximal volume density inside the node. */
+  /* TODO(weizhen): we can make sigma Spectral for better accuracy. Since only root and leaf nodes
+   * need sigma, we can introduce `KernelOctreeInnerNode` to reduce the size of the struct. */
+  Extrema<float> sigma;
+};
+
 struct KernelLightTreeEmitter {
   /* Bounding cone. */
   float theta_o;
@@ -1852,15 +1890,18 @@ enum DeviceKernel : int {
   DEVICE_KERNEL_SHADER_EVAL_DISPLACE,
   DEVICE_KERNEL_SHADER_EVAL_BACKGROUND,
   DEVICE_KERNEL_SHADER_EVAL_CURVE_SHADOW_TRANSPARENCY,
+  DEVICE_KERNEL_SHADER_EVAL_VOLUME_DENSITY,
 
 #define DECLARE_FILM_CONVERT_KERNEL(variant) \
   DEVICE_KERNEL_FILM_CONVERT_##variant, DEVICE_KERNEL_FILM_CONVERT_##variant##_HALF_RGBA
 
   DECLARE_FILM_CONVERT_KERNEL(DEPTH),
   DECLARE_FILM_CONVERT_KERNEL(MIST),
+  DECLARE_FILM_CONVERT_KERNEL(VOLUME_MAJORANT),
   DECLARE_FILM_CONVERT_KERNEL(SAMPLE_COUNT),
   DECLARE_FILM_CONVERT_KERNEL(FLOAT),
   DECLARE_FILM_CONVERT_KERNEL(LIGHT_PATH),
+  DECLARE_FILM_CONVERT_KERNEL(RGBE),
   DECLARE_FILM_CONVERT_KERNEL(FLOAT3),
   DECLARE_FILM_CONVERT_KERNEL(MOTION),
   DECLARE_FILM_CONVERT_KERNEL(CRYPTOMATTE),
@@ -1879,6 +1920,9 @@ enum DeviceKernel : int {
   DEVICE_KERNEL_FILTER_GUIDING_SET_FAKE_ALBEDO,
   DEVICE_KERNEL_FILTER_COLOR_PREPROCESS,
   DEVICE_KERNEL_FILTER_COLOR_POSTPROCESS,
+
+  DEVICE_KERNEL_VOLUME_GUIDING_FILTER_X,
+  DEVICE_KERNEL_VOLUME_GUIDING_FILTER_Y,
 
   DEVICE_KERNEL_CRYPTOMATTE_POSTPROCESS,
 

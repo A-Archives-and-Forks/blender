@@ -229,7 +229,7 @@ class LazyFunctionForIndexSwitchNode : public LazyFunction {
     const eNodeSocketDatatype data_type = eNodeSocketDatatype(storage.data_type);
     const bNodeSocket &index_socket = node.input_socket(0);
     const bNodeSocket &output_socket = node.output_socket(0);
-    const CPPType &cpp_type = *output_socket.typeinfo->geometry_nodes_cpp_type;
+    const CPPType &cpp_type = CPPType::get<SocketValueVariant>();
 
     debug_name_ = node.name;
     can_be_field_ = socket_type_supports_fields(data_type);
@@ -334,11 +334,6 @@ static void node_rna(StructRNA *srna)
         *r_free = true;
         return enum_items_filter(rna_enum_node_socket_data_type_items,
                                  [](const EnumPropertyItem &item) -> bool {
-                                   if (!U.experimental.use_bundle_and_closure_nodes) {
-                                     if (ELEM(item.value, SOCK_BUNDLE, SOCK_CLOSURE)) {
-                                       return false;
-                                     }
-                                   }
                                    return ELEM(item.value,
                                                SOCK_FLOAT,
                                                SOCK_INT,
@@ -375,10 +370,10 @@ static void node_copy_storage(bNodeTree * /*dst_tree*/, bNode *dst_node, const b
   socket_items::copy_array<IndexSwitchItemsAccessor>(*src_node, *dst_node);
 }
 
-static bool node_insert_link(bNodeTree *ntree, bNode *node, bNodeLink *link)
+static bool node_insert_link(bke::NodeInsertLinkParams &params)
 {
   return socket_items::try_add_item_via_any_extend_socket<IndexSwitchItemsAccessor>(
-      *ntree, *node, *node, *link);
+      params.ntree, params.node, params.node, params.link);
 }
 
 static void node_blend_write(const bNodeTree & /*tree*/, const bNode &node, BlendWriter &writer)

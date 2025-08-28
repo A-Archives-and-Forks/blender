@@ -281,8 +281,7 @@ void Film::init(const int2 &extent, const rcti *output_rect)
     }
   }
 
-  this->depth = GPU_clip_control_support() ? DepthState{0.0f, DRW_STATE_DEPTH_GREATER_EQUAL} :
-                                             DepthState{1.0f, DRW_STATE_DEPTH_LESS_EQUAL};
+  this->depth = DepthState{0.0f, DRW_STATE_DEPTH_GREATER_EQUAL};
 
   /* Compute the passes needed by the viewport compositor. */
   Set<std::string> passes_used_by_viewport_compositor;
@@ -550,7 +549,7 @@ void Film::sync()
 
   /* TODO(fclem): Shader variation for panoramic & scaled resolution. */
 
-  GPUShader *sh = inst_.shaders.static_shader_get(shader);
+  gpu::Shader *sh = inst_.shaders.static_shader_get(shader);
   accumulate_ps_.init();
   init_pass(accumulate_ps_, sh);
   /* Sync with rendering passes. */
@@ -586,7 +585,7 @@ void Film::sync()
   }
 }
 
-void Film::init_pass(PassSimple &pass, GPUShader *sh)
+void Film::init_pass(PassSimple &pass, gpu::Shader *sh)
 {
   GPUSamplerState filter = {GPU_SAMPLER_FILTERING_LINEAR};
   RenderBuffers &rbuffers = inst_.render_buffers;

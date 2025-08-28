@@ -67,13 +67,10 @@ void RE_engines_exit()
 {
   RenderEngineType *type, *next;
 
-  if (DRW_gpu_context_try_enable()) {
-    /* Clean resources if the DRW context exists.
-     * We need a context bound even when dealing with non context dependent GPU resources,
-     * since GL functions may be null otherwise (See #141233). */
+  if (WM_gpu_is_initialized()) {
+    /* Clean resources if the DRW context exists. */
     DRW_engines_free();
     DRW_module_exit();
-    DRW_gpu_context_disable();
   }
 
   for (type = static_cast<RenderEngineType *>(R_engines.first); type; type = next) {
@@ -534,8 +531,8 @@ void RE_engine_update_memory_stats(RenderEngine *engine, float mem_used, float m
   Render *re = engine->re;
 
   if (re) {
-    re->i.mem_used = (int)ceilf(mem_used);
-    re->i.mem_peak = (int)ceilf(mem_peak);
+    re->i.mem_used = int(ceilf(mem_used));
+    re->i.mem_peak = int(ceilf(mem_peak));
   }
 }
 
@@ -1321,7 +1318,7 @@ void RE_engine_tile_highlight_clear_all(RenderEngine *engine)
 
 bool RE_engine_gpu_context_create(RenderEngine *engine)
 {
-  /* If the there already is a draw manager render context available, reuse it. */
+  /* If there already is a draw manager render context available, reuse it. */
   engine->use_drw_render_context = (engine->re && RE_system_gpu_context_get(engine->re));
   if (engine->use_drw_render_context) {
     return true;

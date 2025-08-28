@@ -521,7 +521,7 @@ static bool fluid_modifier_init(
     copy_v3_v3_int(fds->res_max, res);
 
     /* Set time, frame length = 0.1 is at 25fps. */
-    fds->frame_length = DT_DEFAULT * (25.0f / FPS) * fds->time_scale;
+    fds->frame_length = DT_DEFAULT * (25.0f / scene->frames_per_second()) * fds->time_scale;
     /* Initially dt is equal to frame length (dt can change with adaptive-time stepping though). */
     fds->dt = fds->frame_length;
     fds->time_per_frame = 0;
@@ -1259,8 +1259,13 @@ static void compute_obstaclesemission(Scene *scene,
          * BLI_mutex_lock() called in manta_step(), so safe to update subframe here
          * TODO(sebbas): Using BKE_scene_ctime_get(scene) instead of new DEG_get_ctime(depsgraph)
          * as subframes don't work with the latter yet. */
-        BKE_object_modifier_update_subframe(
-            depsgraph, scene, effecobj, true, 5, BKE_scene_ctime_get(scene), eModifierType_Fluid);
+        BKE_object_modifier_update_subframe(depsgraph,
+                                            scene,
+                                            effecobj,
+                                            true,
+                                            OBJECT_MODIFIER_UPDATE_SUBFRAME_RECURSION_DEFAULT,
+                                            BKE_scene_ctime_get(scene),
+                                            eModifierType_Fluid);
 
         if (subframes) {
           obstacles_from_mesh(effecobj, fds, fes, &bb_temp, subframe_dt);
@@ -1794,7 +1799,7 @@ static void sample_mesh(FluidFlowSettings *ffs,
                         const blender::Span<blender::float3> vert_normals,
                         const int *corner_verts,
                         const blender::int3 *corner_tris,
-                        blender::Span<blender::float2> mloopuv,
+                        blender::Span<blender::float2> uv_map,
                         float *influence_map,
                         float *velocity_map,
                         int index,
@@ -1915,11 +1920,11 @@ static void sample_mesh(FluidFlowSettings *ffs,
           tex_co[2] = ((z - flow_center[2]) / base_res[2] - ffs->texture_offset) /
                       ffs->texture_size;
         }
-        else if (!mloopuv.is_empty()) {
+        else if (!uv_map.is_empty()) {
           const float *uv[3];
-          uv[0] = mloopuv[corner_tris[tri_i][0]];
-          uv[1] = mloopuv[corner_tris[tri_i][1]];
-          uv[2] = mloopuv[corner_tris[tri_i][2]];
+          uv[0] = uv_map[corner_tris[tri_i][0]];
+          uv[1] = uv_map[corner_tris[tri_i][1]];
+          uv[2] = uv_map[corner_tris[tri_i][2]];
 
           interp_v2_v2v2v2(tex_co, UNPACK3(uv), weights);
 
@@ -1992,7 +1997,7 @@ struct EmitFromDMData {
   blender::Span<blender::float3> vert_normals;
   blender::Span<int> corner_verts;
   blender::Span<blender::int3> corner_tris;
-  blender::Span<blender::float2> mloopuv;
+  blender::Span<blender::float2> uv_map;
   const MDeformVert *dvert;
   int defgrp_index;
 
@@ -2026,7 +2031,7 @@ static void emit_from_mesh_task_cb(void *__restrict userdata,
                     data->vert_normals,
                     data->corner_verts.data(),
                     data->corner_tris.data(),
-                    data->mloopuv,
+                    data->uv_map,
                     bb->influence,
                     bb->velocity,
                     index,
@@ -2146,7 +2151,7 @@ static void emit_from_mesh(
       data.vert_normals = mesh->vert_normals();
       data.corner_verts = corner_verts;
       data.corner_tris = corner_tris;
-      data.mloopuv = uv_map;
+      data.uv_map = uv_map;
       data.dvert = dvert;
       data.defgrp_index = defgrp_index;
       data.tree = &tree_data;
@@ -2734,8 +2739,13 @@ static void compute_flowsemission(Scene *scene,
          * BLI_mutex_lock() called in manta_step(), so safe to update subframe here
          * TODO(sebbas): Using BKE_scene_ctime_get(scene) instead of new DEG_get_ctime(depsgraph)
          * as subframes don't work with the latter yet. */
-        BKE_object_modifier_update_subframe(
-            depsgraph, scene, flowobj, true, 5, BKE_scene_ctime_get(scene), eModifierType_Fluid);
+        BKE_object_modifier_update_subframe(depsgraph,
+                                            scene,
+                                            flowobj,
+                                            true,
+                                            OBJECT_MODIFIER_UPDATE_SUBFRAME_RECURSION_DEFAULT,
+                                            BKE_scene_ctime_get(scene),
+                                            eModifierType_Fluid);
 
         /* Emission from particles. */
         if (ffs->source == FLUID_FLOW_SOURCE_PARTICLES) {
@@ -3244,7 +3254,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   bool use_speedvectors = fds->flags & FLUID_DOMAIN_USE_SPEED_VECTORS;
   bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
   SpanAttributeWriter<float3> velocities;
-  float time_mult = fds->dx / (DT_DEFAULT * (25.0f / FPS));
+  float time_mult = fds->dx / (DT_DEFAULT * (25.0f / scene->frames_per_second()));
 
   if (use_speedvectors) {
     velocities = attributes.lookup_or_add_for_write_only_span<float3>("velocity",
@@ -3547,7 +3557,7 @@ static void manta_guiding(
     Depsgraph *depsgraph, Scene *scene, Object *ob, FluidModifierData *fmd, int frame)
 {
   FluidDomainSettings *fds = fmd->domain;
-  float dt = DT_DEFAULT * (25.0f / FPS) * fds->time_scale;
+  float dt = DT_DEFAULT * (25.0f / scene->frames_per_second()) * fds->time_scale;
 
   std::scoped_lock lock(object_update_lock);
 
@@ -3718,7 +3728,7 @@ static void fluid_modifier_processDomain(FluidModifierData *fmd,
   copy_v3_v3_int(o_shift, fds->shift);
 
   /* Ensure that time parameters are initialized correctly before every step. */
-  fds->frame_length = DT_DEFAULT * (25.0f / FPS) * fds->time_scale;
+  fds->frame_length = DT_DEFAULT * (25.0f / scene->frames_per_second()) * fds->time_scale;
   fds->dt = fds->frame_length;
   fds->time_per_frame = 0;
 
@@ -5009,7 +5019,7 @@ void BKE_fluid_modifier_copy(const FluidModifierData *fmd, FluidModifierData *tf
     FluidFlowSettings *ffs = fmd->flow;
 
     /* NOTE: This is dangerous, as it will generate invalid data in case we are copying between
-     * different objects. Extra external code has to be called then to ensure proper remapping of
+     * different objects. Extra external code has to be called to ensure proper remapping of
      * that pointer. See e.g. `BKE_object_copy_particlesystems` or `BKE_object_copy_modifier`. */
     tffs->psys = ffs->psys;
     tffs->noise_texture = ffs->noise_texture;

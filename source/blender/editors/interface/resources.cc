@@ -42,6 +42,10 @@ static bThemeState g_theme_state = {
     RGN_TYPE_WINDOW,
 };
 
+/* -------------------------------------------------------------------- */
+/** \name Init/Exit
+ * \{ */
+
 void ui_resources_init()
 {
   UI_icons_init();
@@ -52,9 +56,11 @@ void ui_resources_free()
   UI_icons_free();
 }
 
-/* ******************************************************** */
-/*    THEMES */
-/* ******************************************************** */
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Themes
+ * \{ */
 
 const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
 {
@@ -325,10 +331,10 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           cp = ts->time_scrub_background;
           break;
         case TH_TIME_MARKER_LINE:
-          cp = ts->time_marker_line;
+          cp = btheme->common.anim.time_marker;
           break;
         case TH_TIME_MARKER_LINE_SELECTED:
-          cp = ts->time_marker_line_selected;
+          cp = btheme->common.anim.time_marker_selected;
           break;
         case TH_VIEW_OVERLAY:
           cp = ts->view_overlay;
@@ -361,10 +367,10 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           cp = ts->active;
           break;
         case TH_GROUP:
-          cp = ts->group;
+          cp = btheme->common.anim.channel_group;
           break;
         case TH_GROUP_ACTIVE:
-          cp = ts->group_active;
+          cp = btheme->common.anim.channel_group_active;
           break;
         case TH_TRANSFORM:
           cp = ts->transform;
@@ -405,23 +411,20 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
         case TH_EDGE_MODE_SELECT:
           cp = ts->edge_mode_select;
           break;
-        case TH_EDGE_SEAM:
-          cp = ts->edge_seam;
-          break;
-        case TH_EDGE_SHARP:
-          cp = ts->edge_sharp;
+        case TH_EDGE_BEVEL:
+          cp = btheme->space_view3d.edge_bevel;
           break;
         case TH_EDGE_CREASE:
-          cp = ts->edge_crease;
+          cp = btheme->space_view3d.edge_crease;
           break;
-        case TH_EDGE_BEVEL:
-          cp = ts->edge_bevel;
+        case TH_EDGE_SEAM:
+          cp = btheme->space_view3d.edge_seam;
+          break;
+        case TH_EDGE_SHARP:
+          cp = btheme->space_view3d.edge_sharp;
           break;
         case TH_EDITMESH_ACTIVE:
           cp = ts->editmesh_active;
-          break;
-        case TH_EDGE_FACESEL:
-          cp = ts->edge_facesel;
           break;
         case TH_FACE:
           cp = ts->face;
@@ -529,7 +532,7 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           cp = ts->keyborder_select;
           break;
         case TH_CFRAME:
-          cp = ts->cframe;
+          cp = btheme->common.anim.playhead;
           break;
         case TH_FRAME_BEFORE:
           cp = ts->before_current_frame;
@@ -543,6 +546,7 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
         case TH_TIME_GP_KEYFRAME:
           cp = ts->time_gp_keyframe;
           break;
+
         case TH_NURB_ULINE:
           cp = ts->nurb_uline;
           break;
@@ -558,39 +562,38 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
         case TH_ACTIVE_SPLINE:
           cp = ts->act_spline;
           break;
-        case TH_ACTIVE_VERT:
-          cp = ts->lastsel_point;
-          break;
+
         case TH_HANDLE_FREE:
-          cp = ts->handle_free;
-          break;
-        case TH_HANDLE_AUTO:
-          cp = ts->handle_auto;
-          break;
-        case TH_HANDLE_AUTOCLAMP:
-          cp = ts->handle_auto_clamped;
-          break;
-        case TH_HANDLE_VECT:
-          cp = ts->handle_vect;
-          break;
-        case TH_HANDLE_ALIGN:
-          cp = ts->handle_align;
+          cp = btheme->common.curves.handle_free;
           break;
         case TH_HANDLE_SEL_FREE:
-          cp = ts->handle_sel_free;
+          cp = btheme->common.curves.handle_sel_free;
+          break;
+        case TH_HANDLE_AUTO:
+          cp = btheme->common.curves.handle_auto;
           break;
         case TH_HANDLE_SEL_AUTO:
-          cp = ts->handle_sel_auto;
+          cp = btheme->common.curves.handle_sel_auto;
           break;
-        case TH_HANDLE_SEL_AUTOCLAMP:
-          cp = ts->handle_sel_auto_clamped;
+        case TH_HANDLE_VECT:
+          cp = btheme->common.curves.handle_vect;
           break;
         case TH_HANDLE_SEL_VECT:
-          cp = ts->handle_sel_vect;
+          cp = btheme->common.curves.handle_sel_vect;
+          break;
+        case TH_HANDLE_ALIGN:
+          cp = btheme->common.curves.handle_align;
           break;
         case TH_HANDLE_SEL_ALIGN:
-          cp = ts->handle_sel_align;
+          cp = btheme->common.curves.handle_sel_align;
           break;
+        case TH_HANDLE_AUTOCLAMP:
+          cp = btheme->common.curves.handle_auto_clamped;
+          break;
+        case TH_HANDLE_SEL_AUTOCLAMP:
+          cp = btheme->common.curves.handle_sel_auto_clamped;
+          break;
+
         case TH_FREESTYLE_EDGE_MARK:
           cp = ts->freestyle_edge_mark;
           break;
@@ -647,14 +650,8 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
         case TH_NODE_TEXTURE:
           cp = ts->nodeclass_texture;
           break;
-        case TH_NODE_PATTERN:
-          cp = ts->nodeclass_pattern;
-          break;
         case TH_NODE_SCRIPT:
           cp = ts->nodeclass_script;
-          break;
-        case TH_NODE_LAYOUT:
-          cp = ts->nodeclass_layout;
           break;
         case TH_NODE_GEOMETRY:
           cp = ts->nodeclass_geometry;
@@ -774,13 +771,13 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           break;
 
         case TH_HANDLE_VERTEX:
-          cp = ts->handle_vertex;
+          cp = btheme->common.curves.handle_vertex;
           break;
         case TH_HANDLE_VERTEX_SELECT:
-          cp = ts->handle_vertex_select;
+          cp = btheme->common.curves.handle_vertex_select;
           break;
         case TH_HANDLE_VERTEX_SIZE:
-          cp = &ts->handle_vertex_size;
+          cp = &btheme->common.curves.handle_vertex_size;
           break;
 
         case TH_GP_VERTEX:
@@ -794,10 +791,10 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           break;
 
         case TH_DOPESHEET_CHANNELOB:
-          cp = ts->ds_channel;
+          cp = btheme->common.anim.channel;
           break;
         case TH_DOPESHEET_CHANNELSUBOB:
-          cp = ts->ds_subchannel;
+          cp = btheme->common.anim.channel_sub;
           break;
         case TH_DOPESHEET_IPOLINE:
           cp = ts->ds_ipoline;
@@ -927,7 +924,7 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           cp = ts->anim_non_active;
           break;
         case TH_ANIM_PREVIEW_RANGE:
-          cp = ts->anim_preview_range;
+          cp = btheme->common.anim.preview_range;
           break;
 
         case TH_NLA_TWEAK:
@@ -1000,6 +997,9 @@ const uchar *UI_ThemeGetColorPtr(bTheme *btheme, int spacetype, int colorid)
           break;
         case TH_AXIS_Z:
           cp = btheme->tui.zaxis;
+          break;
+        case TH_AXIS_W:
+          cp = btheme->tui.waxis;
           break;
 
         case TH_GIZMO_HI:
@@ -1569,3 +1569,5 @@ void UI_make_axis_color(const uchar col[3], const char axis, uchar r_col[3])
       break;
   }
 }
+
+/** \} */

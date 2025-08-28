@@ -125,7 +125,7 @@ typedef struct BPoint {
   float tilt;
   /** Used for softbody goal weight. */
   float weight;
-  /** F1: selection status,  hide: is point hidden or not. */
+  /** F1: selection status, hide: is point hidden or not. */
   uint8_t f1;
   char _pad1[1];
   short hide;
@@ -265,10 +265,9 @@ typedef struct Curve {
    * specified. The effective radius is a function of the bevel point radius and the taper radius.
    */
   char taper_radius_mode;
-  char _pad;
+  char _pad[3];
 
   /* font part */
-  short lines;
   float spacing, linedist, shear, fsize, wordspace, ulpos, ulheight;
   float xof, yof;
   float linewidth;
@@ -307,8 +306,14 @@ typedef struct Curve {
   float bevfac1, bevfac2;
   char bevfac1_mapping, bevfac2_mapping;
 
-  char _pad2[6];
-  float fsize_realtime;
+  char _pad2[1];
+
+  /**
+   * If non-zero, the #editfont and #editnurb pointers are not owned by this #Curve. That means
+   * this curve is a container for the result of object geometry evaluation. This only works
+   * because evaluated object data never outlives original data.
+   */
+  char edit_data_from_original;
 
   /**
    * A pointer to curve data from evaluation. Owned by the object's #geometry_set_eval, either as a
@@ -318,13 +323,6 @@ typedef struct Curve {
    * original object data.
    */
   const struct Curves *curve_eval;
-  /**
-   * If non-zero, the #editfont and #editnurb pointers are not owned by this #Curve. That means
-   * this curve is a container for the result of object geometry evaluation. This only works
-   * because evaluated object data never outlives original data.
-   */
-  char edit_data_from_original;
-  char _pad3[7];
 
   void *batch_cache;
 

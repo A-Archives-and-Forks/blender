@@ -29,6 +29,7 @@ set(INC
   ../draw/intern
   ../draw/intern/shaders
   metal/kernels
+  vulkan/shaders
   shaders/infos
 
 
@@ -112,6 +113,7 @@ set(SRC
   GPU_compute.hh
   GPU_context.hh
   GPU_debug.hh
+  GPU_format.hh
   GPU_framebuffer.hh
   GPU_immediate.hh
   GPU_immediate_util.hh
@@ -179,7 +181,6 @@ set(OPENGL_SRC
   opengl/gl_compute.cc
   opengl/gl_context.cc
   opengl/gl_debug.cc
-  opengl/gl_debug_layer.cc
   opengl/gl_framebuffer.cc
   opengl/gl_immediate.cc
   opengl/gl_index_buffer.cc
@@ -422,16 +423,6 @@ endif()
 
 
 if(WITH_VULKAN_BACKEND)
-  if(APPLE)
-    list(APPEND INC_SYS
-      ${MOLTENVK_INCLUDE_DIRS}
-    )
-
-    list(APPEND LIB
-      ${MOLTENVK_LIBRARIES}
-    )
-  endif()
-
   list(APPEND INC
     ../../../extern/vulkan_memory_allocator
   )
@@ -456,9 +447,12 @@ if(WITH_VULKAN_BACKEND)
   add_definitions(-DWITH_VULKAN_BACKEND)
 endif()
 
+set(GLSL_SRC_RAW
+  shaders/opengl/glsl_shader_defines.glsl
+)
+
 set(GLSL_SRC
   GPU_shader_shared.hh
-  shaders/opengl/glsl_shader_defines.glsl
 
   shaders/gpu_shader_depth_only_frag.glsl
   shaders/gpu_shader_uniform_color_frag.glsl
@@ -515,10 +509,13 @@ set(GLSL_SRC
   shaders/gpu_shader_keyframe_shape_vert.glsl
   shaders/gpu_shader_keyframe_shape_frag.glsl
 
+  shaders/gpu_shader_sequencer_scope_comp.glsl
+  shaders/gpu_shader_sequencer_scope_frag.glsl
   shaders/gpu_shader_sequencer_strips_vert.glsl
   shaders/gpu_shader_sequencer_strips_frag.glsl
   shaders/gpu_shader_sequencer_thumbs_vert.glsl
   shaders/gpu_shader_sequencer_thumbs_frag.glsl
+  shaders/gpu_shader_sequencer_zebra_frag.glsl
 
   shaders/gpu_shader_codegen_lib.glsl
 
@@ -534,11 +531,13 @@ set(GLSL_SRC
   shaders/common/gpu_shader_debug_gradients_lib.glsl
   shaders/common/gpu_shader_fullscreen_vert.glsl
   shaders/common/gpu_shader_index_load_lib.glsl
+  shaders/common/gpu_shader_index_range_lib.glsl
   shaders/common/gpu_shader_math_base_lib.glsl
   shaders/common/gpu_shader_math_fast_lib.glsl
   shaders/common/gpu_shader_math_matrix_lib.glsl
   shaders/common/gpu_shader_math_rotation_lib.glsl
   shaders/common/gpu_shader_math_vector_lib.glsl
+  shaders/common/gpu_shader_offset_indices_lib.glsl
   shaders/common/gpu_shader_print_lib.glsl
   shaders/common/gpu_shader_sequencer_lib.glsl
   shaders/common/gpu_shader_shared_exponent_lib.glsl
@@ -684,6 +683,10 @@ set(MSL_SRC
   shaders/metal/mtl_shader_common.msl
 )
 
+set(VULKAN_BACKEND_GLSL_SRC
+  vulkan/shaders/vk_backbuffer_blit_comp.glsl
+)
+
 if(WITH_GTESTS)
   if(WITH_GPU_BACKEND_TESTS)
     list(APPEND GLSL_SRC ${GLSL_SRC_TEST})
@@ -699,9 +702,17 @@ if(WITH_METAL_BACKEND)
   endforeach()
 endif()
 
+if(WITH_VULKAN_BACKEND)
+  list(APPEND GLSL_SRC ${VULKAN_BACKEND_GLSL_SRC})
+endif()
+
 set(GLSL_C)
 foreach(GLSL_FILE ${GLSL_SRC})
   glsl_to_c(${GLSL_FILE} GLSL_C)
+endforeach()
+
+foreach(GLSL_FILE ${GLSL_SRC_RAW})
+  data_to_c_simple(${GLSL_FILE} GLSL_C)
 endforeach()
 
 set(SHADER_C)
@@ -759,7 +770,7 @@ target_link_libraries(bf_gpu PUBLIC
   bf_imbuf_opencolorio_shaders
 )
 
-if(WITH_OPENGL_BACKEND AND UNIX)
+if(WITH_OPENGL_BACKEND AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_libraries(bf_gpu PUBLIC rt)
 endif()
 

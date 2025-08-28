@@ -180,14 +180,14 @@ static bool wm_link_append_item_poll(ReportList *reports,
       if (do_append) {
         BKE_reportf(reports,
                     RPT_ERROR_INVALID_INPUT,
-                    "Can't append data-block '%s' of type '%s'",
+                    "Cannot append data-block '%s' of type '%s'",
                     name,
                     group);
       }
       else {
         BKE_reportf(reports,
                     RPT_ERROR_INVALID_INPUT,
-                    "Can't link data-block '%s' of type '%s'",
+                    "Cannot link data-block '%s' of type '%s'",
                     name,
                     group);
       }
@@ -219,14 +219,21 @@ static wmOperatorStatus wm_link_append_exec(bContext *C, wmOperator *op)
   const bool is_librarypath_valid = BKE_blendfile_library_path_explode(
       filepath, libname, &group, &name);
 
-  /* NOTE: Need to also check filepath, as typically libname is an empty string here (when trying
-   * to append from current file from the file-browser e.g.). */
-  if (BLI_path_cmp(BKE_main_blendfile_path(bmain), filepath) == 0 ||
-      BLI_path_cmp(BKE_main_blendfile_path(bmain), libname) == 0)
   {
-    BKE_reportf(op->reports, RPT_ERROR, "'%s': cannot use current file as library", filepath);
-    return OPERATOR_CANCELLED;
+    const char *blendfile_path = BKE_main_blendfile_path(bmain);
+    if (blendfile_path[0] != '\0') {
+      /* NOTE: Need to also check `filepath`, as typically `libname` is an empty string here
+       * (when trying to append from current file from the file-browser e.g.). */
+      if (BLI_path_cmp(blendfile_path, filepath) == 0 ||
+          BLI_path_cmp(blendfile_path, libname) == 0)
+      {
+        BKE_reportf(
+            op->reports, RPT_ERROR, "'%s': A cannot use current file as library", filepath);
+        return OPERATOR_CANCELLED;
+      }
+    }
   }
+
   if (!group) {
     BKE_reportf(op->reports, RPT_ERROR, "'%s': nothing indicated", filepath);
     return OPERATOR_CANCELLED;
@@ -538,14 +545,20 @@ static wmOperatorStatus wm_id_linked_relocate_exec(bContext *C, wmOperator *op)
   const bool is_librarypath_valid = BKE_blendfile_library_path_explode(
       filepath, libname, &group, &name);
 
-  /* NOTE: Need to also check filepath, as typically libname is an empty string here (when trying
-   * to append from current file from the file-browser e.g.). */
-  if (BLI_path_cmp(BKE_main_blendfile_path(bmain), filepath) == 0 ||
-      BLI_path_cmp(BKE_main_blendfile_path(bmain), libname) == 0)
   {
-    BKE_reportf(op->reports, RPT_ERROR, "'%s': cannot use current file as library", filepath);
-    return OPERATOR_CANCELLED;
+    const char *blendfile_path = BKE_main_blendfile_path(bmain);
+    if (blendfile_path[0] != '\0') {
+      /* NOTE: Need to also check `filepath`, as typically `libname` is an empty string here
+       * (when trying to append from current file from the file-browser e.g.). */
+      if (BLI_path_cmp(blendfile_path, filepath) == 0 ||
+          BLI_path_cmp(blendfile_path, libname) == 0)
+      {
+        BKE_reportf(op->reports, RPT_ERROR, "'%s': cannot use current file as library", filepath);
+        return OPERATOR_CANCELLED;
+      }
+    }
   }
+
   if (!is_librarypath_valid) {
     BKE_reportf(op->reports, RPT_ERROR, "'%s': not a library", filepath);
     return OPERATOR_CANCELLED;
@@ -709,6 +722,10 @@ static ID *wm_file_link_append_datablock_ex(Main *bmain,
                                             const char *id_name,
                                             const int flag)
 {
+  BLI_assert_msg(
+      BLI_path_cmp(BKE_main_blendfile_path(bmain), filepath) != 0,
+      "Calling code should ensure it does not attempt to link/append from current blendfile");
+
   const bool do_append = (flag & FILE_LINK) == 0;
   /* Tag everything so we can make local only the new datablock. */
   BKE_main_id_tag_all(bmain, ID_TAG_PRE_EXISTING, true);
@@ -773,10 +790,8 @@ ID *WM_file_append_datablock(Main *bmain,
                              int flag)
 {
   BLI_assert((flag & FILE_LINK) == 0);
-  ID *id = wm_file_link_append_datablock_ex(
+  return wm_file_link_append_datablock_ex(
       bmain, scene, view_layer, v3d, filepath, id_code, id_name, flag);
-
-  return id;
 }
 
 /** \} */
@@ -910,13 +925,16 @@ static wmOperatorStatus wm_lib_relocate_exec_do(bContext *C, wmOperator *op, boo
     return OPERATOR_CANCELLED;
   }
 
-  if (BLI_path_cmp(BKE_main_blendfile_path(bmain), filepath) == 0) {
-    BKE_reportf(op->reports,
-                RPT_ERROR_INVALID_INPUT,
-                "Cannot relocate library '%s' to current blend file '%s'",
-                lib->id.name,
-                filepath);
-    return OPERATOR_CANCELLED;
+  {
+    const char *blendfile_path = BKE_main_blendfile_path(bmain);
+    if ((blendfile_path[0] != '\0') && (BLI_path_cmp(blendfile_path, filepath) == 0)) {
+      BKE_reportf(op->reports,
+                  RPT_ERROR_INVALID_INPUT,
+                  "Cannot relocate library '%s' to current blend file '%s'",
+                  lib->id.name,
+                  filepath);
+      return OPERATOR_CANCELLED;
+    }
   }
 
   LibraryLink_Params lapp_params;
@@ -963,13 +981,13 @@ static wmOperatorStatus wm_lib_relocate_exec_do(bContext *C, wmOperator *op, boo
           continue;
         }
 
-        CLOG_DEBUG(&LOG, "\tCandidate new lib to reload datablocks from: %s", filepath);
+        CLOG_DEBUG(&LOG, "\tCandidate new lib to reload data-blocks from: %s", filepath);
         BKE_blendfile_link_append_context_library_add(lapp_context, filepath, nullptr);
       }
       RNA_END;
     }
     else {
-      CLOG_DEBUG(&LOG, "\tCandidate new lib to reload datablocks from: %s", filepath);
+      CLOG_DEBUG(&LOG, "\tCandidate new lib to reload data-blocks from: %s", filepath);
       BKE_blendfile_link_append_context_library_add(lapp_context, filepath, nullptr);
     }
   }

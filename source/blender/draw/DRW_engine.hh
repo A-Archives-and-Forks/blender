@@ -142,7 +142,8 @@ void DRW_mutexes_exit();
 void DRW_lock_start();
 void DRW_lock_end();
 
-/* Critical section for GPUShader usage. Can be removed when we have threadsafe GPUShader class. */
+/* Critical section for gpu::Shader usage. Can be removed when we have threadsafe gpu::Shader
+ * class. */
 void DRW_submission_start();
 void DRW_submission_end();
 
@@ -158,6 +159,10 @@ void DRW_gpu_context_enable();
  * Returns true on success, false if the draw GPU context does not exists.
  */
 bool DRW_gpu_context_try_enable();
+/**
+ * Returns true if the DRW_gpu_context is enabled on the calling thread.
+ */
+bool DRW_gpu_context_is_enabled();
 void DRW_gpu_context_disable();
 
 #ifdef WITH_XR_OPENXR

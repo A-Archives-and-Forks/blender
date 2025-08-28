@@ -573,7 +573,7 @@ bNodeSocket &Menu::build(bNodeTree &ntree, bNode &node) const
                                                      this->identifier.c_str(),
                                                      this->name.c_str());
 
-  ((bNodeSocketValueMenu *)socket.default_value)->value = this->default_value;
+  ((bNodeSocketValueMenu *)socket.default_value)->value = this->default_value.value;
   this->set_common_flags(socket);
   return socket;
 }
@@ -674,6 +674,13 @@ bNodeSocket &Bundle::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket 
   }
   this->set_common_flags(socket);
   return socket;
+}
+
+BundleBuilder &BundleBuilder::pass_through_input_index(const std::optional<int> index)
+{
+  BLI_assert(this->is_output());
+  decl_->pass_through_input_index = std::move(index);
+  return *this;
 }
 
 /** \} */

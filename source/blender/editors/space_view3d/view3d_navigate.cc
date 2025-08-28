@@ -47,7 +47,7 @@ static eViewOpsFlag viewops_flag_from_prefs()
 
   /**
    * If the mode requires it, always set the #VIEWOPS_FLAG_PERSP_ENSURE.
-   * The function `ED_view3d_persp_ensure` already handles the checking of the preferences.
+   * The function #ED_view3d_persp_ensure already handles the checking of the preferences.
    * And even with the option disabled, in some modes, it is still necessary to exit the camera
    * view.
    *
@@ -852,7 +852,7 @@ bool view3d_orbit_calc_center(bContext *C, float r_dyn_ofs[3])
 
     ofs = float3(0);
     for (int i = 0; i < 4; i++) {
-      ofs += ef->textcurs[i];
+      add_v2_v2(ofs, ef->textcurs[i]);
     }
     ofs *= 0.25f;
 
@@ -1108,7 +1108,7 @@ static const ViewOpsType *view3d_navigation_type_from_idname(const char *idname)
 
 ViewOpsData *ED_view3d_navigation_init(bContext *C, const wmKeyMapItem *kmi_merge)
 {
-  /* Unlike `viewops_data_create`, `ED_view3d_navigation_init` creates a navigation context along
+  /* Unlike #viewops_data_create, #ED_view3d_navigation_init creates a navigation context along
    * with an array of `wmKeyMapItem`s used for navigation. */
   if (!CTX_wm_region_view3d(C)) {
     return nullptr;

@@ -44,6 +44,7 @@
 #include "SEQ_sequencer.hh"
 #include "SEQ_time.hh"
 
+#include "cache/intra_frame_cache.hh"
 #include "multiview.hh"
 #include "proxy.hh"
 #include "render.hh"
@@ -68,7 +69,7 @@ struct IndexBuildContext {
   SessionUID orig_seq_uid;
 };
 
-int rendersize_to_proxysize(int render_size)
+IMB_Proxy_Size rendersize_to_proxysize(eSpaceSeq_Proxy_RenderSize render_size)
 {
   switch (render_size) {
     case SEQ_RENDER_SIZE_PROXY_25:
@@ -79,21 +80,23 @@ int rendersize_to_proxysize(int render_size)
       return IMB_PROXY_75;
     case SEQ_RENDER_SIZE_PROXY_100:
       return IMB_PROXY_100;
+    default:
+      return IMB_PROXY_NONE;
   }
-  return IMB_PROXY_NONE;
 }
 
-double rendersize_to_scale_factor(int render_size)
+float rendersize_to_scale_factor(eSpaceSeq_Proxy_RenderSize render_size)
 {
   switch (render_size) {
     case SEQ_RENDER_SIZE_PROXY_25:
-      return 0.25;
+      return 0.25f;
     case SEQ_RENDER_SIZE_PROXY_50:
-      return 0.50;
+      return 0.5f;
     case SEQ_RENDER_SIZE_PROXY_75:
-      return 0.75;
+      return 0.75f;
+    default:
+      return 1.0f;
   }
-  return 1.0;
 }
 
 bool seq_proxy_get_custom_file_filepath(Strip *strip, char *filepath, const int view_id)
@@ -188,7 +191,7 @@ static bool seq_proxy_get_filepath(Scene *scene,
   return true;
 }
 
-bool can_use_proxy(const RenderData *context, const Strip *strip, int psize)
+bool can_use_proxy(const RenderData *context, const Strip *strip, IMB_Proxy_Size psize)
 {
   if (strip->data->proxy == nullptr || !context->use_proxies) {
     return false;
@@ -467,7 +470,8 @@ bool proxy_rebuild_context(Main *bmain,
 
     context = MEM_callocN<IndexBuildContext>("strip proxy rebuild context");
 
-    strip_new = strip_duplicate_recursive(scene, scene, nullptr, strip, 0);
+    strip_new = strip_duplicate_recursive(
+        bmain, scene, scene, nullptr, strip, StripDuplicate::Selected);
 
     context->tc_flags = strip_new->data->proxy->build_tc_flags;
     context->size_flags = strip_new->data->proxy->build_size_flags;
@@ -542,8 +546,14 @@ void proxy_rebuild(IndexBuildContext *context, wmJobWorkerStatus *worker_status)
   int width, height;
   BKE_render_resolution(&scene->r, false, &width, &height);
 
-  render_new_render_data(
-      bmain, context->depsgraph, context->scene, width, height, 100, false, &render_context);
+  render_new_render_data(bmain,
+                         context->depsgraph,
+                         context->scene,
+                         width,
+                         height,
+                         SEQ_RENDER_SIZE_PROXY_100,
+                         false,
+                         &render_context);
 
   render_context.skip_cache = true;
   render_context.is_proxy_render = true;
@@ -555,6 +565,12 @@ void proxy_rebuild(IndexBuildContext *context, wmJobWorkerStatus *worker_status)
        timeline_frame < time_right_handle_frame_get(scene, strip);
        timeline_frame++)
   {
+    intra_frame_cache_set_cur_frame(render_context.scene,
+                                    timeline_frame,
+                                    render_context.view_id,
+                                    render_context.rectx,
+                                    render_context.recty);
+
     if (context->size_flags & IMB_PROXY_25) {
       seq_proxy_build_frame(&render_context, &state, strip, timeline_frame, 25, overwrite);
     }

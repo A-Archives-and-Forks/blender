@@ -25,6 +25,7 @@
 #include "BLI_math_vector_types.hh"
 #include "BLI_memarena.h"
 #include "BLI_multi_value_map.hh"
+#include "BLI_ordered_edge.hh"
 #include "BLI_polyfill_2d.h"
 #include "BLI_string.h"
 #include "BLI_string_utf8.h"
@@ -690,7 +691,7 @@ static void add_mface_layers(Mesh &mesh, CustomData *fdata_legacy, CustomData *l
 static void mesh_ensure_tessellation_customdata(Mesh *mesh)
 {
   if (UNLIKELY((mesh->totface_legacy != 0) && (mesh->faces_num == 0))) {
-    /* Pass, otherwise this function  clears 'mface' before
+    /* Pass, otherwise this function clears 'mface' before
      * versioning 'mface -> mpoly' code kicks in #30583.
      *
      * Callers could also check but safer to do here - campbell */

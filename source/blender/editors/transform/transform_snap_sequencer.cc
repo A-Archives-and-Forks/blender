@@ -78,7 +78,8 @@ static VectorSet<Strip *> query_snap_sources_preview(const Scene *scene)
   Editing *ed = seq::editing_get(scene);
   ListBase *channels = seq::channels_displayed_get(ed);
 
-  snap_sources = seq::query_rendered_strips(scene, channels, ed->seqbasep, scene->r.cfra, 0);
+  snap_sources = seq::query_rendered_strips(
+      scene, channels, ed->current_strips(), scene->r.cfra, 0);
   snap_sources.remove_if([&](Strip *strip) { return (strip->flag & SELECT) == 0; });
 
   return snap_sources;
@@ -252,7 +253,8 @@ static VectorSet<Strip *> query_snap_targets_preview(const TransInfo *t)
   Editing *ed = seq::editing_get(scene);
   ListBase *channels = seq::channels_displayed_get(ed);
 
-  snap_targets = seq::query_rendered_strips(scene, channels, ed->seqbasep, scene->r.cfra, 0);
+  snap_targets = seq::query_rendered_strips(
+      scene, channels, ed->current_strips(), scene->r.cfra, 0);
 
   /* Selected strips are only valid targets when snapping the cursor or origin. */
   if ((t->data_type == &TransConvertType_SequencerImage) && (t->flag & T_ORIGIN) == 0) {
@@ -544,7 +546,7 @@ static bool snap_calc_timeline(TransInfo *t, const TransSeqSnapData *snap_data)
     return false;
   }
 
-  float2 best_offset(static_cast<float>(best_target_frame - best_source_frame), 0.0f);
+  float2 best_offset(float(best_target_frame - best_source_frame), 0.0f);
   if (transform_convert_sequencer_clamp(t, best_offset)) {
     return false;
   }

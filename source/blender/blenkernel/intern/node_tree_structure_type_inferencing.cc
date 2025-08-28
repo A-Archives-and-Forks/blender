@@ -133,7 +133,7 @@ static void init_input_requirements(const bNodeTree &tree,
                                     MutableSpan<DataRequirement> input_requirements)
 {
   for (const bNode *node : tree.all_nodes()) {
-    if (ELEM(node->type_legacy, NODE_GROUP_OUTPUT, GEO_NODE_CLOSURE_OUTPUT)) {
+    if (ELEM(node->type_legacy, NODE_GROUP_OUTPUT, NODE_CLOSURE_OUTPUT)) {
       for (const bNodeSocket *socket : node->input_sockets()) {
         /* Inputs of these nodes have no requirements. */
         input_requirements[socket->index_in_all_inputs()] = DataRequirement::None;
@@ -236,12 +236,12 @@ static void store_closure_input_structure_types(const bNodeTree &tree,
     if (!input_node || !output_node) {
       continue;
     }
-    if (!output_node->is_type("GeometryNodeClosureOutput")) {
+    if (!output_node->is_type("NodeClosureOutput")) {
       continue;
     }
-    const auto *storage = static_cast<const NodeGeometryClosureOutput *>(output_node->storage);
+    const auto *storage = static_cast<const NodeClosureOutput *>(output_node->storage);
     for (const int i : IndexRange(storage->input_items.items_num)) {
-      const NodeGeometryClosureInputItem &item = storage->input_items.items[i];
+      const NodeClosureInputItem &item = storage->input_items.items[i];
       const bNodeSocket &socket = input_node->output_socket(i);
       StructureType &structure_type = structure_types[socket.index_in_tree()];
       if (item.structure_type != NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_AUTO) {
@@ -452,20 +452,8 @@ static StructureType left_to_right_merge(const StructureType a, const StructureT
   if (a == b) {
     return a;
   }
-  if ((a == StructureType::Dynamic && b == StructureType::Single) ||
-      (a == StructureType::Single && b == StructureType::Dynamic))
-  {
+  if (a == StructureType::Dynamic || b == StructureType::Dynamic) {
     return StructureType::Dynamic;
-  }
-  if ((a == StructureType::Dynamic && b == StructureType::Field) ||
-      (a == StructureType::Field && b == StructureType::Dynamic))
-  {
-    return StructureType::Dynamic;
-  }
-  if ((a == StructureType::Dynamic && b == StructureType::Grid) ||
-      (a == StructureType::Grid && b == StructureType::Dynamic))
-  {
-    return StructureType::Grid;
   }
   if ((a == StructureType::Field && b == StructureType::Grid) ||
       (a == StructureType::Grid && b == StructureType::Field))
@@ -481,6 +469,16 @@ static StructureType left_to_right_merge(const StructureType a, const StructureT
       (a == StructureType::Grid && b == StructureType::Single))
   {
     return StructureType::Grid;
+  }
+  if ((a == StructureType::Single && b == StructureType::List) ||
+      (a == StructureType::List && b == StructureType::Single))
+  {
+    return StructureType::List;
+  }
+  if ((a == StructureType::Field && b == StructureType::List) ||
+      (a == StructureType::List && b == StructureType::Field))
+  {
+    return StructureType::List;
   }
   /* Invalid combination. */
   return a;
@@ -640,7 +638,7 @@ static void propagate_left_to_right(const bNodeTree &tree,
         }
         continue;
       }
-      if (node->type_legacy == GEO_NODE_CLOSURE_INPUT) {
+      if (node->type_legacy == NODE_CLOSURE_INPUT) {
         /* Initialized in #store_closure_input_structure_types already. */
         continue;
       }

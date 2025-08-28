@@ -22,6 +22,7 @@
 #include "BKE_anim_data.hh"
 #include "BKE_image.hh"
 #include "BKE_lib_id.hh"
+#include "BKE_library.hh"
 #include "BKE_main.hh"
 #include "BKE_node.hh"
 #include "BKE_node_enum.hh"
@@ -32,13 +33,13 @@
 
 #include "MOD_nodes.hh"
 
-#include "NOD_geo_closure.hh"
 #include "NOD_geometry_nodes_dependencies.hh"
 #include "NOD_geometry_nodes_gizmos.hh"
 #include "NOD_geometry_nodes_lazy_function.hh"
 #include "NOD_node_declaration.hh"
 #include "NOD_socket.hh"
 #include "NOD_socket_declarations.hh"
+#include "NOD_sync_sockets.hh"
 #include "NOD_texture.h"
 
 #include "DEG_depsgraph_build.hh"
@@ -195,7 +196,8 @@ static int get_internal_link_type_priority(const bNodeSocketType *from, const bN
 /* Check both the tree's own tags and the interface tags. */
 static bool is_tree_changed(const bNodeTree &tree)
 {
-  return tree.runtime->changed_flag != NTREE_CHANGED_NOTHING || tree.tree_interface.is_changed();
+  return tree.runtime->changed_flag != NTREE_CHANGED_NOTHING ||
+         tree.tree_interface.requires_dependent_tree_updates();
 }
 
 using TreeNodePair = std::pair<bNodeTree *, bNode *>;
@@ -290,6 +292,12 @@ struct NodeTreeRelations {
   {
     BLI_assert(group_node_users_.has_value());
     return group_node_users_->lookup(ntree);
+  }
+
+  Span<bNodeTree *> get_all_trees()
+  {
+    this->ensure_all_trees();
+    return *all_trees_;
   }
 };
 
@@ -407,6 +415,9 @@ class NodeTreeMainUpdater {
       if (bmain_) {
         DEG_relations_tag_update(bmain_);
       }
+    }
+    if (bmain_) {
+      nodes::node_can_sync_cache_clear(*bmain_);
     }
   }
 
@@ -561,7 +572,7 @@ class NodeTreeMainUpdater {
       ntreeTexCheckCyclics(&ntree);
     }
 
-    if (ntree.tree_interface.is_changed()) {
+    if (ntree.tree_interface.requires_dependent_tree_updates()) {
       result.interface_changed = true;
     }
 
@@ -648,7 +659,7 @@ class NodeTreeMainUpdater {
       /* Currently we have no way to tell if a node needs to be updated when a link changed. */
       return true;
     }
-    if (ntree.tree_interface.is_changed()) {
+    if (ntree.tree_interface.requires_dependent_tree_updates()) {
       if (node.is_group_input() || node.is_group_output()) {
         return true;
       }
@@ -892,6 +903,9 @@ class NodeTreeMainUpdater {
     if (decl.identifier == "__extend__") {
       return SOCK_DISPLAY_SHAPE_CIRCLE;
     }
+    if (nodes::socket_type_always_single(decl.socket_type)) {
+      return SOCK_DISPLAY_SHAPE_LINE;
+    }
     switch (structure_type) {
       case StructureType::Single:
         return SOCK_DISPLAY_SHAPE_LINE;
@@ -913,6 +927,9 @@ class NodeTreeMainUpdater {
   {
     if (decl.identifier == "__extend__") {
       return SOCK_DISPLAY_SHAPE_CIRCLE;
+    }
+    if (nodes::socket_type_always_single(decl.socket_type)) {
+      return SOCK_DISPLAY_SHAPE_LINE;
     }
     switch (structure_type) {
       case StructureType::Single: {
@@ -938,62 +955,37 @@ class NodeTreeMainUpdater {
   void update_socket_shapes(bNodeTree &ntree)
   {
     ntree.ensure_topology_cache();
-    if (U.experimental.use_socket_structure_type) {
-      for (bNode *node : ntree.all_nodes()) {
-        if (node->is_undefined()) {
-          continue;
-        }
-        /* For input/output nodes we use the inferred structure types. */
-        if (node->is_group_input() || node->is_group_output() ||
-            ELEM(node->type_legacy, GEO_NODE_CLOSURE_INPUT, GEO_NODE_CLOSURE_OUTPUT))
-        {
-          for (bNodeSocket *socket : node->input_sockets()) {
-            socket->display_shape = get_input_socket_shape(
-                *socket->runtime->declaration,
-                ntree.runtime->inferred_structure_types[socket->index_in_tree()]);
-          }
-          for (bNodeSocket *socket : node->output_sockets()) {
-            socket->display_shape = get_output_socket_shape(
-                *socket->runtime->declaration,
-                ntree.runtime->inferred_structure_types[socket->index_in_tree()]);
-          }
-          continue;
-        }
-        /* For other nodes we just use the static structure types defined in the declaration. */
+    for (bNode *node : ntree.all_nodes()) {
+      if (node->is_undefined()) {
+        continue;
+      }
+      /* For input/output nodes we use the inferred structure types. */
+      if (node->is_group_input() || node->is_group_output() ||
+          ELEM(node->type_legacy, NODE_CLOSURE_INPUT, NODE_CLOSURE_OUTPUT))
+      {
         for (bNodeSocket *socket : node->input_sockets()) {
-          if (const SocketDeclaration *declaration = socket->runtime->declaration) {
-            socket->display_shape = get_input_socket_shape(*declaration,
-                                                           declaration->structure_type);
-          }
+          socket->display_shape = get_input_socket_shape(
+              *socket->runtime->declaration,
+              ntree.runtime->inferred_structure_types[socket->index_in_tree()]);
         }
         for (bNodeSocket *socket : node->output_sockets()) {
-          if (const SocketDeclaration *declaration = socket->runtime->declaration) {
-            socket->display_shape = get_output_socket_shape(*declaration,
-                                                            declaration->structure_type);
-          }
+          socket->display_shape = get_output_socket_shape(
+              *socket->runtime->declaration,
+              ntree.runtime->inferred_structure_types[socket->index_in_tree()]);
+        }
+        continue;
+      }
+      /* For other nodes we just use the static structure types defined in the declaration. */
+      for (bNodeSocket *socket : node->input_sockets()) {
+        if (const SocketDeclaration *declaration = socket->runtime->declaration) {
+          socket->display_shape = get_input_socket_shape(*declaration,
+                                                         declaration->structure_type);
         }
       }
-    }
-    else {
-      if (ntree.type == NTREE_GEOMETRY) {
-        const Span<bke::FieldSocketState> field_states = ntree.runtime->field_states;
-        for (bNodeSocket *socket : ntree.all_sockets()) {
-          switch (field_states[socket->index_in_tree()]) {
-            case bke::FieldSocketState::RequiresSingle:
-              socket->display_shape = SOCK_DISPLAY_SHAPE_CIRCLE;
-              break;
-            case bke::FieldSocketState::CanBeField:
-              socket->display_shape = SOCK_DISPLAY_SHAPE_DIAMOND_DOT;
-              break;
-            case bke::FieldSocketState::IsField:
-              socket->display_shape = SOCK_DISPLAY_SHAPE_DIAMOND;
-              break;
-          }
-        }
-      }
-      else if (ntree.type == NTREE_COMPOSIT) {
-        for (bNodeSocket *socket : ntree.all_sockets()) {
-          socket->display_shape = SOCK_DISPLAY_SHAPE_CIRCLE;
+      for (bNodeSocket *socket : node->output_sockets()) {
+        if (const SocketDeclaration *declaration = socket->runtime->declaration) {
+          socket->display_shape = get_output_socket_shape(*declaration,
+                                                          declaration->structure_type);
         }
       }
     }
@@ -1040,7 +1032,8 @@ class NodeTreeMainUpdater {
         }
         locally_defined_enums.append(&enum_input);
       }
-      else {
+      else if (!node->is_group()) {
+        /* Gather built-in menus defined by this node. */
         for (bNodeSocket *input_socket : node->input_sockets()) {
           if (!input_socket->is_available()) {
             continue;
@@ -1182,7 +1175,7 @@ class NodeTreeMainUpdater {
         }
       }
       if (found_conflict) {
-        /* Make sure that all group input sockets know that there is a socket. */
+        /* Make sure that all group input sockets know that there is a conflict. */
         for (bNode *input_node : group_input_nodes) {
           bNodeSocket &socket = input_node->output_socket(interface_input_i);
           auto &socket_value = *socket.default_value_typed<bNodeSocketValueMenu>();
@@ -1347,7 +1340,7 @@ class NodeTreeMainUpdater {
         continue;
       }
       if (ntree.type == NTREE_GEOMETRY) {
-        if (link->fromsock->may_be_field() && !link->tosock->may_be_field()) {
+        if (this->is_invalid_field_link(*link)) {
           link->flag &= ~NODE_LINK_VALID;
           ntree.runtime->link_errors.add(
               NodeLinkKey{*link}, NodeLinkError{TIP_("The node input does not support fields")});
@@ -1395,6 +1388,24 @@ class NodeTreeMainUpdater {
         }
       }
     }
+  }
+
+  bool is_invalid_field_link(const bNodeLink &link)
+  {
+    if (!link.fromsock->may_be_field()) {
+      return false;
+    }
+    const nodes::SocketDeclaration *to_socket_decl = link.tosock->runtime->declaration;
+    if (!to_socket_decl) {
+      return false;
+    }
+    if (ELEM(to_socket_decl->structure_type, StructureType::Dynamic, StructureType::Field)) {
+      return false;
+    }
+    if (link.tonode->is_group_output() || link.tonode->is_type("NodeClosureOutput")) {
+      return false;
+    }
+    return true;
   }
 
   bool check_if_output_changed(const bNodeTree &tree)
@@ -1879,7 +1890,7 @@ class NodeTreeMainUpdater {
       }
     }
 
-    ntree.tree_interface.reset_changed_flags();
+    ntree.tree_interface.reset_interface_changed();
   }
 
   /**

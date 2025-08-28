@@ -13,7 +13,7 @@
 
 #  include "overlay_shader_shared.hh"
 
-#  define HAIR_SHADER
+#  define CURVES_SHADER
 #  define DRW_HAIR_INFO
 
 #  define POINTCLOUD_SHADER
@@ -682,6 +682,8 @@ PUSH_CONSTANT(bool, use_weight)
 PUSH_CONSTANT(bool, use_grease_pencil)
 VERTEX_OUT(overlay_edit_smooth_color_iface)
 FRAGMENT_OUT(0, float4, frag_color)
+FRAGMENT_OUT(1, float4, line_output)
+DEFINE("LINE_OUTPUT")
 VERTEX_SOURCE("overlay_edit_particle_strand_vert.glsl")
 FRAGMENT_SOURCE("overlay_varying_color.glsl")
 ADDITIONAL_INFO(draw_view)
@@ -700,6 +702,8 @@ SAMPLER(0, sampler1D, weight_tx)
 PUSH_CONSTANT(bool, use_weight)
 PUSH_CONSTANT(bool, use_grease_pencil)
 FRAGMENT_OUT(0, float4, frag_color)
+FRAGMENT_OUT(1, float4, line_output)
+DEFINE("LINE_OUTPUT")
 #if 1 /* TODO(fclem): Required for legacy gpencil overlay. To be moved to specialized shader. */
 TYPEDEF_SOURCE("gpencil_shader_shared.hh")
 TYPEDEF_SOURCE("overlay_shader_shared.hh")
@@ -806,7 +810,8 @@ OVERLAY_INFO_VARIATIONS_MODELMAT(overlay_depth_pointcloud, overlay_depth_pointcl
 GPU_SHADER_CREATE_INFO(overlay_depth_curves_base)
 VERTEX_SOURCE("overlay_depth_only_curves_vert.glsl")
 FRAGMENT_SOURCE("overlay_depth_only_frag.glsl")
-ADDITIONAL_INFO(draw_hair)
+ADDITIONAL_INFO(draw_curves)
+ADDITIONAL_INFO(draw_curves_infos)
 ADDITIONAL_INFO(draw_globals)
 ADDITIONAL_INFO(draw_view)
 GPU_SHADER_CREATE_END()

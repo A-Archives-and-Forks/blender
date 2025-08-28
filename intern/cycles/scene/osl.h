@@ -82,6 +82,7 @@ class OSLManager {
   OSLShaderInfo *shader_loaded_info(const string &hash);
 
   OSL::ShadingSystem *get_shading_system(Device *sub_device);
+  OSL::TextureSystem *get_texture_system();
   static void foreach_osl_device(Device *device,
                                  const std::function<void(Device *, OSLGlobals *)> &callback);
 #endif

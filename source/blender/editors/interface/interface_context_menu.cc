@@ -349,7 +349,7 @@ static bUserMenuItem *ui_but_user_menu_find(bContext *C, uiBut *but, bUserMenu *
   if (but->rnaprop) {
     std::optional<std::string> member_id_data_path = WM_context_path_resolve_full(C,
                                                                                   &but->rnapoin);
-    /* NOTE(@ideasman42): It's highly unlikely a this ever occurs since the path must be resolved
+    /* NOTE(@ideasman42): It's highly unlikely this ever occurs since the path must be resolved
      * for this to be added in the first place, there might be some cases where manually
      * constructed RNA paths don't resolve and in this case a crash should be avoided. */
     if (UNLIKELY(!member_id_data_path.has_value())) {
@@ -820,13 +820,6 @@ bool ui_popup_context_menu_for_button(bContext *C, uiBut *but, const wmEvent *ev
 
       if (but->flag & UI_BUT_OVERRIDDEN) {
         if (is_array_component) {
-#if 0 /* Disabled for now. */
-          ot = WM_operatortype_find("UI_OT_override_type_set_button", false);
-          op_ptr = layout->op(ot, "Overrides Type", ICON_NONE, blender::wm::OpCallContext::InvokeDefault, 0);
-          RNA_boolean_set(&op_ptr, "all", true);
-          op_ptr = layout->op(ot, "Single Override Type", ICON_NONE, blender::wm::OpCallContext::InvokeDefault, 0);
-          RNA_boolean_set(&op_ptr, "all", false);
-#endif
           PointerRNA op_ptr = layout->op(
               "UI_OT_override_remove_button",
               CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Remove Overrides"),
@@ -839,14 +832,6 @@ bool ui_popup_context_menu_for_button(bContext *C, uiBut *but, const wmEvent *ev
           RNA_boolean_set(&op_ptr, "all", false);
         }
         else {
-#if 0 /* Disabled for now. */
-          op_ptr = layout->op("UI_OT_override_type_set_button",
-                              "Override Type",
-                              ICON_NONE,
-                              blender::wm::OpCallContext::InvokeDefault,
-                              0);
-          RNA_boolean_set(&op_ptr, "all", false);
-#endif
           PointerRNA op_ptr = layout->op(
               "UI_OT_override_remove_button",
               CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Remove Override"),
@@ -855,25 +840,24 @@ bool ui_popup_context_menu_for_button(bContext *C, uiBut *but, const wmEvent *ev
         }
       }
       else {
+        ot = WM_operatortype_find("UI_OT_override_add_button", false);
         if (is_array_component) {
-          ot = WM_operatortype_find("UI_OT_override_type_set_button", false);
           op_ptr = layout->op(ot,
-                              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Define Overrides"),
+                              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Add Overrides"),
                               ICON_NONE,
                               blender::wm::OpCallContext::InvokeDefault,
                               UI_ITEM_NONE);
           RNA_boolean_set(&op_ptr, "all", true);
-          op_ptr = layout->op(
-              ot,
-              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Define Single Override"),
-              ICON_NONE,
-              blender::wm::OpCallContext::InvokeDefault,
-              UI_ITEM_NONE);
+          op_ptr = layout->op(ot,
+                              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Add Single Override"),
+                              ICON_NONE,
+                              blender::wm::OpCallContext::InvokeDefault,
+                              UI_ITEM_NONE);
           RNA_boolean_set(&op_ptr, "all", false);
         }
         else {
-          op_ptr = layout->op("UI_OT_override_type_set_button",
-                              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Define Override"),
+          op_ptr = layout->op(ot,
+                              CTX_IFACE_(BLT_I18NCONTEXT_OPERATOR_DEFAULT, "Add Override"),
                               ICON_NONE,
                               blender::wm::OpCallContext::InvokeDefault,
                               UI_ITEM_NONE);

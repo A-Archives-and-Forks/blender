@@ -8,34 +8,34 @@
 
 #include "MEM_guardedalloc.h"
 
-#include "BKE_node.hh"
-
 #include "BLI_assert.h"
 #include "BLI_math_vector.hh"
 #include "BLI_math_vector_types.hh"
+#include "BLI_utildefines.h"
 
 #include "DNA_node_types.h"
-#include "RNA_types.hh"
+
+#include "RNA_enum_types.hh"
 
 #include "GPU_shader.hh"
 #include "GPU_texture.hh"
+
+#include "BKE_node.hh"
 
 #include "COM_domain.hh"
 #include "COM_node_operation.hh"
 #include "COM_utilities.hh"
 
-#include "UI_interface_layout.hh"
-#include "UI_resources.hh"
 #include "node_composite_util.hh"
-
-/* **************** Displace  ******************** */
 
 namespace blender::nodes::node_composite_displace_cc {
 
-NODE_STORAGE_FUNCS(NodeDisplaceData)
-
 static void cmp_node_displace_declare(NodeDeclarationBuilder &b)
 {
+  b.use_custom_socket_order();
+
+  b.add_output<decl::Color>("Image").structure_type(StructureType::Dynamic);
+
   b.add_input<decl::Color>("Image")
       .default_value({1.0f, 1.0f, 1.0f, 1.0f})
       .structure_type(StructureType::Dynamic);
@@ -57,19 +57,26 @@ static void cmp_node_displace_declare(NodeDeclarationBuilder &b)
       .max(1000.0f)
       .structure_type(StructureType::Dynamic);
 
-  b.add_output<decl::Color>("Image").structure_type(StructureType::Dynamic);
+  PanelDeclarationBuilder &sampling_panel = b.add_panel("Sampling").default_closed(true);
+  sampling_panel.add_input<decl::Menu>("Interpolation")
+      .default_value(CMP_NODE_INTERPOLATION_BILINEAR)
+      .static_items(rna_enum_node_compositor_interpolation_items)
+      .description("Interpolation method");
+  sampling_panel.add_input<decl::Menu>("Extension X")
+      .default_value(CMP_NODE_EXTENSION_MODE_CLIP)
+      .static_items(rna_enum_node_compositor_extension_items)
+      .description("The extension mode applied to the X axis");
+  sampling_panel.add_input<decl::Menu>("Extension Y")
+      .default_value(CMP_NODE_EXTENSION_MODE_CLIP)
+      .static_items(rna_enum_node_compositor_extension_items)
+      .description("The extension mode applied to the Y axis");
 }
 
 static void cmp_node_init_displace(bNodeTree * /*ntree*/, bNode *node)
 {
+  /* Unused, kept for forward compatibility. */
   NodeDisplaceData *data = MEM_callocN<NodeDisplaceData>(__func__);
-  data->interpolation = CMP_NODE_INTERPOLATION_ANISOTROPIC;
   node->storage = data;
-}
-
-static void cmp_buts_displace(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
-{
-  layout->prop(ptr, "interpolation", UI_ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
 }
 
 using namespace blender::compositor;
@@ -98,7 +105,9 @@ class DisplaceOperation : public NodeOperation {
   void execute_gpu()
   {
     const Interpolation interpolation = this->get_interpolation();
-    GPUShader *shader = context().get_shader(this->get_shader_name(interpolation));
+    const ExtensionMode extension_x = this->get_extension_mode_x();
+    const ExtensionMode extension_y = this->get_extension_mode_y();
+    gpu::Shader *shader = context().get_shader(this->get_shader_name(interpolation));
     GPU_shader_bind(shader);
 
     const Result &input_image = get_input("Image");
@@ -111,7 +120,8 @@ class DisplaceOperation : public NodeOperation {
           interpolation, Interpolation::Bilinear, Interpolation::Bicubic);
       GPU_texture_filter_mode(input_image, use_bilinear);
     }
-    GPU_texture_extend_mode(input_image, GPU_SAMPLER_EXTEND_MODE_CLAMP_TO_BORDER);
+    GPU_texture_extend_mode_x(input_image, map_extension_mode_to_extend_mode(extension_x));
+    GPU_texture_extend_mode_y(input_image, map_extension_mode_to_extend_mode(extension_y));
     input_image.bind_as_texture(shader, "input_tx");
 
     const Result &input_displacement = get_input("Vector");
@@ -144,6 +154,8 @@ class DisplaceOperation : public NodeOperation {
     const Result &y_scale = get_input("Y Scale");
 
     const Interpolation interpolation = this->get_interpolation();
+    const ExtensionMode extension_x = this->get_extension_mode_x();
+    const ExtensionMode extension_y = this->get_extension_mode_y();
     const Domain domain = compute_domain();
     Result &output = get_result("Image");
     output.allocate_texture(domain);
@@ -154,8 +166,15 @@ class DisplaceOperation : public NodeOperation {
       this->compute_anisotropic(size, image, output, input_displacement, x_scale, y_scale);
     }
     else {
-      this->compute_interpolation(
-          interpolation, size, image, output, input_displacement, x_scale, y_scale);
+      this->compute_interpolation(interpolation,
+                                  size,
+                                  image,
+                                  output,
+                                  input_displacement,
+                                  x_scale,
+                                  y_scale,
+                                  extension_x,
+                                  extension_y);
     }
   }
 
@@ -165,26 +184,16 @@ class DisplaceOperation : public NodeOperation {
                              Result &output,
                              const Result &input_displacement,
                              const Result &x_scale,
-                             const Result &y_scale) const
+                             const Result &y_scale,
+                             const ExtensionMode &extension_mode_x,
+                             const ExtensionMode &extension_mode_y) const
   {
     parallel_for(size, [&](const int2 base_texel) {
       const float2 coordinates = compute_coordinates(
           base_texel, size, input_displacement, x_scale, y_scale);
-      switch (interpolation) {
-        /* The anisotropic case requires gradient computation and is handled separately. */
-        case Interpolation::Anisotropic:
-          BLI_assert_unreachable();
-          break;
-        case Interpolation::Nearest:
-          output.store_pixel(base_texel, image.sample_nearest_zero(coordinates));
-          break;
-        case Interpolation::Bilinear:
-          output.store_pixel(base_texel, image.sample_bilinear_zero(coordinates));
-          break;
-        case Interpolation::Bicubic:
-          output.store_pixel(base_texel, image.sample_cubic_wrap(coordinates, false, false));
-          break;
-      }
+      output.store_pixel(
+          base_texel,
+          image.sample(coordinates, interpolation, extension_mode_x, extension_mode_y));
     });
   }
 
@@ -286,25 +295,64 @@ class DisplaceOperation : public NodeOperation {
       case Interpolation::Nearest:
         return "compositor_displace";
     }
-    BLI_assert_unreachable();
+
     return "compositor_displace";
   }
 
-  Interpolation get_interpolation() const
+  Interpolation get_interpolation()
   {
-    switch (node_storage(bnode()).interpolation) {
-      case CMP_NODE_INTERPOLATION_ANISOTROPIC:
-        return Interpolation::Anisotropic;
+    const Result &input = this->get_input("Interpolation");
+    const MenuValue default_menu_value = MenuValue(CMP_NODE_INTERPOLATION_BILINEAR);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    const CMPNodeInterpolation interpolation = static_cast<CMPNodeInterpolation>(menu_value.value);
+    switch (interpolation) {
       case CMP_NODE_INTERPOLATION_NEAREST:
         return Interpolation::Nearest;
       case CMP_NODE_INTERPOLATION_BILINEAR:
         return Interpolation::Bilinear;
       case CMP_NODE_INTERPOLATION_BICUBIC:
         return Interpolation::Bicubic;
+      case CMP_NODE_INTERPOLATION_ANISOTROPIC:
+        return Interpolation::Anisotropic;
     }
 
-    BLI_assert_unreachable();
     return Interpolation::Nearest;
+  }
+
+  ExtensionMode get_extension_mode_x()
+  {
+    const Result &input = this->get_input("Extension X");
+    const MenuValue default_menu_value = MenuValue(CMP_NODE_EXTENSION_MODE_CLIP);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    const CMPExtensionMode extension_x = static_cast<CMPExtensionMode>(menu_value.value);
+    switch (extension_x) {
+      case CMP_NODE_EXTENSION_MODE_CLIP:
+        return ExtensionMode::Clip;
+      case CMP_NODE_EXTENSION_MODE_REPEAT:
+        return ExtensionMode::Repeat;
+      case CMP_NODE_EXTENSION_MODE_EXTEND:
+        return ExtensionMode::Extend;
+    }
+
+    return ExtensionMode::Clip;
+  }
+
+  ExtensionMode get_extension_mode_y()
+  {
+    const Result &input = this->get_input("Extension Y");
+    const MenuValue default_menu_value = MenuValue(CMP_NODE_EXTENSION_MODE_CLIP);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    const CMPExtensionMode extension_y = static_cast<CMPExtensionMode>(menu_value.value);
+    switch (extension_y) {
+      case CMP_NODE_EXTENSION_MODE_CLIP:
+        return ExtensionMode::Clip;
+      case CMP_NODE_EXTENSION_MODE_REPEAT:
+        return ExtensionMode::Repeat;
+      case CMP_NODE_EXTENSION_MODE_EXTEND:
+        return ExtensionMode::Extend;
+    }
+
+    return ExtensionMode::Clip;
   }
 
   bool is_identity()
@@ -352,7 +400,6 @@ static void register_node_type_cmp_displace()
   ntype.enum_name_legacy = "DISPLACE";
   ntype.nclass = NODE_CLASS_DISTORT;
   ntype.declare = file_ns::cmp_node_displace_declare;
-  ntype.draw_buttons = file_ns::cmp_buts_displace;
   ntype.initfunc = file_ns::cmp_node_init_displace;
   blender::bke::node_type_storage(
       ntype, "NodeDisplaceData", node_free_standard_storage, node_copy_standard_storage);

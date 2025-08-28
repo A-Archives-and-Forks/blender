@@ -113,7 +113,7 @@ static wmOperatorStatus outliner_highlight_update_invoke(bContext *C,
 
   /* Drag and drop does its own highlighting. */
   wmWindowManager *wm = CTX_wm_manager(C);
-  if (wm->drags.first) {
+  if (wm->runtime->drags.first) {
     return OPERATOR_PASS_THROUGH;
   }
 
@@ -276,7 +276,7 @@ static wmOperatorStatus outliner_item_openclose_invoke(bContext *C,
     outliner_tag_redraw_avoid_rebuild_on_open_change(space_outliner, region);
 
     /* Only toggle once for single click toggling */
-    if ((event->type == LEFTMOUSE) && (event->val != KM_CLICK_DRAG)) {
+    if ((event->type == LEFTMOUSE) && (event->val != KM_PRESS_DRAG)) {
       return OPERATOR_FINISHED;
     }
 
@@ -2416,7 +2416,7 @@ static void outliner_orphans_purge_ui(bContext * /*C*/, wmOperator *op)
   uiLayout *layout = op->layout;
   PointerRNA *ptr = op->ptr;
   if (!op->customdata) {
-    /* This should only happen on 'adjust last operation' case, since `invoke` will not have  been
+    /* This should only happen on 'adjust last operation' case, since `invoke` will not have been
      * called then before showing the UI (the 'redo panel' UI uses WM-stored operator properties
      * and a newly-created operator).
      *

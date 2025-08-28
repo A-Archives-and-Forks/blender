@@ -16,7 +16,7 @@ namespace blender::image_engine {
 void ScreenSpaceDrawingMode::add_shgroups() const
 {
   PassSimple &pass = instance_.state.image_ps;
-  GPUShader *shader = ShaderModule::module_get().color.get();
+  gpu::Shader *shader = ShaderModule::module_get().color.get();
   const ShaderParameters &sh_params = instance_.state.sh_params;
   DefaultTextureList *dtxl = DRW_context_get()->viewport_texture_list_get();
 
@@ -40,7 +40,7 @@ void ScreenSpaceDrawingMode::add_shgroups() const
 void ScreenSpaceDrawingMode::add_depth_shgroups(::Image *image, ImageUser *image_user) const
 {
   PassSimple &pass = instance_.state.depth_ps;
-  GPUShader *shader = ShaderModule::module_get().depth.get();
+  gpu::Shader *shader = ShaderModule::module_get().depth.get();
   pass.shader_set(shader);
 
   float4x4 image_mat = float4x4::identity();
@@ -188,6 +188,10 @@ void ScreenSpaceDrawingMode::do_partial_update(
                texture_height / BLI_rctf_size_y(&info.clipping_uv_bounds)),
           ceil((changed_overlapping_region_in_uv_space.ymax - info.clipping_uv_bounds.ymin) *
                texture_height / BLI_rctf_size_y(&info.clipping_uv_bounds)));
+      gpu_texture_region_to_update.xmax = min_ii(gpu_texture_region_to_update.xmax,
+                                                 info.clipping_bounds.xmax);
+      gpu_texture_region_to_update.ymax = min_ii(gpu_texture_region_to_update.ymax,
+                                                 info.clipping_bounds.ymax);
 
       rcti tile_region_to_extract;
       BLI_rcti_init(

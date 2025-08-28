@@ -225,10 +225,8 @@ typedef struct UserDef_Experimental {
   char use_sculpt_texture_paint;
   char use_new_volume_nodes;
   char use_shader_node_previews;
-  char use_bundle_and_closure_nodes;
-  char use_socket_structure_type;
   char use_geometry_nodes_lists;
-  char _pad[4];
+  char _pad[6];
 } UserDef_Experimental;
 
 #define USER_EXPERIMENTAL_TEST(userdef, member) \
@@ -598,6 +596,8 @@ typedef struct UserDef {
 
   char render_display_type;      /* eUserpref_RenderDisplayType */
   char filebrowser_display_type; /* eUserpref_TempSpaceDisplayType */
+  char preferences_display_type; /* eUserpref_TempSpaceDisplayType */
+  char _pad18[7];
 
   short sequencer_proxy_setup; /* eUserpref_SeqProxySetup */
   short _pad1;
@@ -1049,6 +1049,9 @@ typedef enum eNdof_Navigation_Mode {
   /**
    * 3D mouse cap controls the movement of the view window
    * and allows for flying through the scene.
+   *
+   * \note this also inverts navigation for for 2D views,
+   * since it's confusing for users when 2D/3D navigation is inverted, see: #144751.
    */
   NDOF_NAVIGATION_MODE_FLY = 1,
   /* TODO: implement "Target Camera Mode" and "Drone Mode" */

@@ -2477,7 +2477,11 @@ void uiTemplateImage(uiLayout *layout,
                      PointerRNA *userptr,
                      bool compact,
                      bool multiview);
-void uiTemplateImageSettings(uiLayout *layout, PointerRNA *imfptr, bool color_management);
+void uiTemplateImageSettings(uiLayout *layout,
+                             bContext *C,
+                             PointerRNA *imfptr,
+                             bool color_management,
+                             const char *panel_idname = nullptr);
 void uiTemplateImageStereo3d(uiLayout *layout, PointerRNA *stereo3d_format_ptr);
 void uiTemplateImageViews(uiLayout *layout, PointerRNA *imaptr);
 void uiTemplateImageFormatViews(uiLayout *layout, PointerRNA *imfptr, PointerRNA *ptr);
@@ -3019,7 +3023,7 @@ bool UI_view_item_popup_keep_open(const blender::ui::AbstractViewItem &item);
  * support dragging, i.e. if it won't create a drag-controller upon request.
  * \return True if dragging started successfully, otherwise false.
  */
-bool UI_view_item_drag_start(bContext &C, const blender::ui::AbstractViewItem &item);
+bool UI_view_item_drag_start(bContext &C, blender::ui::AbstractViewItem &item);
 
 /**
  * \param xy: Coordinate to find a view item at, in window space.

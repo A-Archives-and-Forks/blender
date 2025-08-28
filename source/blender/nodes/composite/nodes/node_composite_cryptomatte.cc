@@ -11,7 +11,6 @@
 
 #include <fmt/format.h>
 
-#include "BKE_node.hh"
 #include "node_composite_util.hh"
 
 #include "BLI_assert.h"
@@ -38,6 +37,7 @@
 #include "BKE_lib_id.hh"
 #include "BKE_library.hh"
 #include "BKE_main.hh"
+#include "BKE_node.hh"
 
 #include "MEM_guardedalloc.h"
 
@@ -322,7 +322,8 @@ class BaseCryptoMatteOperation : public NodeOperation {
   void compute_pick_gpu(const Vector<Result> &layers)
   {
     /* See this->compute_pick for why full precision is necessary. */
-    GPUShader *shader = context().get_shader("compositor_cryptomatte_pick", ResultPrecision::Full);
+    gpu::Shader *shader = context().get_shader("compositor_cryptomatte_pick",
+                                               ResultPrecision::Full);
     GPU_shader_bind(shader);
 
     const int2 lower_bound = this->get_layers_lower_bound();
@@ -416,7 +417,7 @@ class BaseCryptoMatteOperation : public NodeOperation {
       return output_matte;
     }
 
-    GPUShader *shader = context().get_shader("compositor_cryptomatte_matte");
+    gpu::Shader *shader = context().get_shader("compositor_cryptomatte_matte");
     GPU_shader_bind(shader);
 
     const int2 lower_bound = this->get_layers_lower_bound();
@@ -514,7 +515,7 @@ class BaseCryptoMatteOperation : public NodeOperation {
 
   void compute_image_gpu(const Result &matte)
   {
-    GPUShader *shader = context().get_shader("compositor_cryptomatte_image");
+    gpu::Shader *shader = context().get_shader("compositor_cryptomatte_image");
     GPU_shader_bind(shader);
 
     Result &input_image = get_input_image();

@@ -248,7 +248,7 @@ void WM_gizmogroup_ensure_init(const bContext *C, wmGizmoGroup *gzgroup)
     wmGizmoGroupType *gzgt = gzgroup->type;
     if (gzgt->keymap == nullptr) {
       wmWindowManager *wm = CTX_wm_manager(C);
-      wm_gizmogrouptype_setup_keymap(gzgt, wm->defaultconf);
+      wm_gizmogrouptype_setup_keymap(gzgt, wm->runtime->defaultconf);
       BLI_assert(gzgt->keymap != nullptr);
     }
     gzgroup->init_flag |= WM_GIZMOGROUP_INIT_SETUP;
@@ -812,7 +812,7 @@ static wmKeyMap *WM_gizmogroup_keymap_template_select_ex(wmKeyConfig *kc,
   const int action_mouse = (U.flag & USER_LMOUSESELECT) ? RIGHTMOUSE : LEFTMOUSE;
 #else
   const int select_mouse = RIGHTMOUSE, select_mouse_val = KM_PRESS;
-  const int select_tweak = RIGHTMOUSE, select_tweak_val = KM_CLICK_DRAG;
+  const int select_tweak = RIGHTMOUSE, select_tweak_val = KM_PRESS_DRAG;
   const int action_mouse = LEFTMOUSE, action_mouse_val = KM_PRESS;
 #endif
 
@@ -887,7 +887,7 @@ wmKeyMap *WM_gizmo_keymap_generic_with_keyconfig(wmKeyConfig *kc)
 }
 wmKeyMap *WM_gizmo_keymap_generic(wmWindowManager *wm)
 {
-  return WM_gizmo_keymap_generic_with_keyconfig(wm->defaultconf);
+  return WM_gizmo_keymap_generic_with_keyconfig(wm->runtime->defaultconf);
 }
 
 wmKeyMap *WM_gizmo_keymap_generic_select_with_keyconfig(wmKeyConfig *kc)
@@ -897,7 +897,7 @@ wmKeyMap *WM_gizmo_keymap_generic_select_with_keyconfig(wmKeyConfig *kc)
 }
 wmKeyMap *WM_gizmo_keymap_generic_select(wmWindowManager *wm)
 {
-  return WM_gizmo_keymap_generic_select_with_keyconfig(wm->defaultconf);
+  return WM_gizmo_keymap_generic_select_with_keyconfig(wm->runtime->defaultconf);
 }
 
 wmKeyMap *WM_gizmo_keymap_generic_drag_with_keyconfig(wmKeyConfig *kc)
@@ -907,17 +907,17 @@ wmKeyMap *WM_gizmo_keymap_generic_drag_with_keyconfig(wmKeyConfig *kc)
 }
 wmKeyMap *WM_gizmo_keymap_generic_drag(wmWindowManager *wm)
 {
-  return WM_gizmo_keymap_generic_drag_with_keyconfig(wm->defaultconf);
+  return WM_gizmo_keymap_generic_drag_with_keyconfig(wm->runtime->defaultconf);
 }
 
-wmKeyMap *WM_gizmo_keymap_generic_click_drag_with_keyconfig(wmKeyConfig *kc)
+wmKeyMap *WM_gizmo_keymap_generic_press_drag_with_keyconfig(wmKeyConfig *kc)
 {
   const char *idname = "Generic Gizmo Click Drag";
   return WM_keymap_ensure(kc, idname, SPACE_EMPTY, RGN_TYPE_WINDOW);
 }
-wmKeyMap *WM_gizmo_keymap_generic_click_drag(wmWindowManager *wm)
+wmKeyMap *WM_gizmo_keymap_generic_press_drag(wmWindowManager *wm)
 {
-  return WM_gizmo_keymap_generic_click_drag_with_keyconfig(wm->defaultconf);
+  return WM_gizmo_keymap_generic_press_drag_with_keyconfig(wm->runtime->defaultconf);
 }
 
 wmKeyMap *WM_gizmo_keymap_generic_maybe_drag_with_keyconfig(wmKeyConfig *kc)
@@ -927,7 +927,7 @@ wmKeyMap *WM_gizmo_keymap_generic_maybe_drag_with_keyconfig(wmKeyConfig *kc)
 }
 wmKeyMap *WM_gizmo_keymap_generic_maybe_drag(wmWindowManager *wm)
 {
-  return WM_gizmo_keymap_generic_maybe_drag_with_keyconfig(wm->defaultconf);
+  return WM_gizmo_keymap_generic_maybe_drag_with_keyconfig(wm->runtime->defaultconf);
 }
 
 /** \} */
@@ -979,7 +979,7 @@ void WM_gizmomaptype_group_init_runtime_keymap(const Main *bmain, wmGizmoGroupTy
 {
   /* Initialize key-map.
    * On startup there's an extra call to initialize keymaps for 'permanent' gizmo-groups. */
-  wm_gizmogrouptype_setup_keymap(gzgt, ((wmWindowManager *)bmain->wm.first)->defaultconf);
+  wm_gizmogrouptype_setup_keymap(gzgt, ((wmWindowManager *)bmain->wm.first)->runtime->defaultconf);
 }
 
 void WM_gizmomaptype_group_init_runtime(const Main *bmain,

@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-04-14 08:23+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 15:34+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Hindi <https://translate.blender.org/projects/blender-ui/ui/hi/>\n"
 "Language: hi\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10.1"
+"X-Generator: Weblate 5.12.1"
 
 
 msgid "Valid"
@@ -445,6 +445,14 @@ msgstr "आंतरिक"
 
 msgid "Target"
 msgstr "लक्ष्य"
+
+
+msgid "Displacement"
+msgstr "विस्थापन"
+
+
+msgid "Bake displacement"
+msgstr "विस्थापन भर्जन"
 
 
 msgid "Clear"
@@ -1158,10 +1166,6 @@ msgid "Radius Scale"
 msgstr "त्रिज्या प्रंमाण"
 
 
-msgid "Displacement"
-msgstr "विस्थापन"
-
-
 msgid "Velocity"
 msgstr "वेग"
 
@@ -1865,10 +1869,6 @@ msgstr "धुंधलापन"
 
 msgid "Alpha Mode"
 msgstr "पारदर्शिता रूप"
-
-
-msgid "Iris"
-msgstr "आईरिस"
 
 
 msgid "Duration"
@@ -3097,10 +3097,6 @@ msgid "Bake"
 msgstr "भर्जन"
 
 
-msgid "Z Up"
-msgstr "Z ऊर्ध्व"
-
-
 msgid "Unknown"
 msgstr "अज्ञात"
 
@@ -3587,6 +3583,10 @@ msgstr "X ऊर्ध्व"
 
 msgid "Y Up"
 msgstr "Y ऊर्ध्व"
+
+
+msgid "Z Up"
+msgstr "Z ऊर्ध्व"
 
 
 msgid "-X Up"
@@ -4677,14 +4677,6 @@ msgid "Sky"
 msgstr "आकाश"
 
 
-msgid "Bias"
-msgstr "पूर्वाग्रह"
-
-
-msgid "Bake displacement"
-msgstr "विस्थापन भर्जन"
-
-
 msgid "FPS"
 msgstr "एफपीएस"
 
@@ -4743,6 +4735,10 @@ msgstr "शेष घनत्व"
 
 msgid "Factor Rest Length"
 msgstr "कारक शेष लंबाई"
+
+
+msgid "Bias"
+msgstr "पूर्वाग्रह"
 
 
 msgid "Active Strip"
@@ -4961,16 +4957,16 @@ msgid "Color of marker"
 msgstr "चिन्हक के रंग"
 
 
-msgid "Vertex Group Unreferenced"
-msgstr "वर्टेक्स Unreferenced समूह"
-
-
 msgid "Converter Node"
 msgstr "परिवर्तक ग्रन्थि"
 
 
 msgid "Wires"
 msgstr "तार"
+
+
+msgid "Vertex Group Unreferenced"
+msgstr "वर्टेक्स Unreferenced समूह"
 
 
 msgid "Inner"
@@ -5133,10 +5129,6 @@ msgstr "कोई पाठ या संचिका निर्दिष्�
 
 msgid "External shader script must have .osl or .oso extension, or be a module name"
 msgstr "बाह्य shader स्क्रिप्ट .osl या .oso एक्सटेंशन होना चाहिए, या एक मॉड्यूल का नाम हो"
-
-
-msgid "Can't read OSO bytecode to store in node at %r"
-msgstr "OSO bytecode %r पर नोड में संग्रहीत करने के लिए नहीं पढ़ सकता"
 
 
 msgid "Failed to write .oso file next to external .osl file at "
@@ -5483,6 +5475,11 @@ msgstr "चलचित्र"
 
 
 msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "अनुबोधक चिन्हों मिटाएँ..."
+
+
+msgctxt "Operator"
 msgid "Left"
 msgstr "बाईं ओर"
 
@@ -5630,11 +5627,6 @@ msgstr "वक्ता"
 
 
 msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "अनुबोधक चिन्हों मिटाएँ..."
-
-
-msgctxt "Operator"
 msgid "Change Shape"
 msgstr "आकृति बदलें"
 
@@ -5681,10 +5673,6 @@ msgstr "गणना"
 msgctxt "Plural"
 msgid "Sharp"
 msgstr "पैना"
-
-
-msgid "Seams"
-msgstr "तेजी"
 
 
 msgctxt "Operator"
@@ -6146,6 +6134,10 @@ msgid "Outer"
 msgstr "बाहरी"
 
 
+msgid "Seams"
+msgstr "तेजी"
+
+
 msgid "No additional selected meshes with equal vertex count to join"
 msgstr "अंतर्गत होने के लिए कोई अतिरिक्त चयनित जाल बराबर शिरोबिन्दु के साथ गिनती"
 
@@ -6550,10 +6542,6 @@ msgstr "कुंजी"
 
 msgid "Fac"
 msgstr "एफ़एसी"
-
-
-msgid "Layer:"
-msgstr "परत:"
 
 
 msgid "Old"

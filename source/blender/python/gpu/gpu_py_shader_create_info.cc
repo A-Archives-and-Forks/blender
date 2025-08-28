@@ -353,7 +353,7 @@ PyDoc_STRVAR(
     pygpu_interface_info_name_doc,
     "Name of the interface block.\n"
     "\n"
-    ":type: str");
+    ":type: str\n");
 static PyObject *pygpu_interface_info_name_get(BPyGPUStageInterfaceInfo *self, void * /*closure*/)
 {
   StageInterfaceInfo *interface = reinterpret_cast<StageInterfaceInfo *>(self->interface);
@@ -582,7 +582,7 @@ static PyObject *pygpu_shader_info_vertex_out(BPyGPUShaderCreateInfo *self,
 PyDoc_STRVAR(
     /* Wrap. */
     pygpu_shader_info_fragment_out_doc,
-    ".. method:: fragment_out(slot, type, name, blend='NONE')\n"
+    ".. method:: fragment_out(slot, type, name, *, blend='NONE')\n"
     "\n"
     "   Specify a fragment output corresponding to a framebuffer target slot.\n"
     "\n"
@@ -724,7 +724,7 @@ static PyObject *pygpu_shader_info_uniform_buf(BPyGPUShaderCreateInfo *self, PyO
 PyDoc_STRVAR(
     /* Wrap. */
     pygpu_shader_info_image_doc,
-    ".. method:: image(slot, format, type, name, qualifiers={'NO_RESTRICT'})\n"
+    ".. method:: image(slot, format, type, name, *, qualifiers={'NO_RESTRICT'})\n"
     "\n"
     "   Specify an image resource used for arbitrary load and store operations.\n"
     "\n"
@@ -1220,19 +1220,19 @@ static PyObject *pygpu_shader_info_define(BPyGPUShaderCreateInfo *self, PyObject
 PyDoc_STRVAR(
     /* Wrap. */
     pygpu_shader_info_local_group_size_doc,
-    ".. method:: local_group_size(x, y=-1, z=-1)\n"
+    ".. method:: local_group_size(x, y=1, z=1)\n"
     "\n"
     "   Specify the local group size for compute shaders.\n"
     "\n"
     "   :arg x: The local group size in the x dimension.\n"
     "   :type x: int\n"
-    "   :arg y: The local group size in the y dimension. Optional. Defaults to -1.\n"
+    "   :arg y: The local group size in the y dimension. Optional. Defaults to 1.\n"
     "   :type y: int\n"
-    "   :arg z: The local group size in the z dimension. Optional. Defaults to -1.\n"
+    "   :arg z: The local group size in the z dimension. Optional. Defaults to 1.\n"
     "   :type z: int\n");
 static PyObject *pygpu_shader_info_local_group_size(BPyGPUShaderCreateInfo *self, PyObject *args)
 {
-  int x = -1, y = -1, z = -1;
+  int x = -1, y = 1, z = 1;
 
   if (!PyArg_ParseTuple(args, "i|ii:local_group_size", &x, &y, &z)) {
     return nullptr;
@@ -1373,7 +1373,6 @@ PyDoc_STRVAR(
     ".. class:: GPUShaderCreateInfo()\n"
     "\n"
     "   Stores and describes types and variables that are used in shader sources.\n");
-
 PyTypeObject BPyGPUShaderCreateInfo_Type = {
     /*ob_base*/ PyVarObject_HEAD_INIT(nullptr, 0)
     /*tp_name*/ "GPUShaderCreateInfo",

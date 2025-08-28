@@ -217,7 +217,7 @@ static bool bake_strokes(Object *ob,
       lmd->mask_switches,
       lmd->material_mask_bits,
       lmd->intersection_mask,
-      float(lmd->thickness) / 1000.0f,
+      lmd->radius,
       lmd->opacity,
       lmd->shadow_selection,
       lmd->silhouette_selection,
@@ -334,7 +334,7 @@ static void lineart_bake_endjob(void *customdata)
 {
   LineartBakeJob *bj = static_cast<LineartBakeJob *>(customdata);
 
-  WM_set_locked_interface(CTX_wm_manager(bj->C), false);
+  WM_locked_interface_set(CTX_wm_manager(bj->C), false);
 
   WM_main_add_notifier(NC_SCENE | ND_FRAME, bj->scene);
 
@@ -392,7 +392,7 @@ static wmOperatorStatus lineart_bake_common(bContext *C,
     wmJob *wm_job = WM_jobs_get(CTX_wm_manager(C),
                                 CTX_wm_window(C),
                                 scene,
-                                "Line Art",
+                                "Baking Line Art...",
                                 WM_JOB_PROGRESS,
                                 WM_JOB_TYPE_LINEART);
 
@@ -400,7 +400,7 @@ static wmOperatorStatus lineart_bake_common(bContext *C,
     WM_jobs_timer(wm_job, 0.1, NC_GPENCIL | ND_DATA | NA_EDITED, NC_GPENCIL | ND_DATA | NA_EDITED);
     WM_jobs_callbacks(wm_job, lineart_bake_startjob, nullptr, nullptr, lineart_bake_endjob);
 
-    WM_set_locked_interface_with_flags(CTX_wm_manager(C), REGION_DRAW_LOCK_BAKING);
+    WM_locked_interface_set_with_flags(CTX_wm_manager(C), REGION_DRAW_LOCK_BAKING);
 
     WM_jobs_start(CTX_wm_manager(C), wm_job);
 
@@ -411,6 +411,10 @@ static wmOperatorStatus lineart_bake_common(bContext *C,
 
   wmJobWorkerStatus worker_status = {};
   lineart_bake_startjob(bj, &worker_status);
+
+  /* Need to call endjob manually to clear interface locking status when bake is not called as
+   * background task, otherwise spaes like 3d viewport can be unresponsive. */
+  lineart_bake_endjob(bj);
 
   MEM_delete(bj);
 

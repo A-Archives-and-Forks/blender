@@ -368,10 +368,11 @@ static wmOperatorStatus material_slot_assign_exec(bContext *C, wmOperator * /*op
       }
     }
     else if (ob->type == OB_FONT) {
-      EditFont *ef = ((Curve *)ob->data)->editfont;
+      const Curve *cu = static_cast<const Curve *>(ob->data);
+      EditFont *ef = cu->editfont;
       int i, selstart, selend;
 
-      if (ef && BKE_vfont_select_get(ob, &selstart, &selend)) {
+      if (ef && BKE_vfont_select_get(cu, &selstart, &selend)) {
         for (i = selstart; i <= selend; i++) {
           changed = true;
           ef->textbufinfo[i].mat_nr = mat_nr_active;
@@ -1538,7 +1539,7 @@ static wmOperatorStatus lightprobe_cache_bake_invoke(bContext *C,
       wm, win, bmain, view_layer, scene, probes, data->report, scene->r.cfra, 0);
   if (wm_job == nullptr) {
     MEM_delete(data);
-    BKE_report(op->reports, RPT_WARNING, "Can't bake light probe while rendering");
+    BKE_report(op->reports, RPT_WARNING, "Cannot bake light probe while rendering");
     return OPERATOR_CANCELLED;
   }
 

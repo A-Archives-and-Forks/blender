@@ -37,6 +37,7 @@
 #include "BKE_mesh_sample.hh"
 #include "BKE_object.hh"
 #include "BKE_paint.hh"
+#include "BKE_paint_types.hh"
 #include "BKE_report.hh"
 
 #include "DEG_depsgraph_query.hh"
@@ -58,6 +59,8 @@
 
 #include "WM_api.hh"
 #include "WM_types.hh"
+
+#include "IMB_colormanagement.hh"
 
 #include "paint_intern.hh"
 
@@ -257,10 +260,9 @@ static void paint_sample_color(
                 rgba_f = math::clamp(rgba_f, 0.0f, 1.0f);
                 straight_to_premul_v4(rgba_f);
                 if (use_palette) {
-                  linearrgb_to_srgb_v3_v3(color->rgb, rgba_f);
+                  BKE_palette_color_set(color, rgba_f);
                 }
                 else {
-                  linearrgb_to_srgb_v3_v3(rgba_f, rgba_f);
                   BKE_brush_color_set(paint, br, rgba_f);
                 }
               }
@@ -268,12 +270,18 @@ static void paint_sample_color(
                 uchar4 rgba = interp == SHD_INTERP_CLOSEST ?
                                   imbuf::interpolate_nearest_wrap_byte(ibuf, u, v) :
                                   imbuf::interpolate_bilinear_wrap_byte(ibuf, u, v);
+                float rgba_f[4];
+                rgba_uchar_to_float(rgba_f, rgba);
+
+                if ((ibuf->colormanage_flag & IMB_COLORMANAGE_IS_DATA) == 0) {
+                  IMB_colormanagement_colorspace_to_scene_linear_v3(rgba_f,
+                                                                    ibuf->byte_buffer.colorspace);
+                }
+
                 if (use_palette) {
-                  rgb_uchar_to_float(color->rgb, rgba);
+                  BKE_palette_color_set(color, rgba_f);
                 }
                 else {
-                  float rgba_f[3];
-                  rgb_uchar_to_float(rgba_f, rgba);
                   BKE_brush_color_set(paint, br, rgba_f);
                 }
               }
@@ -293,12 +301,8 @@ static void paint_sample_color(
     float rgba_f[3];
     bool is_data;
     if (ED_space_image_color_sample(sima, region, blender::int2(x, y), rgba_f, &is_data)) {
-      if (!is_data) {
-        linearrgb_to_srgb_v3_v3(rgba_f, rgba_f);
-      }
-
       if (use_palette) {
-        copy_v3_v3(color->rgb, rgba_f);
+        BKE_palette_color_set(color, rgba_f);
       }
       else {
         BKE_brush_color_set(paint, br, rgba_f);
@@ -314,8 +318,14 @@ static void paint_sample_color(
                                  CTX_wm_window(C),
                                  blender::int2(x + region->winrct.xmin, y + region->winrct.ymin),
                                  rgb_fl);
+
+    /* The sampled color is in display colorspace, convert to scene linear. */
+    const ColorManagedDisplay *display = IMB_colormanagement_display_get_named(
+        scene->display_settings.display_device);
+    IMB_colormanagement_display_to_scene_linear_v3(rgb_fl, display);
+
     if (use_palette) {
-      copy_v3_v3(color->rgb, rgb_fl);
+      BKE_palette_color_set(color, rgb_fl);
     }
     else {
       BKE_brush_color_set(paint, br, rgb_fl);

@@ -258,7 +258,7 @@ int time_find_next_prev_edit(Scene *scene,
     return timeline_frame;
   }
 
-  LISTBASE_FOREACH (Strip *, strip, ed->seqbasep) {
+  LISTBASE_FOREACH (Strip *, strip, ed->current_strips()) {
     int i;
 
     if (do_skip_mute && render_is_muted(channels, strip)) {
@@ -560,7 +560,7 @@ static void strip_time_slip_strip_ex(const Scene *scene,
                                      bool recursed)
 {
   if (strip->type == STRIP_TYPE_SOUND_RAM && subframe_delta != 0.0f) {
-    strip->sound_offset += subframe_delta / FPS;
+    strip->sound_offset += subframe_delta / scene->frames_per_second();
   }
 
   if (delta == 0 && (!slip_keyframes || subframe_delta == 0.0f)) {

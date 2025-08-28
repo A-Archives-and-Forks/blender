@@ -322,15 +322,17 @@ class USDImportTest(AbstractUSDTest):
             blender_mesh2_eval = bpy.data.objects["mesh_vert_crease"].evaluated_get(depsgraph)
 
             # Check crease values
-            blender_crease_data = [round(d.value) for d in blender_mesh1_eval.data.attributes["crease_edge"].data]
-            usd_crease_data = [round(sharpness_to_crease(d)) for d in usd_mesh1.GetCreaseSharpnessesAttr().Get(frame)]
+            blender_crease_data = [round(d.value, 5) for d in blender_mesh1_eval.data.attributes["crease_edge"].data]
+            usd_crease_data = [
+                round(sharpness_to_crease(d), 5) for d in usd_mesh1.GetCreaseSharpnessesAttr().Get(frame)]
             self.assertEqual(
                 blender_crease_data,
                 usd_crease_data,
                 f"Frame {frame}: {blender_mesh1_eval.name} crease values do not match")
 
-            blender_crease_data = [round(d.value) for d in blender_mesh2_eval.data.attributes["crease_vert"].data]
-            usd_crease_data = [round(sharpness_to_crease(d)) for d in usd_mesh2.GetCornerSharpnessesAttr().Get(frame)]
+            blender_crease_data = [round(d.value, 5) for d in blender_mesh2_eval.data.attributes["crease_vert"].data]
+            usd_crease_data = [
+                round(sharpness_to_crease(d), 5) for d in usd_mesh2.GetCornerSharpnessesAttr().Get(frame)]
             self.assertEqual(
                 blender_crease_data,
                 usd_crease_data,
@@ -1639,6 +1641,16 @@ class USDImportTest(AbstractUSDTest):
             self.assertTrue(len(ob.modifiers) == 1 and ob.modifiers[0].type ==
                             'MESH_SEQUENCE_CACHE', f"{ob.name} has incorrect modifiers")
 
+        # Check that the shape with the color attribute properly updates and has correct values
+        def get_first_color_value(blender_object, frame):
+            bpy.context.scene.frame_set(frame)
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            return blender_object.evaluated_get(depsgraph).data.attributes["displayColor"].data.values()[0].color
+        blender_color = get_first_color_value(bpy.data.objects["capsule_color"], 1)
+        self.assertEqual(self.round_vector(blender_color), [0.8, 1.0, 0.0, 1.0])
+        blender_color = get_first_color_value(bpy.data.objects["capsule_color"], 2)
+        self.assertEqual(self.round_vector(blender_color), [0.1, 0.8, 0.0, 1.0])
+
     def test_import_collection_creation(self):
         """Test that the 'create_collection' option functions correctly."""
 
@@ -1789,7 +1801,7 @@ class USDImportTest(AbstractUSDTest):
         self.assertEqual({'FINISHED'}, res, f"Unable to export to {usdz2}")
 
         def check_image(name, tiles_num, size, is_packed):
-            self.assertTrue(name in bpy.data.images)
+            self.assertTrue(name in bpy.data.images, f"Could not find '{name}'")
 
             image = bpy.data.images[name]
             self.assertEqual(len(image.tiles), tiles_num)
@@ -1816,7 +1828,7 @@ class USDImportTest(AbstractUSDTest):
         check_image("test_grid_<UDIM>.png", 2, 1024, True)
         check_image("test_normal.exr", 1, 128, True)
         check_image("test_normal_invertY.exr", 1, 128, True)
-        check_image("color_121212.hdr", 1, 4, True)
+        check_image("color_0C0C0C.exr", 1, 1, True)
         check_materials()
 
         # Reload the empty file and import back in using IMPORT_COPY
@@ -1832,7 +1844,7 @@ class USDImportTest(AbstractUSDTest):
         check_image("test_grid_<UDIM>.png", 2, 128, False)
         check_image("test_normal.exr", 1, 128, False)
         check_image("test_normal_invertY.exr", 1, 128, False)
-        check_image("color_121212.hdr", 1, 4, False)
+        check_image("color_0C0C0C.exr", 1, 1, False)
         check_materials()
 
     def test_get_prim_map_parent_xform_not_merged(self):
@@ -2006,9 +2018,23 @@ class USDImportComparisonTest(unittest.TestCase):
 
         from modules import io_report
         report = io_report.Report("USD Import", self.output_dir, comparisondir, comparisondir.joinpath("reference"))
+        io_report.Report.context_lines = 8
+
+        bpy.utils.register_class(CompareTestSupportHook)
 
         for input_file in input_files:
-            with self.subTest(pathlib.Path(input_file).stem):
+            input_file_path = pathlib.Path(input_file)
+
+            io_report.Report.side_to_print_single_line = 5
+            io_report.Report.side_to_print_multi_line = 3
+
+            CompareTestSupportHook.reset_config()
+            if input_file_path.name in ("nurbs-gen-single.usda", "nurbs-gen-multiple.usda", "nurbs-custom.usda"):
+                CompareTestSupportHook.do_curve_rename = True
+                io_report.Report.side_to_print_single_line = 10
+                io_report.Report.side_to_print_multi_line = 10
+
+            with self.subTest(input_file_path.stem):
                 bpy.ops.wm.open_mainfile(filepath=str(self.testdir / "empty.blend"))
                 ok = report.import_and_check(
                     input_file, lambda filepath, params: bpy.ops.wm.usd_import(
@@ -2016,7 +2042,30 @@ class USDImportComparisonTest(unittest.TestCase):
                 if not ok:
                     self.fail(f"{input_file.stem} import result does not match expectations")
 
+        bpy.utils.unregister_class(CompareTestSupportHook)
         report.finish("io_usd_import")
+
+
+class CompareTestSupportHook(bpy.types.USDHook):
+    bl_idname = "CompareTestSupportHook"
+    bl_label = "Support some Comparison "
+
+    do_curve_rename = False
+
+    @staticmethod
+    def reset_config():
+        CompareTestSupportHook.do_curve_rename = False
+
+    @staticmethod
+    def on_import(context):
+        prim_map = context.get_prim_map()
+
+        if CompareTestSupportHook.do_curve_rename:
+            for prim_path, objects in prim_map.items():
+                if isinstance(objects[0], bpy.types.Object):
+                    objects[0].name = prim_path.name
+                elif isinstance(objects[0], bpy.types.Curves):
+                    objects[0].name = prim_path.GetParentPath().name
 
 
 class GetPrimMapUsdImportHook(bpy.types.USDHook):

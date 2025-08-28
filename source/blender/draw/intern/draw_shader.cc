@@ -98,7 +98,13 @@ class ShaderCache {
     get_static_cache().release();
   }
 
-  gpu::StaticShader hair_refine = {"draw_hair_refine_compute"};
+  gpu::StaticShader curves_topology = {"draw_curves_topology"};
+  gpu::StaticShader curves_evaluate_position = {"draw_curves_interpolate_position"};
+  gpu::StaticShader curves_evaluate_float4 = {"draw_curves_interpolate_float4_attribute"};
+  gpu::StaticShader curves_evaluate_float3 = {"draw_curves_interpolate_float3_attribute"};
+  gpu::StaticShader curves_evaluate_float2 = {"draw_curves_interpolate_float2_attribute"};
+  gpu::StaticShader curves_evaluate_float = {"draw_curves_interpolate_float_attribute"};
+  gpu::StaticShader curves_evaluate_length_intercept = {"draw_curves_evaluate_length_intercept"};
   gpu::StaticShader debug_draw_display = {"draw_debug_draw_display"};
   gpu::StaticShader draw_visibility_compute = {"draw_visibility_compute"};
   gpu::StaticShader draw_view_finalize = {"draw_view_finalize"};
@@ -149,49 +155,63 @@ class ShaderCache {
 
 using namespace blender::draw::Shader;
 
-GPUShader *DRW_shader_hair_refine_get(ParticleRefineShader /*refinement*/)
+blender::gpu::Shader *DRW_shader_curves_topology_get()
 {
-  return ShaderCache::get().hair_refine.get();
+  return ShaderCache::get().curves_topology.get();
 }
 
-GPUShader *DRW_shader_curves_refine_get(blender::draw::CurvesEvalShader /*type*/)
+blender::gpu::Shader *DRW_shader_curves_refine_get(blender::draw::CurvesEvalShader type)
 {
-  /* TODO: Implement curves evaluation types (Bezier and Catmull Rom). */
-  return ShaderCache::get().hair_refine.get();
+  switch (type) {
+    case blender::draw::CURVES_EVAL_POSITION:
+      return ShaderCache::get().curves_evaluate_position.get();
+    case blender::draw::CURVES_EVAL_FLOAT4:
+      return ShaderCache::get().curves_evaluate_float4.get();
+    case blender::draw::CURVES_EVAL_FLOAT3:
+      return ShaderCache::get().curves_evaluate_float3.get();
+    case blender::draw::CURVES_EVAL_FLOAT2:
+      return ShaderCache::get().curves_evaluate_float2.get();
+    case blender::draw::CURVES_EVAL_FLOAT:
+      return ShaderCache::get().curves_evaluate_float.get();
+    case blender::draw::CURVES_EVAL_LENGTH_INTERCEPT:
+      return ShaderCache::get().curves_evaluate_length_intercept.get();
+  }
+  BLI_assert_unreachable();
+  return nullptr;
 }
 
-GPUShader *DRW_shader_debug_draw_display_get()
+blender::gpu::Shader *DRW_shader_debug_draw_display_get()
 {
   return ShaderCache::get().debug_draw_display.get();
 }
 
-GPUShader *DRW_shader_draw_visibility_compute_get()
+blender::gpu::Shader *DRW_shader_draw_visibility_compute_get()
 {
   return ShaderCache::get().draw_visibility_compute.get();
 }
 
-GPUShader *DRW_shader_draw_view_finalize_get()
+blender::gpu::Shader *DRW_shader_draw_view_finalize_get()
 {
   return ShaderCache::get().draw_view_finalize.get();
 }
 
-GPUShader *DRW_shader_draw_resource_finalize_get()
+blender::gpu::Shader *DRW_shader_draw_resource_finalize_get()
 {
   return ShaderCache::get().draw_resource_finalize.get();
 }
 
-GPUShader *DRW_shader_draw_command_generate_get()
+blender::gpu::Shader *DRW_shader_draw_command_generate_get()
 {
   return ShaderCache::get().draw_command_generate.get();
 }
 
-GPUShader *DRW_shader_subdiv_get(SubdivShaderType shader_type)
+blender::gpu::Shader *DRW_shader_subdiv_get(SubdivShaderType shader_type)
 {
   BLI_assert(!ELEM(shader_type, SubdivShaderType::COMP_CUSTOM_DATA_INTERP));
   return ShaderCache::get().subdiv_sh[uint(shader_type)].get();
 }
 
-GPUShader *DRW_shader_subdiv_custom_data_get(GPUVertCompType comp_type, int dimensions)
+blender::gpu::Shader *DRW_shader_subdiv_custom_data_get(GPUVertCompType comp_type, int dimensions)
 {
   BLI_assert(dimensions >= 1 && dimensions <= SHADER_CUSTOM_DATA_INTERP_MAX_DIMENSIONS);
   if (comp_type == GPU_COMP_U16) {
@@ -202,7 +222,7 @@ GPUShader *DRW_shader_subdiv_custom_data_get(GPUVertCompType comp_type, int dime
   return ShaderCache::get().subdiv_custom_data_sh[dimensions - 1][comp_type].get();
 }
 
-GPUShader *DRW_shader_subdiv_interp_corner_normals_get()
+blender::gpu::Shader *DRW_shader_subdiv_interp_corner_normals_get()
 {
   return ShaderCache::get().subdiv_interp_corner_normals_sh.get();
 }

@@ -6,12 +6,11 @@
 
 #include "kernel/device/cpu/compat.h"
 #include "kernel/device/cpu/globals.h"
-#include "kernel/types.h"
 #include "kernel/util/image.h"
-#include "util/defines.h"
-#include "util/texture.h"
 
+#include "util/defines.h"
 #include "util/half.h"
+#include "util/texture.h"
 
 CCL_NAMESPACE_BEGIN
 
@@ -326,7 +325,6 @@ template<typename TexT, typename OutT = float4> struct TextureInterpolator {
 
 #undef SET_CUBIC_SPLINE_WEIGHTS
 
-/* TODO: only compute randl when needed? */
 ccl_device float4 kernel_image_interp(
     KernelGlobals kg, ShaderData *sd, const int tex_id, float2 uv, const differential2 duv)
 {

@@ -44,7 +44,6 @@ class DeviceScene {
   device_vector<Transform> object_motion_pass;
   device_vector<DecomposedTransform> object_motion;
   device_vector<uint> object_flag;
-  device_vector<float> object_volume_step;
   device_vector<uint> object_prim_offset;
 
   /* cameras */
@@ -87,6 +86,11 @@ class DeviceScene {
 
   /* IES lights */
   device_vector<float> ies_lights;
+
+  /* Volume. */
+  device_vector<KernelOctreeNode> volume_tree_nodes;
+  device_vector<KernelOctreeRoot> volume_tree_roots;
+  device_vector<int> volume_tree_root_ids;
 
   /* Image textures */
   device_vector<KernelImageTexture> image_textures;

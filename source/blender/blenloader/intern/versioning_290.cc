@@ -104,7 +104,7 @@ static eSpaceSeq_Proxy_RenderSize get_sequencer_render_size(Main *bmain)
   return render_size;
 }
 
-static bool can_use_proxy(const Strip *strip, int psize)
+static bool can_use_proxy(const Strip *strip, IMB_Proxy_Size psize)
 {
   if (strip->data->proxy == nullptr) {
     return false;
@@ -1175,7 +1175,7 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
 
       /* The sub-step method changed from "per second" to "per frame".
        * To get the new value simply divide the old bullet sim FPS with the scene FPS. */
-      rbw->substeps_per_frame /= FPS;
+      rbw->substeps_per_frame /= scene->frames_per_second();
 
       if (rbw->substeps_per_frame <= 0) {
         rbw->substeps_per_frame = 1;
@@ -1828,7 +1828,7 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
               {
                 sseq->flag |= SEQ_USE_PROXIES;
               }
-              if (sseq->render_size == SEQ_RENDER_SIZE_FULL) {
+              if (sseq->render_size == SEQ_RENDER_SIZE_FULL_DEPRECATED) {
                 sseq->render_size = SEQ_RENDER_SIZE_PROXY_100;
               }
             }

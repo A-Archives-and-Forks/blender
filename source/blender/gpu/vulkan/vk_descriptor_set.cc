@@ -167,7 +167,6 @@ void VKDescriptorSetUpdator::bind_input_attachment_resource(
     }
   }
   else {
-    bool supports_dynamic_rendering = device.extensions_get().dynamic_rendering;
     const BindSpaceTextures::Elem *elem_ptr = state_manager.textures_.get(
         resource_binding.binding);
     if (!elem_ptr) {
@@ -179,39 +178,20 @@ void VKDescriptorSetUpdator::bind_input_attachment_resource(
     VKTexture *texture = static_cast<VKTexture *>(elem.resource);
     BLI_assert(texture);
     BLI_assert(elem.resource_type == BindSpaceTextures::Type::Texture);
-    if (supports_dynamic_rendering) {
-      const VKSampler &sampler = device.samplers().get(elem.sampler);
-      bind_image(
-          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          sampler.vk_handle(),
-          texture->image_view_get(resource_binding.arrayed, VKImageViewFlags::DEFAULT).vk_handle(),
-          VK_IMAGE_LAYOUT_GENERAL,
-          resource_binding.location);
-      VkImage vk_image = texture->vk_image_handle();
-      if (vk_image != VK_NULL_HANDLE) {
-        access_info.images.append({vk_image,
-                                   resource_binding.access_mask,
-                                   to_vk_image_aspect_flag_bits(texture->device_format_get()),
-                                   0,
-                                   VK_REMAINING_ARRAY_LAYERS});
-      }
-    }
-    else {
-      /* Fall back to render-passes / sub-passes. */
-      bind_image(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-                 VK_NULL_HANDLE,
-                 texture->image_view_get(resource_binding.arrayed, VKImageViewFlags::NO_SWIZZLING)
-                     .vk_handle(),
-                 VK_IMAGE_LAYOUT_GENERAL,
-                 resource_binding.location);
-      VkImage vk_image = texture->vk_image_handle();
-      if (vk_image != VK_NULL_HANDLE) {
-        access_info.images.append({vk_image,
-                                   resource_binding.access_mask,
-                                   to_vk_image_aspect_flag_bits(texture->device_format_get()),
-                                   0,
-                                   VK_REMAINING_ARRAY_LAYERS});
-      }
+    const VKSampler &sampler = device.samplers().get(elem.sampler);
+    bind_image(
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        sampler.vk_handle(),
+        texture->image_view_get(resource_binding.arrayed, VKImageViewFlags::DEFAULT).vk_handle(),
+        VK_IMAGE_LAYOUT_GENERAL,
+        resource_binding.location);
+    VkImage vk_image = texture->vk_image_handle();
+    if (vk_image != VK_NULL_HANDLE) {
+      access_info.images.append({vk_image,
+                                 resource_binding.access_mask,
+                                 to_vk_image_aspect_flag_bits(texture->device_format_get()),
+                                 0,
+                                 VK_REMAINING_ARRAY_LAYERS});
     }
   }
 }
@@ -555,7 +535,8 @@ void VKDescriptorBufferUpdator::allocate_new_descriptor_set(
                        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                    0,
-                   VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT);
+                   VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+                   0.8f);
     debug::object_label(buffer->vk_handle(), "DescriptorBuffer");
     descriptor_buffer_data = static_cast<uint8_t *>(buffer->mapped_memory_get());
     descriptor_buffer_device_address = buffer->device_address_get();

@@ -163,7 +163,7 @@ static void find_socket_log_contexts(const Main &bmain,
         if (snode.edittree == nullptr) {
           continue;
         }
-        if (snode.geometry_nodes_type != SNODE_GEOMETRY_TOOL) {
+        if (snode.node_tree_sub_type != SNODE_GEOMETRY_TOOL) {
           continue;
         }
         bke::ComputeContextCache compute_context_cache;
@@ -892,9 +892,12 @@ static void run_node_group_ui(bContext *C, wmOperator *op)
 
   bke::OperatorComputeContext compute_context;
   GeoOperatorLog &eval_log = get_static_eval_log();
-  geo_log::GeoTreeLog &tree_log = eval_log.log->get_tree_log(compute_context.hash());
+
+  geo_log::GeoTreeLog *tree_log = eval_log.log ?
+                                      &eval_log.log->get_tree_log(compute_context.hash()) :
+                                      nullptr;
   nodes::draw_geometry_nodes_operator_redo_ui(
-      *C, *op, const_cast<bNodeTree &>(*node_tree), &tree_log);
+      *C, *op, const_cast<bNodeTree &>(*node_tree), tree_log);
 }
 
 static bool run_node_ui_poll(wmOperatorType * /*ot*/, PointerRNA *ptr)
@@ -988,44 +991,44 @@ void GEOMETRY_OT_execute_node_group(wmOperatorType *ot)
                              "cursor_position",
                              3,
                              nullptr,
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX,
                              "3D Cursor Position",
                              "",
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX);
   RNA_def_property_flag(prop, PROP_HIDDEN);
   prop = RNA_def_float_array(ot->srna,
                              "cursor_rotation",
                              4,
                              nullptr,
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX,
                              "3D Cursor Rotation",
                              "",
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX);
   RNA_def_property_flag(prop, PROP_HIDDEN);
   prop = RNA_def_float_array(ot->srna,
                              "viewport_projection_matrix",
                              16,
                              nullptr,
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX,
                              "Viewport Projection Transform",
                              "",
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX);
   RNA_def_property_flag(prop, PROP_HIDDEN);
   prop = RNA_def_float_array(ot->srna,
                              "viewport_view_matrix",
                              16,
                              nullptr,
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX,
                              "Viewport View Transform",
                              "",
-                             FLT_MIN,
+                             -FLT_MAX,
                              FLT_MAX);
   RNA_def_property_flag(prop, PROP_HIDDEN);
   prop = RNA_def_boolean(

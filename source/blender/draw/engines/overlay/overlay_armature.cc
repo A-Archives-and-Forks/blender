@@ -1295,7 +1295,7 @@ static void draw_points(const Armatures::DrawContext *ctx,
     }
   }
 
-  /*  Draw tip point */
+  /* Draw tip point. */
   if (is_envelope_draw) {
     drw_shgroup_bone_envelope(ctx,
                               bone.disp_mat(),
@@ -1897,7 +1897,7 @@ void Armatures::draw_armature_edit(Armatures::DrawContext *ctx)
        eBone;
        eBone = eBone->next, index += 0x10000)
   {
-    if (!blender::animrig::bone_is_visible_editbone(&arm, eBone)) {
+    if (!blender::animrig::bone_is_visible(&arm, eBone)) {
       continue;
     }
 
@@ -1905,7 +1905,7 @@ void Armatures::draw_armature_edit(Armatures::DrawContext *ctx)
 
     /* catch exception for bone with hidden parent */
     eBone_Flag boneflag = eBone_Flag(eBone->flag);
-    if ((eBone->parent) && !blender::animrig::bone_is_visible_editbone(&arm, eBone->parent)) {
+    if ((eBone->parent) && !blender::animrig::bone_is_visible(&arm, eBone->parent)) {
       boneflag &= ~BONE_CONNECTED;
     }
 
@@ -2022,11 +2022,11 @@ void Armatures::draw_armature_pose(Armatures::DrawContext *ctx)
   for (bPoseChannel *pchan = static_cast<bPoseChannel *>(ob->pose->chanbase.first); pchan;
        pchan = pchan->next, index += 0x10000)
   {
-    Bone *bone = pchan->bone;
-    if (!blender::animrig::bone_is_visible(&arm, bone)) {
+    if (!blender::animrig::bone_is_visible(&arm, pchan)) {
       continue;
     }
 
+    Bone *bone = pchan->bone;
     const bool draw_dofs = !is_pose_select && ctx->show_relations &&
                            (ctx->draw_mode == ARM_DRAW_MODE_POSE) &&
                            (bone->flag & BONE_SELECTED) &&
@@ -2042,7 +2042,7 @@ void Armatures::draw_armature_pose(Armatures::DrawContext *ctx)
     }
 
     eBone_Flag boneflag = eBone_Flag(bone->flag);
-    if (bone->parent && !blender::animrig::bone_is_visible(&arm, bone->parent)) {
+    if (pchan->parent && !blender::animrig::bone_is_visible(&arm, pchan->parent)) {
       /* Avoid drawing connection line to hidden parent. */
       boneflag &= ~BONE_CONNECTED;
     }

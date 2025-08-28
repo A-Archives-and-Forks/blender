@@ -57,10 +57,9 @@ function(add_blender_test testname)
   )
 endfunction()
 
-function(add_blender_test_io testname)
-  # Remove `--debug-exit-on-error` since errors
-  # are printed on e.g. meshes with invalid data. But
-  # we do want to test those in import tests.
+function(add_blender_test_allow_error testname)
+  # Remove `--debug-exit-on-error` since errors are printed on e.g. meshes with
+  # invalid data or failed image loading, but sometimes we want to test those.
   set(EXE_PARAMS ${TEST_BLENDER_EXE_PARAMS})
   list(REMOVE_ITEM EXE_PARAMS --debug-exit-on-error)
   add_blender_test_impl(
@@ -209,6 +208,11 @@ add_blender_test(
   --python ${CMAKE_CURRENT_LIST_DIR}/bl_bundled_modules.py -- --inside-blender
 )
 
+add_blender_test(
+  script_http_downloader
+  --python ${CMAKE_CURRENT_LIST_DIR}/bl_http_downloader.py
+)
+
 # test running operators doesn't segfault under various conditions
 if(WITH_TESTS_EXPERIMENTAL)
   add_blender_test(
@@ -220,6 +224,11 @@ endif()
 # ------------------------------------------------------------------------------
 # PY API TESTS
 # ------------------------------------------------------------------------------
+
+add_blender_test(
+  script_pyapi_bpy_app_tempdir
+  --python ${CMAKE_CURRENT_LIST_DIR}/bl_pyapi_bpy_app_tempdir.py
+)
 
 add_blender_test(
   script_pyapi_bpy_path
@@ -249,6 +258,11 @@ add_blender_test(
 add_blender_test(
   script_pyapi_idprop_datablock
   --python ${CMAKE_CURRENT_LIST_DIR}/bl_pyapi_idprop_datablock.py
+)
+
+add_blender_test(
+  script_pyapi_prop
+  --python ${CMAKE_CURRENT_LIST_DIR}/bl_pyapi_prop.py
 )
 
 add_blender_test(
@@ -408,6 +422,13 @@ endif()
 add_blender_test(
   geometry_attributes
   --python ${CMAKE_CURRENT_LIST_DIR}/bl_geometry_attributes.py
+)
+
+add_blender_test(
+  geonode_file_reporting
+  --python ${CMAKE_CURRENT_LIST_DIR}/bl_geonode_file_reporting.py
+  --
+  --testdir "${TEST_SRC_DIR}/io_tests"
 )
 
 # ------------------------------------------------------------------------------
@@ -592,13 +613,6 @@ add_blender_test(
 # ------------------------------------------------------------------------------
 
 if(TEST_SRC_DIR_EXISTS)
-  add_blender_test(
-    bl_node_field_type_inference
-    --python ${CMAKE_CURRENT_LIST_DIR}/bl_node_field_type_inference.py
-    --
-    --testdir "${TEST_SRC_DIR}/node_group"
-  )
-
   add_blender_test(
     bl_node_structure_type_inference
     --python ${CMAKE_CURRENT_LIST_DIR}/bl_node_structure_type_inference.py
@@ -1035,6 +1049,11 @@ if(WITH_GPU_COMPOSITOR_TESTS AND TEST_SRC_DIR_EXISTS)
   endif()
 endif()
 
+add_blender_test(
+  compositing_node_group
+  --python ${CMAKE_CURRENT_LIST_DIR}/compositing_node_group.py
+)
+
 # ------------------------------------------------------------------------------
 # GEOMETRY NODE TESTS
 # ------------------------------------------------------------------------------
@@ -1171,7 +1190,7 @@ if(WITH_USD AND TEST_SRC_DIR_EXISTS)
 endif()
 
 if(TEST_SRC_DIR_EXISTS)
-  add_blender_test_io(
+  add_blender_test_allow_error(
     io_fbx_import
     --python ${CMAKE_CURRENT_LIST_DIR}/io_fbx_import_test.py
     --
@@ -1181,7 +1200,7 @@ if(TEST_SRC_DIR_EXISTS)
 endif()
 
 if(WITH_IO_WAVEFRONT_OBJ AND TEST_SRC_DIR_EXISTS)
-  add_blender_test_io(
+  add_blender_test_allow_error(
     io_obj_import
     --python ${CMAKE_CURRENT_LIST_DIR}/io_obj_import_test.py
     --
@@ -1191,7 +1210,7 @@ if(WITH_IO_WAVEFRONT_OBJ AND TEST_SRC_DIR_EXISTS)
 endif()
 
 if(WITH_IO_PLY AND TEST_SRC_DIR_EXISTS)
-  add_blender_test_io(
+  add_blender_test_allow_error(
     io_ply_import
     --python ${CMAKE_CURRENT_LIST_DIR}/io_ply_import_test.py
     --
@@ -1201,7 +1220,7 @@ if(WITH_IO_PLY AND TEST_SRC_DIR_EXISTS)
 endif()
 
 if(WITH_IO_STL AND TEST_SRC_DIR_EXISTS)
-  add_blender_test_io(
+  add_blender_test_allow_error(
     io_stl_import
     --python ${CMAKE_CURRENT_LIST_DIR}/io_stl_import_test.py
     --
@@ -1244,7 +1263,7 @@ if(TEST_SRC_DIR_EXISTS AND TEST_OPENIMAGEIO_TOOL_EXISTS)
     -optional_formats "${OPTIONAL_FORMATS}"
   )
 
-  add_blender_test(
+  add_blender_test_allow_error(
     imbuf_load
     --python ${CMAKE_CURRENT_LIST_DIR}/bl_imbuf_load.py
     --
@@ -1358,11 +1377,6 @@ if(WITH_UI_TESTS)
   # list explicitly so changes bisecting/updated are sure to re-run CMake.
   set(_ui_tests
     test_sculpt.asset_shelf_brush_selection
-    test_workspace.sanity_check_general
-    test_workspace.sanity_check_2d_animation
-    test_workspace.sanity_check_sculpting
-    test_workspace.sanity_check_vfx
-    test_workspace.sanity_check_video_editing
     test_undo.compositor_make_group
     test_undo.text_editor_edit_mode_mix
     test_undo.text_editor_simple
@@ -1380,6 +1394,11 @@ if(WITH_UI_TESTS)
     test_undo.view3d_simple
     test_undo.view3d_texture_paint_complex
     test_undo.view3d_texture_paint_simple
+    test_workspace.sanity_check_general
+    test_workspace.sanity_check_2d_animation
+    test_workspace.sanity_check_sculpting
+    test_workspace.sanity_check_vfx
+    test_workspace.sanity_check_video_editing
   )
   foreach(ui_test ${_ui_tests})
     add_blender_test_ui(

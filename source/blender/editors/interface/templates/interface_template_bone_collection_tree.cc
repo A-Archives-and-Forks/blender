@@ -81,9 +81,9 @@ class BoneCollectionDragController : public AbstractViewItemDragController {
                                bArmature &armature,
                                const int bcoll_index);
 
-  eWM_DragDataType get_drag_type() const override;
+  std::optional<eWM_DragDataType> get_drag_type() const override;
   void *create_drag_data() const override;
-  void on_drag_start() override;
+  void on_drag_start(bContext &C) override;
 };
 
 class BoneCollectionDropTarget : public TreeViewItemDropTarget {
@@ -343,6 +343,11 @@ class BoneCollectionItem : public AbstractTreeViewItem {
     return bone_collection_.name;
   }
 
+  void delete_item(bContext *C) override
+  {
+    ANIM_armature_bonecoll_remove(&armature_, &bone_collection_);
+    ED_undo_push(C, "Delete Bone Collection");
+  }
   std::unique_ptr<AbstractViewItemDragController> create_drag_controller() const override
   {
     /* Reject dragging linked (or otherwise uneditable) bone collections. */
@@ -438,7 +443,7 @@ BoneCollectionDragController::BoneCollectionDragController(BoneCollectionTreeVie
 {
 }
 
-eWM_DragDataType BoneCollectionDragController::get_drag_type() const
+std::optional<eWM_DragDataType> BoneCollectionDragController::get_drag_type() const
 {
   return WM_DRAG_BONE_COLLECTION;
 }
@@ -450,7 +455,7 @@ void *BoneCollectionDragController::create_drag_data() const
   return drag_data;
 }
 
-void BoneCollectionDragController::on_drag_start()
+void BoneCollectionDragController::on_drag_start(bContext & /*C*/)
 {
   ANIM_armature_bonecoll_active_index_set(drag_arm_bcoll_.armature, drag_arm_bcoll_.bcoll_index);
 }

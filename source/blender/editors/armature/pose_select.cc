@@ -320,7 +320,7 @@ bool ED_pose_deselect_all(Object *ob, int select_mode, const bool ignore_visibil
   if (select_mode == SEL_TOGGLE) {
     select_mode = SEL_SELECT;
     LISTBASE_FOREACH (bPoseChannel *, pchan, &ob->pose->chanbase) {
-      if (ignore_visibility || blender::animrig::bone_is_visible_pchan(arm, pchan)) {
+      if (ignore_visibility || blender::animrig::bone_is_visible(arm, pchan)) {
         if (pchan->bone->flag & BONE_SELECTED) {
           select_mode = SEL_DESELECT;
           break;
@@ -333,7 +333,7 @@ bool ED_pose_deselect_all(Object *ob, int select_mode, const bool ignore_visibil
   bool changed = false;
   LISTBASE_FOREACH (bPoseChannel *, pchan, &ob->pose->chanbase) {
     /* ignore the pchan if it isn't visible or if its selection cannot be changed */
-    if (ignore_visibility || blender::animrig::bone_is_visible_pchan(arm, pchan)) {
+    if (ignore_visibility || blender::animrig::bone_is_visible(arm, pchan)) {
       int flag_prev = pchan->bone->flag;
       pose_do_bone_select(pchan, select_mode);
       changed = (changed || flag_prev != pchan->bone->flag);
@@ -346,7 +346,7 @@ static bool ed_pose_is_any_selected(Object *ob, bool ignore_visibility)
 {
   bArmature *arm = static_cast<bArmature *>(ob->data);
   LISTBASE_FOREACH (bPoseChannel *, pchan, &ob->pose->chanbase) {
-    if (ignore_visibility || blender::animrig::bone_is_visible_pchan(arm, pchan)) {
+    if (ignore_visibility || blender::animrig::bone_is_visible(arm, pchan)) {
       if (pchan->bone->flag & BONE_SELECTED) {
         return true;
       }
@@ -624,7 +624,9 @@ static wmOperatorStatus pose_select_parent_exec(bContext *C, wmOperator * /*op*/
   pchan = CTX_data_active_pose_bone(C);
   if (pchan) {
     parent = pchan->parent;
-    if ((parent) && !(parent->bone->flag & (BONE_HIDDEN_P | BONE_UNSELECTABLE))) {
+    if ((parent) && !(parent->drawflag & PCHAN_DRAW_HIDDEN) &&
+        !(parent->bone->flag & BONE_UNSELECTABLE))
+    {
       parent->bone->flag |= BONE_SELECTED;
       arm->act_bone = parent->bone;
     }
@@ -950,7 +952,7 @@ static blender::Set<bPoseChannel *> get_selected_pose_bones(Object *pose_object)
   blender::Set<bPoseChannel *> selected_pose_bones;
   bArmature *arm = static_cast<bArmature *>((pose_object) ? pose_object->data : nullptr);
   LISTBASE_FOREACH (bPoseChannel *, pchan, &pose_object->pose->chanbase) {
-    if (PBONE_SELECTED(arm, pchan->bone)) {
+    if (blender::animrig::bone_is_selected(arm, pchan)) {
       selected_pose_bones.add(pchan);
     }
   }
@@ -1060,7 +1062,7 @@ static bool pose_select_siblings(bContext *C, const bool extend)
     BLI_assert(arm);
     blender::Set<bPoseChannel *> parents_of_selected;
     LISTBASE_FOREACH (bPoseChannel *, pchan, &pose_object->pose->chanbase) {
-      if (PBONE_SELECTED(arm, pchan->bone)) {
+      if (blender::animrig::bone_is_selected(arm, pchan)) {
         parents_of_selected.add(pchan->parent);
       }
     }
@@ -1073,7 +1075,9 @@ static bool pose_select_siblings(bContext *C, const bool extend)
       }
       /* Checking if the bone is already selected so `changed_any_selection` stays true to its
        * word. */
-      if (parents_of_selected.contains(pchan->parent) && !PBONE_SELECTED(arm, pchan->bone)) {
+      if (parents_of_selected.contains(pchan->parent) &&
+          !blender::animrig::bone_is_selected(arm, pchan))
+      {
         pose_do_bone_select(pchan, SEL_SELECT);
         changed_any_selection = true;
       }
@@ -1321,8 +1325,7 @@ static wmOperatorStatus pose_select_mirror_exec(bContext *C, wmOperator *op)
     blender::Map<bPoseChannel *, eBone_Flag> old_selection_flags;
     LISTBASE_FOREACH (bPoseChannel *, pchan, &ob->pose->chanbase) {
       /* Treat invisible bones as deselected. */
-      const int flags = blender::animrig::bone_is_visible_pchan(arm, pchan) ? pchan->bone->flag :
-                                                                              0;
+      const int flags = blender::animrig::bone_is_visible(arm, pchan) ? pchan->bone->flag : 0;
 
       old_selection_flags.add_new(pchan, eBone_Flag(flags));
     }

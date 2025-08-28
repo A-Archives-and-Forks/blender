@@ -50,7 +50,7 @@ static bool color_space_is_invertible(const OCIO_NAMESPACE::ConstColorSpaceRcPtr
   }
 
   if (ocio_color_space->getTransform(OCIO_NAMESPACE::COLORSPACE_DIR_TO_REFERENCE)) {
-    /* if there's defined transform to reference space,  color space could be converted to scene
+    /* if there's defined transform to reference space, color space could be converted to scene
      * linear. */
     return true;
   }
@@ -131,6 +131,55 @@ LibOCIOColorSpace::LibOCIOColorSpace(const int index,
   this->index = index;
 
   is_invertible_ = color_space_is_invertible(ocio_color_space);
+
+  /* In OpenColorIO 2.5 there will be native support for this. For older configs and
+   * older OpenColorIO versions, check the aliases. This a convention used in the
+   * Blender and ACES 2.0 configs. */
+  const int num_aliases = ocio_color_space->getNumAliases();
+  for (int i = 0; i < num_aliases; i++) {
+    StringRefNull alias = ocio_color_space->getAlias(i);
+    if (alias == "srgb_display") {
+      interop_id_ = "srgb_rec709_display";
+    }
+    else if (alias == "displayp3_display") {
+      interop_id_ = "srgb_p3d65_display";
+    }
+    else if (alias == "displayp3_hdr_display") {
+      interop_id_ = "srgbx_p3d65_display";
+    }
+    else if (alias == "p3d65_display") {
+      interop_id_ = "g26_p3d65_display";
+    }
+    else if (alias == "rec1886_rec709_display") {
+      interop_id_ = "g24_rec709_display";
+    }
+    else if (alias == "rec2100_pq_display") {
+      interop_id_ = "pq_rec2020_display";
+    }
+    else if (alias == "rec2100_hlg_display") {
+      interop_id_ = "hlg_rec2020_display";
+    }
+    else if (alias == "lin_rec709_srgb" || alias == "lin_rec709") {
+      interop_id_ = "lin_rec709_scene";
+    }
+    else if (alias == "lin_rec2020") {
+      interop_id_ = "lin_rec2020_scene";
+    }
+    else if (alias == "lin_p3d65" || alias == "lin_displayp3") {
+      interop_id_ = "lin_p3d65_scene";
+    }
+    else if ((alias.startswith("lin_") || alias.startswith("srgb_") || alias.startswith("g18_") ||
+              alias.startswith("g22_") || alias.startswith("g24_") || alias.startswith("g26_") ||
+              alias.startswith("pq_") || alias.startswith("hlg_")) &&
+             (alias.endswith("_scene") || alias.endswith("_display")))
+    {
+      interop_id_ = alias;
+    }
+
+    if (!interop_id_.is_empty()) {
+      break;
+    }
+  }
 }
 
 bool LibOCIOColorSpace::is_scene_linear() const

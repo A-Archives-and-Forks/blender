@@ -316,7 +316,6 @@ set(GLSL_SRC
   engines/eevee/shaders/eevee_ambient_occlusion_lib.glsl
   engines/eevee/shaders/eevee_ambient_occlusion_pass_comp.glsl
   engines/eevee/shaders/eevee_attributes_curves_lib.glsl
-  engines/eevee/shaders/eevee_attributes_gpencil_lib.glsl
   engines/eevee/shaders/eevee_attributes_mesh_lib.glsl
   engines/eevee/shaders/eevee_attributes_pointcloud_lib.glsl
   engines/eevee/shaders/eevee_attributes_volume_lib.glsl
@@ -373,7 +372,6 @@ set(GLSL_SRC
   engines/eevee/shaders/eevee_gbuffer_closure_test.glsl
   engines/eevee/shaders/eevee_gbuffer_normal_test.glsl
   engines/eevee/shaders/eevee_geom_curves_vert.glsl
-  engines/eevee/shaders/eevee_geom_gpencil_vert.glsl
   engines/eevee/shaders/eevee_geom_mesh_vert.glsl
   engines/eevee/shaders/eevee_geom_pointcloud_vert.glsl
   engines/eevee/shaders/eevee_geom_volume_vert.glsl
@@ -555,8 +553,11 @@ set(GLSL_SRC
   intern/shaders/draw_debug_draw_lib.glsl
   intern/shaders/draw_debug_shape_lib.glsl
   intern/shaders/draw_fxaa_lib.glsl
+  intern/shaders/draw_curves_interpolation_comp.glsl
+  intern/shaders/draw_curves_length_intercept_comp.glsl
   intern/shaders/draw_curves_lib.glsl
-  intern/shaders/draw_hair_refine_comp.glsl
+  intern/shaders/draw_curves_test.glsl
+  intern/shaders/draw_curves_topology_comp.glsl
   intern/shaders/draw_shape_lib.glsl
   intern/shaders/draw_command_generate_comp.glsl
   intern/shaders/draw_debug_draw_display_frag.glsl
@@ -574,8 +575,10 @@ set(GLSL_SRC
   intern/shaders/draw_view_reconstruction_lib.glsl
   intern/shaders/draw_visibility_comp.glsl
 
+  intern/draw_attribute_shader_shared.hh
   intern/draw_command_shared.hh
   intern/draw_defines.hh
+  intern/draw_curves_defines.hh
   intern/draw_pointcloud_private.hh
   intern/draw_shader_shared.hh
   intern/draw_subdiv_defines.hh
@@ -780,20 +783,6 @@ if(WITH_OPENSUBDIV)
   )
 endif()
 
-if(WITH_OPENVDB)
-  list(APPEND INC
-    ../../../intern/openvdb
-  )
-  list(APPEND INC_SYS
-    ${OPENVDB_INCLUDE_DIRS}
-  )
-  list(APPEND LIB
-    bf_intern_openvdb
-    ${OPENVDB_LIBRARIES}
-  )
-  add_definitions(-DWITH_OPENVDB ${OPENVDB_DEFINITIONS})
-endif()
-
 if(WITH_MOD_FLUID)
   list(APPEND INC
     ../../../intern/mantaflow/extern
@@ -823,11 +812,6 @@ if(WITH_GTESTS)
       list(APPEND INC_SYS
         PUBLIC ${VULKAN_INCLUDE_DIRS}
       )
-      if(APPLE)
-        list(APPEND INC_SYS
-          ${MOLTENVK_INCLUDE_DIRS}
-        )
-      endif()
     endif()
   endif()
 endif()
@@ -848,6 +832,7 @@ if(WITH_GTESTS)
   if(WITH_GPU_DRAW_TESTS)
     set(TEST_SRC
       tests/draw_pass_test.cc
+      tests/draw_curves_test.cc
       tests/draw_testing.cc
       tests/eevee_test.cc
 

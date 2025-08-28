@@ -32,11 +32,11 @@
  */
 typedef enum eUIFont_ID {
   UIFONT_DEFAULT = 0,
-  /*  UIFONT_BITMAP   = 1 */ /* UNUSED */
+  // UIFONT_BITMAP = 1, /* UNUSED */
 
   /* free slots */
   UIFONT_CUSTOM1 = 2,
-  /* UIFONT_CUSTOM2 = 3, */ /* UNUSED */
+  // UIFONT_CUSTOM2 = 3, /* UNUSED */
 } eUIFont_ID;
 
 /**
@@ -106,6 +106,37 @@ typedef struct uiStyle {
   char _pad0[2];
 } uiStyle;
 
+typedef struct ThemeCommonAnim {
+  unsigned char playhead[4];
+  unsigned char preview_range[4];
+
+  unsigned char time_marker[4], time_marker_selected[4];
+
+  unsigned char channel[4], channel_sub[4];
+  unsigned char channel_group[4], channel_group_active[4];
+} ThemeCommonAnim;
+
+typedef struct ThemeCommonCurves {
+  /** Curve handles. */
+  unsigned char handle_free[4], handle_auto[4], handle_vect[4], handle_align[4],
+      handle_auto_clamped[4];
+  unsigned char handle_sel_free[4], handle_sel_auto[4], handle_sel_vect[4], handle_sel_align[4],
+      handle_sel_auto_clamped[4];
+
+  /** Curve points. */
+  unsigned char handle_vertex[4];
+  unsigned char handle_vertex_select[4];
+  unsigned char handle_vertex_size;
+
+  char _pad0[3];
+} ThemeCommonCurves;
+
+typedef struct ThemeCommon {
+  ThemeCommonAnim anim;
+  ThemeCommonCurves curves;
+  char _pad0[4];
+} ThemeCommon;
+
 typedef struct uiWidgetColors {
   unsigned char outline[4];
   unsigned char outline_sel[4];
@@ -162,14 +193,14 @@ typedef struct ThemeUI {
   /* Transparent Grid */
   unsigned char transparent_checker_primary[4], transparent_checker_secondary[4];
   unsigned char transparent_checker_size;
-  char _pad1[1];
+  char _pad1[5];
 
   float icon_alpha;
   float icon_saturation;
   unsigned char widget_text_cursor[4];
 
   /* Axis Colors */
-  unsigned char xaxis[4], yaxis[4], zaxis[4];
+  unsigned char xaxis[4], yaxis[4], zaxis[4], waxis[4];
 
   /* Gizmo Colors. */
   unsigned char gizmo_hi[4];
@@ -268,11 +299,11 @@ typedef struct ThemeSpace {
 
   unsigned char wire[4], wire_edit[4], select[4];
   unsigned char lamp[4], speaker[4], empty[4], camera[4];
-  unsigned char active[4], group[4], group_active[4], transform[4];
+  unsigned char active[4], transform[4];
   unsigned char vertex[4], vertex_select[4], vertex_active[4], vertex_bevel[4],
       vertex_unreferenced[4];
   unsigned char edge[4], edge_select[4], edge_mode_select[4];
-  unsigned char edge_seam[4], edge_sharp[4], edge_facesel[4], edge_crease[4], edge_bevel[4];
+  unsigned char edge_seam[4], edge_sharp[4], edge_crease[4], edge_bevel[4];
   /** Solid faces. */
   unsigned char face[4], face_select[4], face_mode_select[4], face_retopology[4];
   unsigned char face_back[4], face_front[4];
@@ -284,23 +315,17 @@ typedef struct ThemeSpace {
   unsigned char loop_normal[4];
   unsigned char bone_solid[4], bone_pose[4], bone_pose_active[4], bone_locked_weight[4];
   unsigned char strip[4], strip_select[4];
-  unsigned char cframe[4];
   unsigned char before_current_frame[4], after_current_frame[4];
   unsigned char time_keyframe[4], time_gp_keyframe[4];
   unsigned char freestyle_edge_mark[4], freestyle_face_mark[4];
   unsigned char time_scrub_background[4];
-  unsigned char time_marker_line[4], time_marker_line_selected[4];
+  char _pad10[4];
 
   unsigned char nurb_uline[4], nurb_vline[4];
-  unsigned char act_spline[4], nurb_sel_uline[4], nurb_sel_vline[4], lastsel_point[4];
-
-  unsigned char handle_free[4], handle_auto[4], handle_vect[4], handle_align[4],
-      handle_auto_clamped[4];
-  unsigned char handle_sel_free[4], handle_sel_auto[4], handle_sel_vect[4], handle_sel_align[4],
-      handle_sel_auto_clamped[4];
+  unsigned char act_spline[4], nurb_sel_uline[4], nurb_sel_vline[4];
 
   /** Dope-sheet. */
-  unsigned char ds_channel[4], ds_subchannel[4], ds_ipoline[4];
+  unsigned char ds_ipoline[4];
   /** Key-types. */
   unsigned char keytype_keyframe[4], keytype_extreme[4], keytype_breakdown[4], keytype_jitter[4],
       keytype_movehold[4], keytype_generated[4];
@@ -330,7 +355,6 @@ typedef struct ThemeSpace {
   unsigned char nodeclass_output[4], nodeclass_filter[4];
   unsigned char nodeclass_vector[4], nodeclass_texture[4];
   unsigned char nodeclass_shader[4], nodeclass_script[4];
-  unsigned char nodeclass_pattern[4], nodeclass_layout[4];
   unsigned char nodeclass_geometry[4], nodeclass_attribute[4];
 
   unsigned char node_zone_simulation[4];
@@ -349,11 +373,7 @@ typedef struct ThemeSpace {
   float keyframe_scale_fac;
 
   unsigned char editmesh_active[4];
-
-  unsigned char handle_vertex[4];
-  unsigned char handle_vertex_select[4];
-
-  unsigned char handle_vertex_size;
+  char _pad9[1];
 
   unsigned char clipping_border_3d[4];
 
@@ -401,8 +421,7 @@ typedef struct ThemeSpace {
   unsigned char anim_active[4];
   /** Active Action = NULL. */
   unsigned char anim_non_active[4];
-  /** Preview range overlay. */
-  unsigned char anim_preview_range[4];
+  char _pad8[4];
 
   /** NLA 'Tweaking' action/strip. */
   unsigned char nla_tweaking[4];
@@ -490,6 +509,8 @@ typedef struct bTheme {
   char filepath[/*FILE_MAX*/ 1024];
 
   ThemeUI tui;
+
+  ThemeCommon common;
 
   /**
    * Individual Space-types:

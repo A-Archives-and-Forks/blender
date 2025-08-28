@@ -8,27 +8,34 @@
 
 #include <cmath>
 
-#include "BKE_node.hh"
 #include "BLI_math_base.hh"
 #include "BLI_math_matrix_types.hh"
 #include "BLI_math_vector_types.hh"
 
-#include "UI_interface_layout.hh"
-#include "UI_resources.hh"
-
 #include "GPU_shader.hh"
+
+#include "BKE_node.hh"
 
 #include "COM_node_operation.hh"
 #include "COM_utilities.hh"
 
 #include "node_composite_util.hh"
 
-/* **************** SCALAR MATH ******************** */
-
 namespace blender::nodes::node_composite_boxmask_cc {
+
+static const EnumPropertyItem operation_items[] = {
+    {CMP_NODE_MASKTYPE_ADD, "ADD", 0, "Add", ""},
+    {CMP_NODE_MASKTYPE_SUBTRACT, "SUBTRACT", 0, "Subtract", ""},
+    {CMP_NODE_MASKTYPE_MULTIPLY, "MULTIPLY", 0, "Multiply", ""},
+    {CMP_NODE_MASKTYPE_NOT, "NOT", 0, "Not", ""},
+    {0, nullptr, 0, nullptr, nullptr},
+};
 
 static void cmp_node_boxmask_declare(NodeDeclarationBuilder &b)
 {
+  b.add_input<decl::Menu>("Operation")
+      .default_value(CMP_NODE_MASKTYPE_ADD)
+      .static_items(operation_items);
   b.add_input<decl::Float>("Mask")
       .subtype(PROP_FACTOR)
       .default_value(0.0f)
@@ -56,11 +63,6 @@ static void cmp_node_boxmask_declare(NodeDeclarationBuilder &b)
   b.add_input<decl::Float>("Rotation").subtype(PROP_ANGLE);
 
   b.add_output<decl::Float>("Mask").structure_type(StructureType::Dynamic);
-}
-
-static void node_composit_buts_boxmask(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
-{
-  layout->prop(ptr, "mask_type", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
 }
 
 using namespace blender::compositor;
@@ -128,7 +130,7 @@ class BoxMaskOperation : public NodeOperation {
 
   void execute_gpu()
   {
-    GPUShader *shader = context().get_shader(get_shader_name());
+    gpu::Shader *shader = context().get_shader(get_shader_name());
     GPU_shader_bind(shader);
 
     const Domain domain = compute_domain();
@@ -160,8 +162,7 @@ class BoxMaskOperation : public NodeOperation {
 
   const char *get_shader_name()
   {
-    switch (get_mask_type()) {
-      default:
+    switch (this->get_operation()) {
       case CMP_NODE_MASKTYPE_ADD:
         return "compositor_box_mask_add";
       case CMP_NODE_MASKTYPE_SUBTRACT:
@@ -171,6 +172,8 @@ class BoxMaskOperation : public NodeOperation {
       case CMP_NODE_MASKTYPE_NOT:
         return "compositor_box_mask_not";
     }
+
+    return "compositor_box_mask_add";
   }
 
   void execute_cpu()
@@ -188,7 +191,7 @@ class BoxMaskOperation : public NodeOperation {
     const float cos_angle = math::cos(this->get_angle());
     const float sin_angle = math::sin(this->get_angle());
 
-    switch (this->get_mask_type()) {
+    switch (this->get_operation()) {
       case CMP_NODE_MASKTYPE_ADD:
         parallel_for(domain_size, [&](const int2 texel) {
           box_mask<CMP_NODE_MASKTYPE_ADD>(base_mask,
@@ -201,7 +204,7 @@ class BoxMaskOperation : public NodeOperation {
                                           cos_angle,
                                           sin_angle);
         });
-        break;
+        return;
       case CMP_NODE_MASKTYPE_SUBTRACT:
         parallel_for(domain_size, [&](const int2 texel) {
           box_mask<CMP_NODE_MASKTYPE_SUBTRACT>(base_mask,
@@ -214,7 +217,7 @@ class BoxMaskOperation : public NodeOperation {
                                                cos_angle,
                                                sin_angle);
         });
-        break;
+        return;
       case CMP_NODE_MASKTYPE_MULTIPLY:
         parallel_for(domain_size, [&](const int2 texel) {
           box_mask<CMP_NODE_MASKTYPE_MULTIPLY>(base_mask,
@@ -227,7 +230,7 @@ class BoxMaskOperation : public NodeOperation {
                                                cos_angle,
                                                sin_angle);
         });
-        break;
+        return;
       case CMP_NODE_MASKTYPE_NOT:
         parallel_for(domain_size, [&](const int2 texel) {
           box_mask<CMP_NODE_MASKTYPE_NOT>(base_mask,
@@ -240,8 +243,20 @@ class BoxMaskOperation : public NodeOperation {
                                           cos_angle,
                                           sin_angle);
         });
-        break;
+        return;
     }
+
+    parallel_for(domain_size, [&](const int2 texel) {
+      box_mask<CMP_NODE_MASKTYPE_ADD>(base_mask,
+                                      value_mask,
+                                      output_mask,
+                                      texel,
+                                      domain_size,
+                                      location,
+                                      size,
+                                      cos_angle,
+                                      sin_angle);
+    });
   }
 
   Domain compute_domain() override
@@ -250,11 +265,6 @@ class BoxMaskOperation : public NodeOperation {
       return Domain(context().get_compositing_region_size());
     }
     return get_input("Mask").domain();
-  }
-
-  CMPNodeMaskType get_mask_type()
-  {
-    return CMPNodeMaskType(bnode().custom1);
   }
 
   float2 get_location()
@@ -271,6 +281,14 @@ class BoxMaskOperation : public NodeOperation {
   float get_angle()
   {
     return this->get_input("Rotation").get_single_value_default(0.0f);
+  }
+
+  CMPNodeMaskType get_operation()
+  {
+    const Result &input = this->get_input("Operation");
+    const MenuValue default_menu_value = MenuValue(CMP_NODE_MASKTYPE_ADD);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    return static_cast<CMPNodeMaskType>(menu_value.value);
   }
 };
 
@@ -293,7 +311,6 @@ static void register_node_type_cmp_boxmask()
   ntype.enum_name_legacy = "BOXMASK";
   ntype.nclass = NODE_CLASS_MATTE;
   ntype.declare = file_ns::cmp_node_boxmask_declare;
-  ntype.draw_buttons = file_ns::node_composit_buts_boxmask;
   ntype.get_compositor_operation = file_ns::get_compositor_operation;
 
   blender::bke::node_register_type(ntype);

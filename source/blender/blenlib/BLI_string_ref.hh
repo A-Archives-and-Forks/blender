@@ -78,6 +78,17 @@ class StringRefBase {
   template<size_t N> void copy_utf8_truncated(char (&dst)[N]) const;
 
   /**
+   * Copy the string into a char array. The copied string will be null-terminated. If it does not
+   * fit, it will be truncated.
+   *
+   * \note #copy_utf8_truncated should be used UTF8 strings,
+   * this should be used for strings which are allowed to contain arbitrary
+   * byte sequences without a known encoding such as file-paths.
+   */
+  void copy_bytes_truncated(char *dst, int64_t dst_size) const;
+  template<size_t N> void copy_bytes_truncated(char (&dst)[N]) const;
+
+  /**
    * Copy the string into a buffer. The buffer has to be one byte larger than the size of the
    * string, because the copied string will be null-terminated. Only use this when you are
    * absolutely sure that the buffer is large enough.
@@ -150,6 +161,7 @@ class StringRef : public StringRefBase {
   constexpr StringRef drop_prefix(int64_t n) const;
   constexpr StringRef drop_known_prefix(StringRef prefix) const;
   constexpr StringRef drop_suffix(int64_t n) const;
+  constexpr StringRef drop_known_suffix(StringRef suffix) const;
 
   constexpr char operator[](int64_t index) const;
 };
@@ -229,6 +241,11 @@ inline void StringRefBase::copy_unsafe(char *dst) const
 template<size_t N> inline void StringRefBase::copy_utf8_truncated(char (&dst)[N]) const
 {
   this->copy_utf8_truncated(dst, N);
+}
+
+template<size_t N> inline void StringRefBase::copy_bytes_truncated(char (&dst)[N]) const
+{
+  this->copy_bytes_truncated(dst, N);
 }
 
 /**
@@ -524,6 +541,16 @@ constexpr StringRef StringRef::drop_suffix(const int64_t n) const
   BLI_assert(n >= 0);
   const int64_t new_size = std::max<int64_t>(0, size_ - n);
   return StringRef(data_, new_size);
+}
+
+/**
+ * Return a new StringRef with the given suffix being skipped. This invokes undefined behavior if
+ * the string does not begin with the given suffix.
+ */
+constexpr StringRef StringRef::drop_known_suffix(StringRef suffix) const
+{
+  BLI_assert(this->endswith(suffix));
+  return this->drop_suffix(suffix.size());
 }
 
 /**

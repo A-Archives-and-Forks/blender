@@ -27,7 +27,6 @@ class MTLShaderInterface;
 
 struct VertexBufferID {
   uint32_t id : 16;
-  uint32_t is_instance : 15;
   uint32_t used : 1;
 };
 
@@ -81,8 +80,8 @@ class MTLBatch : public Batch {
   ~MTLBatch() override = default;
 
   void draw(int v_first, int v_count, int i_first, int i_count) override;
-  void draw_indirect(GPUStorageBuf *indirect_buf, intptr_t offset) override;
-  void multi_draw_indirect(GPUStorageBuf * /*indirect_buf*/,
+  void draw_indirect(StorageBuf *indirect_buf, intptr_t offset) override;
+  void multi_draw_indirect(StorageBuf * /*indirect_buf*/,
                            int /*count*/,
                            intptr_t /*offset*/,
                            intptr_t /*stride*/) override
@@ -104,10 +103,6 @@ class MTLBatch : public Batch {
   {
     return static_cast<MTLVertBuf *>(verts[index]);
   }
-  MTLVertBuf *inst_(const int index) const
-  {
-    return static_cast<MTLVertBuf *>(inst[index]);
-  }
   MTLShader *active_shader_get() const
   {
     return active_shader_;
@@ -115,7 +110,7 @@ class MTLBatch : public Batch {
 
  private:
   void draw_advanced(int v_first, int v_count, int i_first, int i_count);
-  void draw_advanced_indirect(GPUStorageBuf *indirect_buf, intptr_t offset);
+  void draw_advanced_indirect(StorageBuf *indirect_buf, intptr_t offset);
   int prepare_vertex_binding(MTLVertBuf *verts,
                              MTLRenderPipelineStateDescriptor &desc,
                              const MTLShaderInterface *interface,

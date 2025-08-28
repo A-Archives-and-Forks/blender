@@ -1,10 +1,10 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-04-14 08:42+0000\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 15:06+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Thai <https://translate.blender.org/projects/blender-ui/ui/th/>\n"
 "Language: th\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.10.1"
+"X-Generator: Weblate 5.12.1"
 
 
 msgid "Name"
@@ -552,6 +552,10 @@ msgstr "ภายนอก"
 
 msgid "Target"
 msgstr "เป้าหมาย"
+
+
+msgid "Normals"
+msgstr "แนวฉาก"
 
 
 msgid "Clear"
@@ -1163,6 +1167,10 @@ msgid "Normal"
 msgstr "แนวฉาก"
 
 
+msgid "Shader"
+msgstr "เชดเดอร์"
+
+
 msgid "Border"
 msgstr "เส้นขอบ"
 
@@ -1338,10 +1346,6 @@ msgid "Font Size"
 msgstr "ขนาดฟอนต์"
 
 
-msgid "Normals"
-msgstr "แนวฉาก"
-
-
 msgid "Square"
 msgstr "สี่เหลี่ยม"
 
@@ -1482,10 +1486,6 @@ msgstr "อัปเดต"
 
 msgid "Movie File"
 msgstr "ไฟล์ภาพยนตร์"
-
-
-msgid "Shader"
-msgstr "เชดเดอร์"
 
 
 msgid "Pattern"
@@ -1724,6 +1724,10 @@ msgstr "พื้นที่ใช้งาน"
 
 msgid "Animation"
 msgstr "แอนิเมชัน"
+
+
+msgid "Video"
+msgstr "วิดีโอ"
 
 
 msgid "YCC"
@@ -3046,6 +3050,10 @@ msgid "Relax UVs"
 msgstr "ผ่อนคลาย UV"
 
 
+msgid "Replace Selection"
+msgstr "แทนที่ที่เลือกไว้"
+
+
 msgctxt "Sequence"
 msgid "Add"
 msgstr "เพิ่ม"
@@ -3059,10 +3067,6 @@ msgstr "การปรับเปลี่ยน"
 msgctxt "Operator"
 msgid "Copy"
 msgstr "คัดลอก"
-
-
-msgid "Replace Selection"
-msgstr "แทนที่ที่เลือกไว้"
 
 
 msgctxt "Operator"
@@ -3283,10 +3287,6 @@ msgstr "เงา"
 
 msgid "Audio"
 msgstr "เสียง"
-
-
-msgid "Video"
-msgstr "วิดีโอ"
 
 
 msgid "Views"
@@ -3670,12 +3670,12 @@ msgid "Text color"
 msgstr "สีข้อความ"
 
 
-msgid "Selected Text"
-msgstr "ข้อความที่ถูกเลือก"
-
-
 msgid "Preview Background"
 msgstr "พื้นหลังตัวอย่าง"
+
+
+msgid "Selected Text"
+msgstr "ข้อความที่ถูกเลือก"
 
 
 msgid "Panel Title"
@@ -3962,6 +3962,11 @@ msgid "Offset X"
 msgstr "ออฟเซต X"
 
 
+msgctxt "Operator"
+msgid "Flip"
+msgstr "กลับด้าน"
+
+
 msgid "Detail"
 msgstr "รายละเอียด"
 
@@ -4180,6 +4185,16 @@ msgstr "ภาพยนตร์"
 msgctxt "Operator"
 msgid "Fade"
 msgstr "จาง"
+
+
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "ลบคีย์เฟรม..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "ล้างคีย์เฟรม..."
 
 
 msgid "Storage"
@@ -4556,16 +4571,6 @@ msgstr "ลำโพง"
 
 
 msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "ลบคีย์เฟรม..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "ล้างคีย์เฟรม..."
-
-
-msgctxt "Operator"
 msgid "Bake Action..."
 msgstr "สร้างกระทำ..."
 
@@ -4658,11 +4663,6 @@ msgstr "ปานกลาง"
 msgctxt "Operator"
 msgid "Strong"
 msgstr "แข็งแรง"
-
-
-msgctxt "Operator"
-msgid "Flip"
-msgstr "กลับด้าน"
 
 
 msgctxt "Operator"

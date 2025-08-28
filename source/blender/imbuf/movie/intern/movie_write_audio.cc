@@ -6,6 +6,13 @@
  * \ingroup imbuf
  */
 
+#ifdef _MSC_VER
+/* This needs to be included first to prevent ffmpegs headers adding defines for various math
+ * constants leading to duplicate definitions. */
+#  define _USE_MATH_DEFINES
+#  include <cmath>
+#endif
+
 #include "movie_util.hh"
 #include "movie_write.hh"
 
@@ -27,6 +34,10 @@
 
 #  include "BKE_report.hh"
 #  include "BKE_sound.h"
+
+#  include "CLG_log.h"
+
+static CLG_LogRef LOG = {"video.write"};
 
 /* If any of these codecs, we prefer the float sample format (if supported) */
 static bool request_float_audio_buffer(int codec_id)
@@ -91,7 +102,7 @@ static int write_audio_frame(MovieWriter *context)
   if (ret < 0) {
     /* Can't send frame to encoder. This shouldn't happen. */
     av_make_error_string(error_str, AV_ERROR_MAX_STRING_SIZE, ret);
-    fprintf(stderr, "Can't send audio frame: %s\n", error_str);
+    CLOG_ERROR(&LOG, "Can't send audio frame: %s", error_str);
     success = -1;
   }
 
@@ -105,7 +116,7 @@ static int write_audio_frame(MovieWriter *context)
     }
     if (ret < 0) {
       av_make_error_string(error_str, AV_ERROR_MAX_STRING_SIZE, ret);
-      fprintf(stderr, "Error encoding audio frame: %s\n", error_str);
+      CLOG_ERROR(&LOG, "Error encoding audio frame: %s", error_str);
       success = -1;
     }
 
@@ -120,7 +131,7 @@ static int write_audio_frame(MovieWriter *context)
     int write_ret = av_interleaved_write_frame(context->outfile, pkt);
     if (write_ret != 0) {
       av_make_error_string(error_str, AV_ERROR_MAX_STRING_SIZE, ret);
-      fprintf(stderr, "Error writing audio packet: %s\n", error_str);
+      CLOG_ERROR(&LOG, "Error writing audio packet: %s", error_str);
       success = -1;
       break;
     }
@@ -220,7 +231,7 @@ AVStream *alloc_audio_stream(MovieWriter *context,
 
   codec = avcodec_find_encoder(codec_id);
   if (!codec) {
-    fprintf(stderr, "Couldn't find valid audio codec\n");
+    CLOG_ERROR(&LOG, "Couldn't find valid audio codec");
     context->audio_codec = nullptr;
     return nullptr;
   }
@@ -311,7 +322,7 @@ AVStream *alloc_audio_stream(MovieWriter *context,
   if (ret < 0) {
     char error_str[AV_ERROR_MAX_STRING_SIZE];
     av_make_error_string(error_str, AV_ERROR_MAX_STRING_SIZE, ret);
-    fprintf(stderr, "Couldn't initialize audio codec: %s\n", error_str);
+    CLOG_ERROR(&LOG, "Couldn't initialize audio codec: %s", error_str);
     BLI_strncpy(error, ffmpeg_last_error(), error_size);
     avcodec_free_context(&c);
     context->audio_codec = nullptr;
@@ -323,12 +334,12 @@ AVStream *alloc_audio_stream(MovieWriter *context,
   c->time_base.num = 1;
   c->time_base.den = c->sample_rate;
 
-  if (c->frame_size == 0) {
-    /* Used to be if ((c->codec_id >= CODEC_ID_PCM_S16LE) && (c->codec_id <= CODEC_ID_PCM_DVD))
-     * not sure if that is needed anymore, so let's try out if there are any
-     * complaints regarding some FFMPEG versions users might have. */
-    context->audio_input_samples = AV_INPUT_BUFFER_MIN_SIZE * 8 / c->bits_per_coded_sample /
-                                   audio_channels;
+  if (c->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE) {
+    /* If the audio format has a variable frame size, default to 1024.
+     * This is because we won't try to encode any variable frame size.
+     * 1024 seems to be a good compromize between size and speed.
+     */
+    context->audio_input_samples = 1024;
   }
   else {
     context->audio_input_samples = c->frame_size;

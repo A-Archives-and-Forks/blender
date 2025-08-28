@@ -18,6 +18,7 @@
 #include "scene/shader_nodes.h"
 #include "scene/svm.h"
 #include "scene/tables.h"
+#include "scene/volume.h"
 
 #include "util/colorspace.h"
 #include "util/log.h"
@@ -49,7 +50,6 @@ NODE_DEFINE(Shader)
 
   SOCKET_BOOLEAN(use_transparent_shadow, "Use Transparent Shadow", true);
   SOCKET_BOOLEAN(use_bump_map_correction, "Bump Map Correction", true);
-  SOCKET_BOOLEAN(heterogeneous_volume, "Heterogeneous Volume", true);
 
   static NodeEnum volume_sampling_method_enum;
   volume_sampling_method_enum.insert("distance", VOLUME_SAMPLING_DISTANCE);
@@ -67,8 +67,6 @@ NODE_DEFINE(Shader)
               "Volume Interpolation Method",
               volume_interpolation_method_enum,
               VOLUME_INTERPOLATION_LINEAR);
-
-  SOCKET_FLOAT(volume_step_rate, "Volume Step Rate", 1.0f);
 
   static NodeEnum displacement_method_enum;
   displacement_method_enum.insert("bump", DISPLACE_BUMP);
@@ -99,7 +97,7 @@ Shader::Shader() : Node(get_node_type())
   has_volume_spatial_varying = false;
   has_volume_attribute_dependency = false;
   has_volume_connected = false;
-  prev_volume_step_rate = 0.0f;
+  has_light_path_node = false;
 
   emission_estimate = zero_float3();
   emission_sampling = EMISSION_SAMPLING_NONE;
@@ -388,10 +386,13 @@ void Shader::tag_update(Scene *scene)
     scene->procedural_manager->tag_update();
   }
 
-  if (has_volume != prev_has_volume || volume_step_rate != prev_volume_step_rate) {
+  if (has_volume != prev_has_volume) {
     scene->geometry_manager->need_flags_update = true;
     scene->object_manager->need_flags_update = true;
-    prev_volume_step_rate = volume_step_rate;
+  }
+
+  if (has_volume || prev_has_volume) {
+    scene->volume_manager->tag_update(this);
   }
 }
 
@@ -478,12 +479,13 @@ int ShaderManager::get_shader_id(Shader *shader, bool smooth)
   return id;
 }
 
-void ShaderManager::device_update_pre(Device *device,
+void ShaderManager::device_update_pre(Device * /*device*/,
                                       DeviceScene *dscene,
                                       Scene *scene,
-                                      Progress &progress)
+                                      Progress & /*progress*/)
 {
-  /* This runs before kernels have been loaded, so can't copy to device yet. */
+  /* This optimizes the shader graphs, but does not update anything on the device yet.
+   * After this we'll know the kernel features actually used, to load the kernels. */
   if (!need_update()) {
     return;
   }
@@ -500,14 +502,59 @@ void ShaderManager::device_update_pre(Device *device,
   assert(scene->default_background->reference_count() != 0);
   assert(scene->default_empty->reference_count() != 0);
 
-  device_update_specific(device, dscene, scene, progress);
+  /* Preprocess shader graph. */
+  bool has_volumes = false;
+
+  for (Shader *shader : scene->shaders) {
+    if (shader->is_modified()) {
+      ShaderNode *output = shader->graph->output();
+      shader->has_bump = (shader->get_displacement_method() != DISPLACE_TRUE) &&
+                         output->input("Surface")->link && output->input("Displacement")->link;
+      shader->has_bssrdf_bump = shader->has_bump;
+
+      shader->graph->finalize(
+          scene, shader->has_bump, shader->get_displacement_method() == DISPLACE_BOTH);
+
+      shader->has_surface = output->input("Surface")->link != nullptr;
+      shader->has_surface_transparent = false;
+      shader->has_surface_raytrace = false;
+      shader->has_surface_bssrdf = false;
+      shader->has_surface_spatial_varying = false;
+      shader->has_volume = output->input("Volume")->link != nullptr;
+      shader->has_volume_spatial_varying = false;
+      shader->has_volume_attribute_dependency = false;
+      shader->has_displacement = output->input("Displacement")->link != nullptr;
+
+      shader->has_light_path_node = false;
+      for (ShaderNode *node : shader->graph->nodes) {
+        if (node->special_type == SHADER_SPECIAL_TYPE_LIGHT_PATH) {
+          /* TODO: check if the light path node is linked to the volume output. */
+          shader->has_light_path_node = true;
+          break;
+        }
+      }
+    }
+
+    if (shader->reference_count()) {
+      has_volumes |= shader->has_volume;
+    }
+  }
+
+  /* Set this early as it is needed by volume rendering passes. */
+  KernelIntegrator *kintegrator = &dscene->data.integrator;
+  if (bool(kintegrator->use_volumes) != has_volumes) {
+    scene->tag_has_volume_modified();
+    kintegrator->use_volumes = has_volumes;
+  }
 }
 
-void ShaderManager::device_update_post(Device * /*device*/,
+void ShaderManager::device_update_post(Device *device,
                                        DeviceScene *dscene,
-                                       Scene * /*scene*/,
-                                       Progress & /*progress*/)
+                                       Scene *scene,
+                                       Progress &progress)
 {
+  device_update_specific(device, dscene, scene, progress);
+
   /* This runs after kernels have been loaded, so can copy to device. */
   dscene->shaders.copy_to_device_if_modified();
   dscene->svm_nodes.copy_to_device_if_modified();
@@ -525,7 +572,6 @@ void ShaderManager::device_update_common(Device * /*device*/,
   }
 
   KernelShader *kshader = dscene->shaders.alloc(scene->shaders.size());
-  bool has_volumes = false;
   bool has_transparent_shadow = false;
 
   for (Shader *shader : scene->shaders) {
@@ -552,8 +598,6 @@ void ShaderManager::device_update_common(Device * /*device*/,
     }
     if (shader->has_volume) {
       flag |= SD_HAS_VOLUME;
-      has_volumes = true;
-
       /* todo: this could check more fine grained, to skip useless volumes
        * enclosed inside an opaque bsdf.
        */
@@ -563,10 +607,8 @@ void ShaderManager::device_update_common(Device * /*device*/,
     if (shader->has_volume_connected && !shader->has_surface) {
       flag |= SD_HAS_ONLY_VOLUME;
     }
-    if (shader->has_volume) {
-      if (shader->get_heterogeneous_volume() && shader->has_volume_spatial_varying) {
-        flag |= SD_HETEROGENEOUS_VOLUME;
-      }
+    if (shader->has_volume && shader->has_volume_spatial_varying) {
+      flag |= SD_HETEROGENEOUS_VOLUME;
     }
     if (shader->has_volume_attribute_dependency) {
       flag |= SD_NEED_VOLUME_ATTRIBUTES;
@@ -596,6 +638,10 @@ void ShaderManager::device_update_common(Device * /*device*/,
     /* constant emission check */
     if (shader->emission_is_constant) {
       flag |= SD_HAS_CONSTANT_EMISSION;
+    }
+
+    if (shader->has_light_path_node) {
+      flag |= SD_HAS_LIGHT_PATH_NODE;
     }
 
     const uint32_t cryptomatte_id = util_murmur_hash3(
@@ -632,7 +678,6 @@ void ShaderManager::device_update_common(Device * /*device*/,
 
   /* integrator */
   KernelIntegrator *kintegrator = &dscene->data.integrator;
-  kintegrator->use_volumes = has_volumes;
   /* TODO(sergey): De-duplicate with flags set in integrator.cpp. */
   kintegrator->transparent_shadows = has_transparent_shadow;
 

@@ -103,6 +103,10 @@ void MD5Hash::process(const uint8_t *data /*[64]*/)
     static const int w = 1;
 
     if (*((const uint8_t *)&w)) /* dynamic little-endian */ {
+#if defined(__GNUC__) && defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wnull-pointer-subtraction"
+#endif
       /*
        * On little-endian machines, we can process properly aligned
        * data without copying it.
@@ -116,6 +120,9 @@ void MD5Hash::process(const uint8_t *data /*[64]*/)
         memcpy(xbuf, data, 64);
         X = xbuf;
       }
+#if defined(__GNUC__) && defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
     }
     else { /* dynamic big-endian */
       /*

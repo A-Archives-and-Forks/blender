@@ -374,7 +374,7 @@ void gpu::MTLTexture::blit(gpu::MTLTexture *dst,
 {
   BLI_assert(this->type_get() == dst->type_get());
 
-  GPUShader *shader = fullscreen_blit_sh_get();
+  gpu::Shader *shader = fullscreen_blit_sh_get();
   BLI_assert(shader != nullptr);
   BLI_assert(MTLContext::get());
 
@@ -1511,8 +1511,6 @@ void gpu::MTLTexture::mip_range_set(int min, int max)
 
   /* NOTE:
    * - mip_min_ and mip_max_ are used to Clamp LODs during sampling.
-   * - Given functions like Framebuffer::recursive_downsample modifies the mip range
-   *   between each layer, we do not want to be re-baking the texture.
    * - For the time being, we are going to just need to generate a FULL mipmap chain
    *   as we do not know ahead of time whether mipmaps will be used.
    *

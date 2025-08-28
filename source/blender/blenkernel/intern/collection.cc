@@ -545,7 +545,7 @@ bool BKE_collection_delete(Main *bmain, Collection *collection, bool hierarchy)
 {
   /* Master collection is not real datablock, can't be removed. */
   if (collection->flag & COLLECTION_IS_MASTER) {
-    BLI_assert_msg(0, "Scene master collection can't be deleted");
+    BLI_assert_msg(0, "Scene master collection cannot be deleted");
     return false;
   }
 
@@ -772,7 +772,8 @@ Collection *BKE_collection_duplicate(Main *bmain,
      * using the original obdata ID, leading to them being falsly detected as being in Edit mode,
      * and therefore not remapping their obdata to the newly duplicated one.
      * See #139715. */
-    BKE_libblock_relink_to_newid(bmain, &collection_new->id, ID_REMAP_FORCE_OBDATA_IN_EDITMODE);
+    BKE_libblock_relink_to_newid(
+        bmain, &collection_new->id, ID_REMAP_FORCE_OBDATA_IN_EDITMODE | ID_REMAP_SKIP_USER_CLEAR);
 
 #ifndef NDEBUG
     /* Call to `BKE_libblock_relink_to_newid` above is supposed to have cleared all those flags. */
@@ -1100,6 +1101,29 @@ bool BKE_collection_has_object_recursive_instanced_orig_id(Collection *collectio
       return true;
     }
   }
+  return false;
+}
+
+bool BKE_collection_contains_geometry_recursive(const Collection *collection)
+{
+  LISTBASE_FOREACH (CollectionObject *, col_ob, &collection->gobject) {
+    if (col_ob->ob->visibility_flag & OB_HIDE_RENDER) {
+      continue;
+    }
+    if (OB_TYPE_IS_GEOMETRY(col_ob->ob->type)) {
+      return true;
+    }
+  }
+
+  LISTBASE_FOREACH (CollectionChild *, child_col, &collection->children) {
+    if (child_col->collection->flag & COLLECTION_HIDE_RENDER) {
+      continue;
+    }
+    if (BKE_collection_contains_geometry_recursive(child_col->collection)) {
+      return true;
+    }
+  }
+
   return false;
 }
 

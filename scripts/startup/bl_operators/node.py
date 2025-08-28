@@ -286,8 +286,8 @@ class NODE_OT_add_closure_zone(NodeAddZoneOperator, Operator):
     bl_label = "Add Closure Zone"
     bl_options = {'REGISTER', 'UNDO'}
 
-    input_node_type = "GeometryNodeClosureInput"
-    output_node_type = "GeometryNodeClosureOutput"
+    input_node_type = "NodeClosureInput"
+    output_node_type = "NodeClosureOutput"
     add_default_geometry_link = False
 
 
@@ -328,6 +328,12 @@ class NODE_OT_tree_path_parent(Operator):
     bl_label = "Parent Node Tree"
     bl_options = {'REGISTER', 'UNDO'}
 
+    parent_tree_index: IntProperty(
+        name="Parent Index",
+        description="Parent index in context path",
+        default=0,
+    )
+
     @classmethod
     def poll(cls, context):
         space = context.space_data
@@ -337,7 +343,9 @@ class NODE_OT_tree_path_parent(Operator):
     def execute(self, context):
         space = context.space_data
 
-        space.path.pop()
+        parent_number_to_pop = len(space.path) - 1 - self.parent_tree_index
+        for _ in range(parent_number_to_pop):
+            space.path.pop()
 
         return {'FINISHED'}
 

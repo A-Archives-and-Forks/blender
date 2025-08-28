@@ -965,7 +965,7 @@ static int *read_file_thumbnail(FileData *fd)
 }
 
 /**
- * ID names are truncated the their maximum allowed length at a very low level of the readfile code
+ * ID names are truncated to their maximum allowed length at a very low level of the readfile code
  * (see #read_id_struct).
  *
  * However, ensuring they remain unique can only be done once all IDs have been read and put in
@@ -3018,7 +3018,7 @@ static bool read_libblock_undo_restore(
   if (id_old != nullptr && read_libblock_is_identical(fd, bhead)) {
     /* Local datablock was unchanged, restore from the old main. */
     CLOG_DEBUG(&LOG_UNDO,
-               "UNDO: read %s (uid %u) -> keep identical datablock",
+               "UNDO: read %s (uid %u) -> keep identical data-block",
                id->name,
                id->session_uid);
 

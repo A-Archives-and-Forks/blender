@@ -14,10 +14,8 @@
 #include "BLI_math_vector_types.hh"
 #include "BLI_task.hh"
 
-#include "RNA_access.hh"
-
-#include "UI_interface_layout.hh"
-#include "UI_resources.hh"
+#include "RNA_enum_types.hh"
+#include "RNA_types.hh"
 
 #include "GPU_shader.hh"
 
@@ -29,11 +27,15 @@
 
 #include "node_composite_util.hh"
 
-/* **************** Dilate/Erode ******************** */
-
 namespace blender::nodes::node_composite_dilate_cc {
 
-NODE_STORAGE_FUNCS(NodeDilateErode)
+static const EnumPropertyItem type_items[] = {
+    {CMP_NODE_DILATE_ERODE_STEP, "STEP", 0, "Steps", ""},
+    {CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD, "THRESHOLD", 0, "Threshold", ""},
+    {CMP_NODE_DILATE_ERODE_DISTANCE, "DISTANCE", 0, "Distance", ""},
+    {CMP_NODE_DILATE_ERODE_DISTANCE_FEATHER, "FEATHER", 0, "Feather", ""},
+    {0, nullptr, 0, nullptr, nullptr},
+};
 
 static void cmp_node_dilate_declare(NodeDeclarationBuilder &b)
 {
@@ -42,37 +44,29 @@ static void cmp_node_dilate_declare(NodeDeclarationBuilder &b)
   b.add_input<decl::Int>("Size").default_value(0).description(
       "The size of dilation/erosion in pixels. Positive values dilates and negative values "
       "erodes");
+  b.add_input<decl::Menu>("Type")
+      .default_value(CMP_NODE_DILATE_ERODE_STEP)
+      .static_items(type_items);
   b.add_input<decl::Float>("Falloff Size")
       .default_value(0.0f)
       .min(0.0f)
-      .make_available([](bNode &node) { node.custom1 = CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD; })
+      .usage_by_menu("Type", CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD)
       .description(
           "The size of the falloff from the edges in pixels. If less than two pixels, the edges "
           "will be anti-aliased");
+  b.add_input<decl::Menu>("Falloff")
+      .default_value(PROP_SMOOTH)
+      .static_items(rna_enum_proportional_falloff_curve_only_items)
+      .usage_by_menu("Type", CMP_NODE_DILATE_ERODE_DISTANCE_FEATHER);
 
   b.add_output<decl::Float>("Mask").structure_type(StructureType::Dynamic);
 }
 
 static void node_composit_init_dilateerode(bNodeTree * /*ntree*/, bNode *node)
 {
+  /* Unused but kept for forward compatibility. */
   NodeDilateErode *data = MEM_callocN<NodeDilateErode>(__func__);
-  data->falloff = PROP_SMOOTH;
   node->storage = data;
-}
-
-static void node_composit_buts_dilateerode(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
-{
-  layout->prop(ptr, "mode", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
-  if (RNA_enum_get(ptr, "mode") == CMP_NODE_DILATE_ERODE_DISTANCE_FEATHER) {
-    layout->prop(ptr, "falloff", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
-  }
-}
-
-static void node_update(bNodeTree *ntree, bNode *node)
-{
-  bNodeSocket *falloff_size_input = bke::node_find_socket(*node, SOCK_IN, "Falloff Size");
-  const bool is_falloff_size_needed = node->custom1 == CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD;
-  blender::bke::node_set_socket_availability(*ntree, *falloff_size_input, is_falloff_size_needed);
 }
 
 using namespace blender::compositor;
@@ -83,14 +77,15 @@ class DilateErodeOperation : public NodeOperation {
 
   void execute() override
   {
+    const Result &input = this->get_input("Mask");
+    Result &output = this->get_result("Mask");
+
     if (this->is_identity()) {
-      const Result &input = this->get_input("Mask");
-      Result &output = this->get_result("Mask");
       output.share_data(input);
       return;
     }
 
-    switch (get_method()) {
+    switch (this->get_type()) {
       case CMP_NODE_DILATE_ERODE_STEP:
         execute_step();
         return;
@@ -103,10 +98,9 @@ class DilateErodeOperation : public NodeOperation {
       case CMP_NODE_DILATE_ERODE_DISTANCE_FEATHER:
         execute_distance_feather();
         return;
-      default:
-        BLI_assert_unreachable();
-        return;
     }
+
+    output.share_data(input);
   }
 
   /* ----------------------------
@@ -130,7 +124,7 @@ class DilateErodeOperation : public NodeOperation {
 
   Result execute_step_horizontal_pass_gpu()
   {
-    GPUShader *shader = context().get_shader(get_morphological_step_shader_name());
+    gpu::Shader *shader = context().get_shader(get_morphological_step_shader_name());
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1i(shader, "radius", this->get_structuring_element_size() / 2);
@@ -202,7 +196,7 @@ class DilateErodeOperation : public NodeOperation {
 
   void execute_step_vertical_pass_gpu(Result &horizontal_pass_result)
   {
-    GPUShader *shader = context().get_shader(get_morphological_step_shader_name());
+    gpu::Shader *shader = context().get_shader(get_morphological_step_shader_name());
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1i(shader, "radius", this->get_structuring_element_size() / 2);
@@ -364,7 +358,7 @@ class DilateErodeOperation : public NodeOperation {
 
   void execute_distance_threshold_gpu(Result &output)
   {
-    GPUShader *shader = context().get_shader("compositor_morphological_distance_threshold");
+    gpu::Shader *shader = context().get_shader("compositor_morphological_distance_threshold");
     GPU_shader_bind(shader);
 
     GPU_shader_uniform_1f(shader, "inset", math::max(this->get_falloff_size(), 10e-6f));
@@ -498,11 +492,8 @@ class DilateErodeOperation : public NodeOperation {
 
   void execute_distance_feather()
   {
-    morphological_distance_feather(context(),
-                                   get_input("Mask"),
-                                   get_result("Mask"),
-                                   this->get_size(),
-                                   node_storage(bnode()).falloff);
+    morphological_distance_feather(
+        context(), get_input("Mask"), get_result("Mask"), this->get_size(), this->get_falloff());
   }
 
   /* ---------------
@@ -516,7 +507,7 @@ class DilateErodeOperation : public NodeOperation {
       return true;
     }
 
-    if (get_method() == CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD &&
+    if (this->get_type() == CMP_NODE_DILATE_ERODE_DISTANCE_THRESHOLD &&
         this->get_falloff_size() != 0.0f)
     {
       return false;
@@ -554,9 +545,20 @@ class DilateErodeOperation : public NodeOperation {
     return math::max(0.0f, this->get_input("Falloff Size").get_single_value_default(0.0f));
   }
 
-  CMPNodeDilateErodeMethod get_method()
+  CMPNodeDilateErodeMethod get_type()
   {
-    return static_cast<CMPNodeDilateErodeMethod>(bnode().custom1);
+    const Result &input = this->get_input("Type");
+    const MenuValue default_menu_value = MenuValue(CMP_NODE_DILATE_ERODE_STEP);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    return static_cast<CMPNodeDilateErodeMethod>(menu_value.value);
+  }
+
+  int get_falloff()
+  {
+    const Result &input = this->get_input("Falloff");
+    const MenuValue default_menu_value = MenuValue(PROP_SMOOTH);
+    const MenuValue menu_value = input.get_single_value_default(default_menu_value);
+    return menu_value.value;
   }
 };
 
@@ -578,9 +580,7 @@ static void register_node_type_cmp_dilateerode()
   ntype.ui_description = "Expand and shrink masks";
   ntype.enum_name_legacy = "DILATEERODE";
   ntype.nclass = NODE_CLASS_OP_FILTER;
-  ntype.draw_buttons = file_ns::node_composit_buts_dilateerode;
   ntype.declare = file_ns::cmp_node_dilate_declare;
-  ntype.updatefunc = file_ns::node_update;
   ntype.initfunc = file_ns::node_composit_init_dilateerode;
   blender::bke::node_type_storage(
       ntype, "NodeDilateErode", node_free_standard_storage, node_copy_standard_storage);

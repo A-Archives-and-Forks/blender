@@ -9,14 +9,18 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <fmt/format.h>
+
 #include "BLI_fileops.h"
 #include "BLI_listbase.h"
 #include "BLI_path_utils.hh"
+#include "BLI_string.h"
 #include "BLI_utildefines.h"
 
 #include "BKE_appdir.hh"
 #include "BKE_blendfile.hh"
 #include "BKE_context.hh"
+#include "BKE_layer.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_main.hh"
 #include "BKE_screen.hh"
@@ -209,7 +213,25 @@ bool ED_workspace_change(WorkSpace *workspace_new, bContext *C, wmWindowManager 
 
   /* Automatic mode switching. */
   if (workspace_new->object_mode != workspace_old->object_mode) {
-    blender::ed::object::mode_set(C, eObjectMode(workspace_new->object_mode));
+    const Object *object = nullptr;
+    if (const Base *base = CTX_data_active_base(C)) {
+      object = base->object;
+      /* Behavior that depends on the active area is not expected in the context of workspace
+       * switching, ignore the view-port even if it's available. */
+      const View3D *v3d = nullptr;
+
+      const bool base_visible = BKE_base_is_visible(v3d, base);
+      if (!base_visible && object->mode == OB_MODE_OBJECT) {
+        /* Set this to nullptr to indicate that the mode should not be switched. This matches
+         * CTX_data_active_object behavior in the 3D Viewport. See `view3d_context` for more
+         * details. */
+        object = nullptr;
+      }
+    }
+
+    if (object) {
+      blender::ed::object::mode_set(C, eObjectMode(workspace_new->object_mode));
+    }
   }
 
   return true;
@@ -222,6 +244,7 @@ WorkSpace *ED_workspace_duplicate(WorkSpace *workspace_old, Main *bmain, wmWindo
 
   workspace_new->flags = workspace_old->flags;
   workspace_new->pin_scene = workspace_old->pin_scene;
+  workspace_new->sequencer_scene = workspace_old->sequencer_scene;
   workspace_new->object_mode = workspace_old->object_mode;
   workspace_new->order = workspace_old->order;
   BLI_duplicatelist(&workspace_new->owner_ids, &workspace_old->owner_ids);
@@ -341,6 +364,33 @@ static void WORKSPACE_OT_delete(wmOperatorType *ot)
   ot->exec = workspace_delete_exec;
 }
 
+static wmOperatorStatus workspace_delete_all_others_exec(bContext *C, wmOperator * /*op*/)
+{
+  Main *bmain = CTX_data_main(C);
+  WorkSpace *workspace = workspace_context_get(C);
+
+  LISTBASE_FOREACH (WorkSpace *, ws, &bmain->workspaces) {
+    if (ws != workspace) {
+      WM_event_add_notifier(C, NC_SCREEN | ND_WORKSPACE_DELETE, ws);
+      WM_event_add_notifier(C, NC_WINDOW, nullptr);
+    }
+  }
+
+  return OPERATOR_FINISHED;
+}
+
+static void WORKSPACE_OT_delete_all_others(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Delete Other Workspaces";
+  ot->description = "Delete all workspaces except this one";
+  ot->idname = "WORKSPACE_OT_delete_all_others";
+
+  /* api callbacks */
+  ot->poll = workspace_context_poll;
+  ot->exec = workspace_delete_all_others_exec;
+}
+
 static wmOperatorStatus workspace_append_activate_exec(bContext *C, wmOperator *op)
 {
   Main *bmain = CTX_data_main(C);
@@ -354,19 +404,34 @@ static wmOperatorStatus workspace_append_activate_exec(bContext *C, wmOperator *
   RNA_string_get(op->ptr, "idname", idname);
   RNA_string_get(op->ptr, "filepath", filepath);
 
-  WorkSpace *appended_workspace = (WorkSpace *)WM_file_append_datablock(
-      bmain,
-      CTX_data_scene(C),
-      CTX_data_view_layer(C),
-      CTX_wm_view3d(C),
-      filepath,
-      ID_WS,
-      idname,
-      BLO_LIBLINK_APPEND_RECURSIVE);
+  WorkSpace *appended_workspace = nullptr;
+  /* NOTE: Need to check `filepath`, in the rare case where the usual source of work-spaces
+   * (the startup blend-file) is the one currently open (see #144305). */
+  const char *blendfile_path = BKE_main_blendfile_path(bmain);
+  if ((blendfile_path[0] != '\0') && (BLI_path_cmp(blendfile_path, filepath) == 0)) {
+    appended_workspace = reinterpret_cast<WorkSpace *>(
+        BKE_libblock_find_name(bmain, ID_WS, idname, nullptr));
+    if (appended_workspace) {
+      /* Copy, to mimic behavior when appending from another file (which always creates a new copy
+       * of the data). */
+      appended_workspace = ED_workspace_duplicate(appended_workspace, bmain, CTX_wm_window(C));
+    }
+  }
+  else {
+    appended_workspace = reinterpret_cast<WorkSpace *>(
+        WM_file_append_datablock(bmain,
+                                 CTX_data_scene(C),
+                                 CTX_data_view_layer(C),
+                                 CTX_wm_view3d(C),
+                                 filepath,
+                                 ID_WS,
+                                 idname,
+                                 BLO_LIBLINK_APPEND_RECURSIVE));
+  }
 
   if (appended_workspace) {
+    /* Translate workspace name, unless it was taken from current blendfile. */
     if (BLT_translate_new_dataname()) {
-      /* Translate workspace name */
       BKE_libblock_rename(
           *bmain, appended_workspace->id, CTX_DATA_(BLT_I18NCONTEXT_ID_WORKSPACE, idname));
     }
@@ -643,6 +708,7 @@ void ED_operatortypes_workspace()
 {
   WM_operatortype_append(WORKSPACE_OT_duplicate);
   WM_operatortype_append(WORKSPACE_OT_delete);
+  WM_operatortype_append(WORKSPACE_OT_delete_all_others);
   WM_operatortype_append(WORKSPACE_OT_add);
   WM_operatortype_append(WORKSPACE_OT_append_activate);
   WM_operatortype_append(WORKSPACE_OT_reorder_to_back);

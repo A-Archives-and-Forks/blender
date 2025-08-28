@@ -19,7 +19,7 @@
 
 namespace blender::gpu {
 
-GPUCapabilities GCaps;
+GPUCapabilities GCaps = {};
 
 }
 
@@ -141,11 +141,6 @@ int GPU_max_parallel_compilations()
   return GCaps.max_parallel_compilations;
 }
 
-bool GPU_mip_render_workaround()
-{
-  return GCaps.mip_render_workaround;
-}
-
 bool GPU_depth_blitting_workaround()
 {
   return GCaps.depth_blitting_workaround;
@@ -172,24 +167,9 @@ bool GPU_stencil_clasify_buffer_workaround()
   return GCaps.stencil_clasify_buffer_workaround;
 }
 
-bool GPU_node_link_instancing_workaround()
-{
-  return GCaps.node_link_instancing_workaround;
-}
-
-bool GPU_vulkan_render_pass_workaround()
-{
-  return GCaps.render_pass_workaround;
-}
-
 bool GPU_geometry_shader_support()
 {
   return GCaps.geometry_shader_support;
-}
-
-bool GPU_shader_draw_parameters_support()
-{
-  return GCaps.shader_draw_parameters_support;
 }
 
 bool GPU_hdr_support()
@@ -200,11 +180,6 @@ bool GPU_hdr_support()
 bool GPU_stencil_export_support()
 {
   return GCaps.stencil_export_support;
-}
-
-bool GPU_clip_control_support()
-{
-  return GCaps.clip_control_support;
 }
 
 int GPU_max_shader_storage_buffer_bindings()

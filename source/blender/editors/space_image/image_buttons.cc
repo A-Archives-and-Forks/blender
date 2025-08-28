@@ -101,17 +101,9 @@ static void ui_imageuser_slot_menu(bContext *C, uiLayout *layout, void *image_p)
     else if (slot->render != nullptr) {
       icon = ICON_DOT;
     }
-    uiDefIconTextButS(block,
-                      ButType::ButMenu,
-                      B_NOP,
-                      icon,
-                      str,
-                      0,
-                      0,
-                      UI_UNIT_X * 5,
-                      UI_UNIT_X,
-                      &image->render_slot,
-                      "");
+    uiBut *but = uiDefIconTextBut(
+        block, ButType::ButMenu, B_NOP, icon, str, 0, 0, UI_UNIT_X * 5, UI_UNIT_X, nullptr, "");
+    UI_but_func_set(but, [image, slot_id](bContext & /*C*/) { image->render_slot = slot_id; });
   }
 
   layout->separator();
@@ -973,7 +965,11 @@ void uiTemplateImage(uiLayout *layout,
   UI_block_funcN_set(block, nullptr, nullptr, nullptr);
 }
 
-void uiTemplateImageSettings(uiLayout *layout, PointerRNA *imfptr, bool color_management)
+void uiTemplateImageSettings(uiLayout *layout,
+                             bContext *C,
+                             PointerRNA *imfptr,
+                             bool color_management,
+                             const char *panel_idname)
 {
   ImageFormatData *imf = static_cast<ImageFormatData *>(imfptr->data);
   ID *id = imfptr->owner_id;
@@ -991,10 +987,14 @@ void uiTemplateImageSettings(uiLayout *layout, PointerRNA *imfptr, bool color_ma
   col->use_property_split_set(true);
   col->use_property_decorate_set(false);
 
-  col->prop(imfptr, "media_type", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  /* The file output node draws the media type itself. */
+  const bool is_file_output = (id && GS(id->name) == ID_NT);
+  if (!is_file_output) {
+    col->prop(imfptr, "media_type", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  }
 
-  /* Multi layer images and video media types only have a single supported format, so we needn't
-   * draw the format format enum. */
+  /* Multi layer images and video media types only have a single supported format,
+   * so we needn't draw the format enum. */
   if (imf->media_type == MEDIA_TYPE_IMAGE) {
     col->prop(imfptr, "file_format", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
@@ -1066,18 +1066,30 @@ void uiTemplateImageSettings(uiLayout *layout, PointerRNA *imfptr, bool color_ma
 
   /* Override color management */
   if (color_management) {
-    col->separator();
-    col->prop(imfptr, "color_management", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+    col->separator_spacer();
 
-    if (imf->color_management == R_IMF_COLOR_MANAGEMENT_OVERRIDE) {
+    if (uiLayout *panel = col->panel(C,
+                                     panel_idname ? panel_idname : "settings_color_management",
+                                     true,
+                                     IFACE_("Color Management")))
+    {
+      panel->separator();
+      panel->row(true).prop(imfptr, "color_management", UI_ITEM_R_EXPAND, " ", ICON_NONE);
+
+      uiLayout *color_settings = &panel->column(true);
       if (BKE_imtype_requires_linear_float(imf->imtype)) {
-        PointerRNA linear_settings_ptr = RNA_pointer_get(imfptr, "linear_colorspace_settings");
-        col->prop(&linear_settings_ptr, "name", UI_ITEM_NONE, IFACE_("Color Space"), ICON_NONE);
+        if (imf->color_management == R_IMF_COLOR_MANAGEMENT_OVERRIDE) {
+          PointerRNA linear_settings_ptr = RNA_pointer_get(imfptr, "linear_colorspace_settings");
+          color_settings->prop(
+              &linear_settings_ptr, "name", UI_ITEM_NONE, IFACE_("Color Space"), ICON_NONE);
+        }
       }
       else {
         PointerRNA display_settings_ptr = RNA_pointer_get(imfptr, "display_settings");
-        col->prop(&display_settings_ptr, "display_device", UI_ITEM_NONE, std::nullopt, ICON_NONE);
-        uiTemplateColormanagedViewSettings(col, nullptr, imfptr, "view_settings");
+        color_settings->prop(
+            &display_settings_ptr, "display_device", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+        uiTemplateColormanagedViewSettings(color_settings, nullptr, imfptr, "view_settings");
+        color_settings->enabled_set(imf->color_management == R_IMF_COLOR_MANAGEMENT_OVERRIDE);
       }
     }
   }
@@ -1207,7 +1219,7 @@ void uiTemplateImageInfo(uiLayout *layout, bContext *C, Image *ima, ImageUser *i
   col->alignment_set(blender::ui::LayoutAlign::Right);
 
   if (ibuf == nullptr) {
-    col->label(RPT_("Can't Load Image"), ICON_NONE);
+    col->label(RPT_("Cannot Load Image"), ICON_NONE);
   }
   else {
     char str[MAX_IMAGE_INFO_LEN] = {0};

@@ -44,7 +44,6 @@ class GroupInputOperation : public NodeOperation {
     if (!pass.is_allocated()) {
       /* Pass not rendered yet, or not supported by viewport. */
       result.allocate_invalid();
-      this->context().set_info_message("Viewport compositor setup not fully supported");
       return;
     }
 
@@ -66,8 +65,8 @@ class GroupInputOperation : public NodeOperation {
 
   void execute_pass_gpu(const Result &pass, Result &result)
   {
-    GPUShader *shader = this->context().get_shader(this->get_shader_name(pass),
-                                                   result.precision());
+    gpu::Shader *shader = this->context().get_shader(this->get_shader_name(pass),
+                                                     result.precision());
     GPU_shader_bind(shader);
 
     /* The compositing space might be limited to a subset of the pass texture, so only read that
@@ -100,9 +99,10 @@ class GroupInputOperation : public NodeOperation {
       case ResultType::Int2:
       case ResultType::Float2:
       case ResultType::Bool:
+      case ResultType::Menu:
         /* Not supported. */
         break;
-      case ResultType::Menu:
+      case ResultType::String:
         /* Single only types do not support GPU code path. */
         BLI_assert(Result::is_single_value_only_type(pass.type()));
         BLI_assert_unreachable();

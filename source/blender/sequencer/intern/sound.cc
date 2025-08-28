@@ -62,7 +62,8 @@ static bool sequencer_refresh_sound_length_recursive(Main *bmain, Scene *scene, 
       int old = strip->len;
       float fac;
 
-      strip->len = std::max(1, int(round((info.length - strip->sound->offset_time) * FPS)));
+      strip->len = std::max(
+          1, int(round((info.length - strip->sound->offset_time) * scene->frames_per_second())));
       fac = float(strip->len) / float(old);
       old = strip->startofs;
       strip->startofs *= fac;
@@ -360,7 +361,7 @@ void *sound_modifier_recreator(Strip *strip,
                                bool &needs_update)
 {
 
-  if (!(smd->flag & SEQUENCE_MODIFIER_MUTE)) {
+  if (!(smd->flag & STRIP_MODIFIER_FLAG_MUTE)) {
     const SoundModifierWorkerInfo *smwi = sound_modifier_worker_info_get(smd->type);
     return smwi->recreator(strip, smd, sound, needs_update);
   }

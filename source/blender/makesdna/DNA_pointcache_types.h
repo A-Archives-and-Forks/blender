@@ -95,7 +95,7 @@ typedef struct PointCache {
   int totpoint;
   /** Modifier stack index. */
   int index;
-  /** #PTCACHE_COMPRESS_NO and others. */
+  /** #PointCacheCompression. Used for versioning only; now cache is always compressed. */
   short compression;
   char _pad0[2];
 
@@ -149,13 +149,16 @@ enum {
   PTCACHE_FLAGS_COPY = PTCACHE_DISK_CACHE | PTCACHE_EXTERNAL | PTCACHE_IGNORE_LIBPATH,
 };
 
-enum {
+/**
+ * Cache files baked before 5.0 could have used LZO or LZMA.
+ * During 5.0 alpha ZSTD compression had two settings.
+ * Now only the ZSTD+filtering option is used.
+ */
+typedef enum PointCacheCompression {
   PTCACHE_COMPRESS_NO = 0,
-  /* LZO and LZMA have been removed since 5.0. */
-  // PTCACHE_COMPRESS_LZO = 1 << 0,
-  // PTCACHE_COMPRESS_LZMA = 1 << 1,
-  PTCACHE_COMPRESS_ZSTD_FAST = 1 << 2,
-  PTCACHE_COMPRESS_ZSTD_SLOW = 1 << 3,
-
-  PTCACHE_COMPRESS_ZSTD = PTCACHE_COMPRESS_ZSTD_FAST | PTCACHE_COMPRESS_ZSTD_SLOW
-};
+  PTCACHE_COMPRESS_LZO_DEPRECATED = 1,  /* Removed in 5.0. */
+  PTCACHE_COMPRESS_LZMA_DEPRECATED = 2, /* Removed in 5.0. */
+  PTCACHE_COMPRESS_ZSTD_FILTERED = 3,
+  PTCACHE_COMPRESS_ZSTD_FAST_DEPRECATED = 4, /* Used only during 5.0 alpha. */
+  PTCACHE_COMPRESS_ZSTD_SLOW_DEPRECATED = 8, /* Used only during 5.0 alpha. */
+} PointCacheCompression;

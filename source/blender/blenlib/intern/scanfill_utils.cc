@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include "DNA_listBase.h"
+
 #include "MEM_guardedalloc.h"
 
 #include "BLI_ghash.h"
@@ -48,7 +49,7 @@ struct ScanFillIsect {
 #  define EFLAG_CLEAR(eed, val) \
     { \
       CHECK_TYPE(eed, ScanFillEdge *); \
-      (eed)->user_flag = (eed)->user_flag & ~(uint)val; \
+      (eed)->user_flag = (eed)->user_flag & ~uint(val); \
     } \
     (void)0
 #endif
@@ -63,7 +64,7 @@ struct ScanFillIsect {
 #  define VFLAG_CLEAR(eve, val) \
     { \
       CHECK_TYPE(eve, ScanFillVert *); \
-      (eve)->user_flags = (eve)->user_flag & ~(uint)val; \
+      (eve)->user_flags = (eve)->user_flag & ~uint(val); \
     } \
     (void)0
 #endif

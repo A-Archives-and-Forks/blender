@@ -234,19 +234,19 @@ static bool use_proxy(Editing *ed, Strip *strip)
                    (ed->proxy_storage == SEQ_EDIT_PROXY_DIR_STORAGE));
 }
 
-static void proxy_dir_get(Editing *ed, Strip *strip, size_t str_len, char *r_proxy_dirpath)
+static void proxy_dir_get(Editing *ed, Strip *strip, char r_proxy_dirpath[FILE_MAX])
 {
   if (use_proxy(ed, strip)) {
     if (ed->proxy_storage == SEQ_EDIT_PROXY_DIR_STORAGE) {
       if (ed->proxy_dir[0] == 0) {
-        BLI_strncpy(r_proxy_dirpath, "//BL_proxy", str_len);
+        BLI_strncpy(r_proxy_dirpath, "//BL_proxy", FILE_MAX);
       }
       else {
-        BLI_strncpy(r_proxy_dirpath, ed->proxy_dir, str_len);
+        BLI_strncpy(r_proxy_dirpath, ed->proxy_dir, FILE_MAX);
       }
     }
     else {
-      BLI_strncpy(r_proxy_dirpath, strip->data->proxy->dirpath, str_len);
+      BLI_strncpy(r_proxy_dirpath, strip->data->proxy->dirpath, FILE_MAX);
     }
     BLI_path_abs(r_proxy_dirpath, BKE_main_blendfile_path_from_global());
   }
@@ -259,7 +259,7 @@ static void index_dir_set(Editing *ed, Strip *strip, StripAnim *sanim)
   }
 
   char proxy_dirpath[FILE_MAX];
-  proxy_dir_get(ed, strip, sizeof(proxy_dirpath), proxy_dirpath);
+  proxy_dir_get(ed, strip, proxy_dirpath);
   seq_proxy_index_dir_set(sanim->anim, proxy_dirpath);
 }
 
@@ -344,7 +344,7 @@ const Strip *strip_topmost_get(const Scene *scene, int frame)
   const Strip *best_strip = nullptr;
   int best_channel = -1;
 
-  LISTBASE_FOREACH (const Strip *, strip, ed->seqbasep) {
+  LISTBASE_FOREACH (const Strip *, strip, ed->current_strips()) {
     if (render_is_muted(channels, strip) || !time_strip_intersects_frame(scene, strip, frame)) {
       continue;
     }

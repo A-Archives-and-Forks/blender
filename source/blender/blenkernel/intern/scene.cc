@@ -334,11 +334,12 @@ static void scene_copy_data(Main *bmain,
     scene_dst->ed->show_missing_media_flag = scene_src->ed->show_missing_media_flag;
     scene_dst->ed->proxy_storage = scene_src->ed->proxy_storage;
     STRNCPY(scene_dst->ed->proxy_dir, scene_src->ed->proxy_dir);
-    blender::seq::seqbase_duplicate_recursive(scene_src,
+    blender::seq::seqbase_duplicate_recursive(bmain,
+                                              scene_src,
                                               scene_dst,
                                               &scene_dst->ed->seqbase,
                                               &scene_src->ed->seqbase,
-                                              STRIP_DUPE_ALL,
+                                              blender::seq::StripDuplicate::All,
                                               flag_subdata);
     BLI_duplicatelist(&scene_dst->ed->channels, &scene_src->ed->channels);
     scene_dst->ed->displayed_channels = &scene_dst->ed->channels;
@@ -682,6 +683,10 @@ static void scene_foreach_toolsettings(LibraryForeachIDData *data,
         do_undo_restore,
         scene_foreach_paint(data, paint, do_undo_restore, reader, paint_old));
 
+    /* WARNING: Handling this object pointer is fairly intricated, to support both 'regular'
+     * foreach_id processing (in which case both sets of data, current and old, are the same), and
+     * the restore-after-undo cases. It does not have a helper, because so far it is the only case
+     * of having to deal with non-'paint' data in a sub-toolsett struct. */
     Object *gravity_object = toolsett->sculpt ? toolsett->sculpt->gravity_object : nullptr;
     Object *gravity_object_old = toolsett_old->sculpt->gravity_object;
     BKE_LIB_FOREACHID_UNDO_PRESERVE_PROCESS_IDSUPER_P(data,
@@ -694,7 +699,11 @@ static void scene_foreach_toolsettings(LibraryForeachIDData *data,
     if (toolsett->sculpt) {
       toolsett->sculpt->gravity_object = gravity_object;
     }
-    toolsett_old->sculpt->gravity_object = gravity_object_old;
+    /* Do not re-assign `gravity_object_old` object if both current and old data are the same
+     * (foreach_id case), that would nullify assignement above, making remapping cases fail. */
+    if (toolsett_old != toolsett) {
+      toolsett_old->sculpt->gravity_object = gravity_object_old;
+    }
   }
   if (toolsett_old->gp_paint) {
     paint = toolsett->gp_paint ? &toolsett->gp_paint->paint : nullptr;
@@ -810,7 +819,7 @@ static bool strip_foreach_member_id_cb(Strip *strip, void *user_data)
   }
 
   if (flag & IDWALK_DO_DEPRECATED_POINTERS) {
-    FOREACHID_PROCESS_ID_NOCHECK(data, strip->ipo, IDWALK_CB_USER);
+    FOREACHID_PROCESS_ID_NOCHECK(data, strip->ipo_legacy, IDWALK_CB_USER);
   }
 
 #undef FOREACHID_PROCESS_IDSUPER
@@ -1359,6 +1368,7 @@ static void scene_blend_read_data(BlendDataReader *reader, ID *id)
     ed->runtime.intra_frame_cache = nullptr;
     ed->runtime.source_image_cache = nullptr;
     ed->runtime.final_image_cache = nullptr;
+    ed->runtime.preview_cache = nullptr;
 
     /* recursive link sequences, lb will be correctly initialized */
     link_recurs_seq(reader, &ed->seqbase);
@@ -1575,7 +1585,7 @@ static void scene_undo_preserve(BlendLibReader *reader, ID *id_new, ID *id_old)
      * (like object ones). */
     scene_foreach_toolsettings(
         nullptr, scene_new->toolsettings, true, reader, scene_old->toolsettings);
-    std::swap(*scene_old->toolsettings, *scene_new->toolsettings);
+    blender::dna::shallow_swap(*scene_old->toolsettings, *scene_new->toolsettings);
   }
 }
 
@@ -1630,6 +1640,19 @@ constexpr IDTypeInfo get_type_info()
   return info;
 }
 IDTypeInfo IDType_ID_SCE = get_type_info();
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Scene member functions
+ */
+
+double Scene::frames_per_second() const
+{
+  return double(this->r.frs_sec) / double(this->r.frs_sec_base);
+}
+
+/** \} */
 
 const char *RE_engine_id_BLENDER_EEVEE = "BLENDER_EEVEE";
 const char *RE_engine_id_BLENDER_EEVEE_NEXT = "BLENDER_EEVEE_NEXT";
@@ -1970,7 +1993,8 @@ Scene *BKE_scene_duplicate(Main *bmain, Scene *sce, eSceneCopyMethod type)
        * using the original obdata ID, leading to them being falsly detected as being in Edit mode,
        * and therefore not remapping their obdata to the newly duplicated one.
        * See #139715. */
-      BKE_libblock_relink_to_newid(bmain, &sce_copy->id, ID_REMAP_FORCE_OBDATA_IN_EDITMODE);
+      BKE_libblock_relink_to_newid(
+          bmain, &sce_copy->id, ID_REMAP_FORCE_OBDATA_IN_EDITMODE | ID_REMAP_SKIP_USER_CLEAR);
 
 #ifndef NDEBUG
       /* Call to `BKE_libblock_relink_to_newid` above is supposed to have cleared all those
@@ -2342,7 +2366,7 @@ const char *BKE_scene_find_last_marker_name(const Scene *scene, int frame)
 
 int BKE_scene_frame_snap_by_seconds(Scene *scene, double interval_in_seconds, int frame)
 {
-  const int fps = round_db_to_int(FPS * interval_in_seconds);
+  const int fps = round_db_to_int(scene->frames_per_second() * interval_in_seconds);
   const int second_prev = frame - mod_i(frame, fps);
   const int second_next = second_prev + fps;
   const int delta_prev = frame - second_prev;

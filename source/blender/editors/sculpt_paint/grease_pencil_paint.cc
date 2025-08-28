@@ -166,7 +166,7 @@ static Brush *create_fill_guide_brush()
 
   settings->brush_draw_mode = GP_BRUSH_MODE_VERTEXCOLOR;
   /* TODO: Use theme setting. */
-  copy_v3_fl3(fill_guides_brush->rgb, 0.0f, 1.0f, 1.0f);
+  copy_v3_fl3(fill_guides_brush->color, 0.0f, 1.0f, 1.0f);
   settings->vertex_factor = 1.0f;
 
   settings->active_smooth = 0.35f;
@@ -292,7 +292,7 @@ struct PaintOperationExecutor {
     use_vertex_color_ = brush_using_vertex_color(scene_->toolsettings->gp_paint, brush_);
     if (use_vertex_color_) {
       ColorGeometry4f color_base;
-      srgb_to_linearrgb_v3_v3(color_base, brush_->rgb);
+      copy_v3_v3(color_base, brush_->color);
       color_base.a = settings_->vertex_factor;
       if (ELEM(settings_->vertex_mode, GPPAINT_MODE_STROKE, GPPAINT_MODE_BOTH)) {
         vertex_color_ = color_base;
@@ -797,6 +797,8 @@ struct PaintOperationExecutor {
 
     /* Interpolate the screen space positions. */
     linear_interpolation<float2>(prev_coords, coords, new_screen_space_coords, is_first_sample);
+    linear_interpolation<float>(prev_radius, radius, new_radii, is_first_sample);
+    linear_interpolation<float>(prev_opacity, opacity, new_opacities, is_first_sample);
     point_attributes_to_skip.add_multiple({"position", "radius", "opacity"});
 
     /* Randomize radii. */
@@ -806,12 +808,9 @@ struct PaintOperationExecutor {
                                                           self.stroke_random_radius_factor_,
                                                           self.accum_distance_ +
                                                               max_spacing_px * i,
-                                                          radius,
+                                                          new_radii[i],
                                                           extension_sample.pressure);
       }
-    }
-    else {
-      linear_interpolation<float>(prev_radius, radius, new_radii, is_first_sample);
     }
 
     /* Randomize opacities. */
@@ -821,12 +820,9 @@ struct PaintOperationExecutor {
                                                                self.stroke_random_opacity_factor_,
                                                                self.accum_distance_ +
                                                                    max_spacing_px * i,
-                                                               opacity,
+                                                               new_opacities[i],
                                                                extension_sample.pressure);
       }
-    }
-    else {
-      linear_interpolation<float>(prev_opacity, opacity, new_opacities, is_first_sample);
     }
 
     /* Randomize rotations. */
@@ -851,6 +847,8 @@ struct PaintOperationExecutor {
     if (use_vertex_color_ || attributes.contains("vertex_color")) {
       MutableSpan<ColorGeometry4f> new_vertex_colors =
           self.drawing_->vertex_colors_for_write().slice(new_points);
+      linear_interpolation<ColorGeometry4f>(
+          prev_vertex_color, vertex_color_, new_vertex_colors, is_first_sample);
       if (use_settings_random_ || attributes.contains("vertex_color")) {
         for (const int i : IndexRange(new_points_num)) {
           new_vertex_colors[i] = ed::greasepencil::randomize_color(*settings_,
@@ -860,13 +858,9 @@ struct PaintOperationExecutor {
                                                                    self.stroke_random_val_factor_,
                                                                    self.accum_distance_ +
                                                                        max_spacing_px * i,
-                                                                   vertex_color_,
+                                                                   new_vertex_colors[i],
                                                                    extension_sample.pressure);
         }
-      }
-      else {
-        linear_interpolation<ColorGeometry4f>(
-            prev_vertex_color, vertex_color_, new_vertex_colors, is_first_sample);
       }
       point_attributes_to_skip.add("vertex_color");
     }

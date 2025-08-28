@@ -1,18 +1,18 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 5.0.0 Alpha (b'a775d58b2e0e')\n"
+"Project-Id-Version: Blender 5.0.0 Alpha (b'68abaa12d581')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-21 08:48+0000\n"
-"PO-Revision-Date: 2025-05-01 10:56+0000\n"
-"Last-Translator: \"Adriel Y.\" <mixnblend@users.noreply.translate.blender.org>\n"
+"POT-Creation-Date: 2025-08-25 08:31+0000\n"
+"PO-Revision-Date: 2025-07-23 14:57+0000\n"
+"Last-Translator: Michael Tribayu Jatnika Natawiria <mike.natawiria@gmail.com>\n"
 "Language-Team: Indonesian <https://translate.blender.org/projects/blender-ui/ui/id/>\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n!=1);\n"
-"X-Generator: Weblate 5.11\n"
+"X-Generator: Weblate 5.12.1\n"
 "X-Poedit-SourceCharset: utf-8\n"
 "X-Poedit-Bookmarks: -1,-1,-1,-1,-1,-1,-1,-1,-1,4"
 
@@ -2575,6 +2575,18 @@ msgid "Bake to the active color attribute on meshes"
 msgstr "Panggang ke atribut warna aktif di jala"
 
 
+msgid "Bake Type"
+msgstr "Tipe Bake"
+
+
+msgid "Normals"
+msgstr "Normal"
+
+
+msgid "Displacement"
+msgstr "Pemindahan"
+
+
 msgid "Automatic Name"
 msgstr "Nama Otomatis"
 
@@ -4262,10 +4274,6 @@ msgid "Radius of head of bone (for Envelope deform only)"
 msgstr "Radius tulang kepala (untuk Amplop deform/merusak bentuk saja)"
 
 
-msgid "Bone is not visible when it is not in Edit Mode (i.e. in Object or Pose Modes)"
-msgstr "Tulang tidak terlihat saat tidak di Mode Edit (i.e di Mode Objek atau Pose)"
-
-
 msgid "Selectable"
 msgstr "Terseleksi"
 
@@ -4392,10 +4400,6 @@ msgstr "Saat tulang ada induk, kepala tulang terjebak ke ekor induk"
 
 msgid "Cyclic Offset"
 msgstr "Offset Siklik"
-
-
-msgid "When bone doesn't have a parent, it receives cyclic offset effects (Deprecated)"
-msgstr "Saat tulang tidak mempunyai induk, tulang tersebut menerima efek offset siklik (Ditinggalkan)"
 
 
 msgid "Deform"
@@ -6400,10 +6404,6 @@ msgid "Display Device"
 msgstr "Perangkat Tampilan"
 
 
-msgid "Display device name"
-msgstr "Nama perangkat tampilan"
-
-
 msgid "Input color space settings"
 msgstr "Pengaturan spasi warna masukan"
 
@@ -6682,10 +6682,6 @@ msgstr "Posisi"
 
 msgid "Set position of selected color stop"
 msgstr "Set posisi stop warna yang terseleksi"
-
-
-msgid "File Output Slots"
-msgstr "Slot Keluaran Dokumen"
 
 
 msgid "Console Input"
@@ -9076,10 +9072,6 @@ msgid "Color Dry"
 msgstr "Kering Warna"
 
 
-msgid "Displacement"
-msgstr "Pemindahan"
-
-
 msgid "Acceleration"
 msgstr "Akselerasi"
 
@@ -10541,10 +10533,6 @@ msgstr "Metode kompresi untuk digunakan"
 
 msgid "Zip"
 msgstr "Zip"
-
-
-msgid "Blosc"
-msgstr "Blosc"
 
 
 msgid "Data Depth"
@@ -12396,10 +12384,6 @@ msgid "Textboxes"
 msgstr "Tekstur"
 
 
-msgid "Normals"
-msgstr "Normal"
-
-
 msgid "Surface UV Map"
 msgstr "Peta UV Permukaan"
 
@@ -12582,18 +12566,6 @@ msgstr "Memudar"
 
 msgid "Color Space Settings"
 msgstr "Partikel"
-
-
-msgid "JPEG 2000"
-msgstr "JPEG 2000"
-
-
-msgid "TIFF"
-msgstr "TIFF"
-
-
-msgid "WebP"
-msgstr "WebP"
 
 
 msgid "Duration"
@@ -13724,6 +13696,10 @@ msgid "B44A (lossy)"
 msgstr "B44A (kehilangan kualitas)"
 
 
+msgid "Video"
+msgstr "Video"
+
+
 msgid "Settings for stereo 3D"
 msgstr "Pengaturan untuk 3D stereo"
 
@@ -14731,10 +14707,6 @@ msgstr "Klik"
 
 msgid "Double Click"
 msgstr "Klik Dua Kali"
-
-
-msgid "Click Drag"
-msgstr "Klik Seret"
 
 
 msgid "KeyMap Items"
@@ -18045,22 +18017,6 @@ msgid "File Output"
 msgstr "Keluaran Dokumen"
 
 
-msgid "Active Input Index"
-msgstr "Indeks Masukan Aktif"
-
-
-msgid "Base Path"
-msgstr "Jalur Dasar"
-
-
-msgid "File Slots"
-msgstr "Slot Dokumen"
-
-
-msgid "EXR Layer Slots"
-msgstr "Slot Layer EXR"
-
-
 msgid "To Straight"
 msgstr "Ke Lurus"
 
@@ -18238,14 +18194,6 @@ msgid "Fill Curve"
 msgstr "Isi Kurva"
 
 
-msgid "Triangles"
-msgstr "Segitiga"
-
-
-msgid "How to choose number of vertices on fillet"
-msgstr "Bagaimana memilih angka simpul di fillet"
-
-
 msgid "Flip Faces"
 msgstr "Membalikkan Wajah"
 
@@ -18331,6 +18279,10 @@ msgid "Fill Type"
 msgstr "Tipe Isi"
 
 
+msgid "Triangles"
+msgstr "Segitiga"
+
+
 msgid "Ico Sphere"
 msgstr "Ico Bola"
 
@@ -18373,10 +18325,6 @@ msgstr "Sampel Permukaan Terdekat"
 
 msgid "Sample UV Surface"
 msgstr "Sampel Permukaan UV"
-
-
-msgid "Scale Mode"
-msgstr "Mode Skala"
 
 
 msgid "Scale Instances"
@@ -18681,10 +18629,6 @@ msgstr "Keluaran Node"
 
 msgid "Node Instance Hash"
 msgstr "Hash Contoh Node"
-
-
-msgid "Use Node Format"
-msgstr "Situs Blender"
 
 
 msgid "Tooltip"
@@ -21554,9 +21498,8 @@ msgid "Current"
 msgstr "Setelah Ini"
 
 
-msgctxt "Operator"
-msgid "Move File Node Socket"
-msgstr "Induk"
+msgid "TIFF"
+msgstr "TIFF"
 
 
 msgctxt "Operator"
@@ -23188,10 +23131,6 @@ msgstr "Vertex Aktif"
 
 msgid "Mouse Position X"
 msgstr "Posisi X Tetikus"
-
-
-msgid "Position of the mouse used for \"Surface\" mode"
-msgstr "Posisi tetikus digunakan untuk mode \"Permukaan\""
 
 
 msgid "Mouse Position Y"
@@ -25205,10 +25144,6 @@ msgid "Audio"
 msgstr "Audio"
 
 
-msgid "Video"
-msgstr "Video"
-
-
 msgid "Extra Options"
 msgstr "Tambahan Opsi"
 
@@ -25557,10 +25492,6 @@ msgid "AO Bounces Render"
 msgstr "AO Memantul Render"
 
 
-msgid "Bake Type"
-msgstr "Tipe Bake"
-
-
 msgid "Adaptively blur glossy shaders after blurry bounces, to reduce noise at the cost of accuracy"
 msgstr "Secara adaptif blur shader glossy setelah blur memantul, untuk mengurangi noise dengan mengorbankan akurasi"
 
@@ -25615,10 +25546,6 @@ msgstr "Hitungan Sampel"
 
 msgid "Map Resolution"
 msgstr "Resolusi Peta"
-
-
-msgid "Distance between volume shader samples when rendering the volume (lower values give more accurate and detailed results, but also increased render time)"
-msgstr "Jarak diantara sampel volume shader saat render volume (mengecilkan nilai memberi hasil lebih akurat dan lengkap, tetapi menambahkan waktu render)"
 
 
 msgid "Language Name"
@@ -25764,10 +25691,6 @@ msgstr "Tampilkan lapisan halus"
 
 msgid "Text Color"
 msgstr "Warna Standar"
-
-
-msgid "User Scale"
-msgstr "Skala Pengguna"
 
 
 msgid "Render Region"
@@ -27423,10 +27346,6 @@ msgid "No output node"
 msgstr "Tidak ada node keluaran"
 
 
-msgid "Homogeneous"
-msgstr "Homogen"
-
-
 msgid "Texture Limit"
 msgstr "Batas Tekstur"
 
@@ -27888,11 +27807,6 @@ msgstr "Ukuran Panah"
 
 
 msgctxt "Operator"
-msgid "Delete All Shape Keys"
-msgstr "Hapus Semua Kunci Bentuk"
-
-
-msgctxt "Operator"
 msgid "Sort by Name"
 msgstr "Urut dari Nama"
 
@@ -27913,18 +27827,8 @@ msgstr "Hapus Semua Kelompok"
 
 
 msgctxt "Operator"
-msgid "New Shape from Mix"
-msgstr "Bentuk Baru dari Campuran"
-
-
-msgctxt "Operator"
-msgid "Move to Top"
-msgstr "Pindah ke Atas"
-
-
-msgctxt "Operator"
-msgid "Move to Bottom"
-msgstr "Pindah ke Bawah"
+msgid "Flip"
+msgstr "Balik"
 
 
 msgid "Update on Edit"
@@ -28872,6 +28776,16 @@ msgstr "Blender ID"
 
 
 msgctxt "Operator"
+msgid "Move to Top"
+msgstr "Pindah ke Atas"
+
+
+msgctxt "Operator"
+msgid "Move to Bottom"
+msgstr "Pindah ke Bawah"
+
+
+msgctxt "Operator"
 msgid "Increase Number"
 msgstr "Menambahkan Angka"
 
@@ -29212,6 +29126,21 @@ msgid "No Items Available"
 msgstr "Tidak ada Item yang Tersedia"
 
 
+msgctxt "Operator"
+msgid "Delete Keyframes..."
+msgstr "Hapus Keyframe..."
+
+
+msgctxt "Operator"
+msgid "Clear Keyframes..."
+msgstr "Kosongkan Keyframe..."
+
+
+msgctxt "Operator"
+msgid "Interactive Mirror"
+msgstr "Cermin interaktif"
+
+
 msgid "Raw"
 msgstr "Raw"
 
@@ -29496,11 +29425,6 @@ msgstr "Pengguna:"
 
 
 msgctxt "Operator"
-msgid "Interactive Mirror"
-msgstr "Cermin interaktif"
-
-
-msgctxt "Operator"
 msgid "Selection to Active"
 msgstr "Seleksi ke Aktif"
 
@@ -29603,16 +29527,6 @@ msgstr "Kamera"
 msgctxt "Operator"
 msgid "Speaker"
 msgstr "Tambah Gambar"
-
-
-msgctxt "Operator"
-msgid "Delete Keyframes..."
-msgstr "Hapus Keyframe..."
-
-
-msgctxt "Operator"
-msgid "Clear Keyframes..."
-msgstr "Kosongkan Keyframe..."
 
 
 msgctxt "Operator"
@@ -29757,11 +29671,6 @@ msgstr "Lemah"
 msgctxt "Operator"
 msgid "Strong"
 msgstr "Kuat"
-
-
-msgctxt "Operator"
-msgid "Flip"
-msgstr "Balik"
 
 
 msgctxt "Operator"
@@ -30708,10 +30617,6 @@ msgid "Object not found"
 msgstr "Benda tidak ketemu"
 
 
-msgid "Object \"%s\" is not a mesh or can't be converted to a mesh (Curve, Text, Surface or Metaball)"
-msgstr "Objek \"%s\" bukan mesh atau tidak dapat diubah ke mesh (Kurva, Teks, Permukaan atau Metabola)"
-
-
 msgid "Bone already has an IK constraint"
 msgstr "Kamera"
 
@@ -31068,10 +30973,6 @@ msgid "Select Pass"
 msgstr "Seleksi"
 
 
-msgid "Can't Load Image"
-msgstr "Gambar"
-
-
 msgid "Can only save sequence on image sequences"
 msgstr "Orientasi Transformasi"
 
@@ -31126,10 +31027,6 @@ msgstr "Penyunting Logika"
 
 msgid "Mask not found"
 msgstr "Gambar Latar"
-
-
-msgid "Can't overwrite export file"
-msgstr "Tidak dapat menimpa file ekspor"
 
 
 msgid "Columns:"
@@ -31712,22 +31609,6 @@ msgid "Buffer Edge:"
 msgstr "Tepi Penyangga:"
 
 
-msgid "Base Path:"
-msgstr "Jalur Dasar:"
-
-
-msgid "Layer:"
-msgstr "Lapisan:"
-
-
-msgid "File Subpath:"
-msgstr "Subjalur Berkas:"
-
-
-msgid "Format:"
-msgstr "Format:"
-
-
 msgid "Color Modulation"
 msgstr "Modulasi Warna"
 
@@ -31762,6 +31643,10 @@ msgstr "Berapa kali untuk memburamkan nilai untuk semua elemen"
 
 msgid "Intersecting Edges"
 msgstr "Tepi Persimpangan"
+
+
+msgid "How to choose number of vertices on fillet"
+msgstr "Bagaimana memilih angka simpul di fillet"
 
 
 msgid "Point Index"
@@ -31882,6 +31767,10 @@ msgstr "Panjang Sinar"
 
 msgid "Which top-level instances to realize"
 msgstr "Dimana contoh-contoh level-atas yang perlu disadari"
+
+
+msgid "Scale Mode"
+msgstr "Mode Skala"
 
 
 msgid "Inverted"
@@ -32103,10 +31992,6 @@ msgid "No border area selected"
 msgstr "Modus Sunting"
 
 
-msgid "No render output node in scene"
-msgstr "Adegan"
-
-
 msgctxt "Sequence"
 msgid "Color Balance"
 msgstr "Keseimbangan Warna"
@@ -32182,18 +32067,6 @@ msgid "Nothing indicated"
 msgstr "Tidak ada yang berindikasi"
 
 
-msgid "Can't append data-block '%s' of type '%s'"
-msgstr "Tidak dapat menambahkan tipe '%s' dari data-blok '%s'"
-
-
-msgid "Can't link data-block '%s' of type '%s'"
-msgstr "Tidak dapat menghubungkan tipe '%s' dari data-blok '%s'"
-
-
-msgid "'%s': cannot use current file as library"
-msgstr "'%s': tidak dapat menggunakan file sekarang sebagai perpustakaan"
-
-
 msgid "'%s': nothing indicated"
 msgstr "'%s': tidak terindikasi"
 
@@ -32204,6 +32077,10 @@ msgstr "'%s': bukan perpustakaan"
 
 msgid "Scene '%s' is linked, instantiation of objects is disabled"
 msgstr "Adegan '%s' telah dihubungkan, instantiasi objek telah dinonaktifkan"
+
+
+msgid "'%s': cannot use current file as library"
+msgstr "'%s': tidak dapat menggunakan file sekarang sebagai perpustakaan"
 
 
 msgid "'%s' is not a valid library filepath"
@@ -32284,16 +32161,6 @@ msgstr "Dukungan Platform Terbatas"
 
 
 msgctxt "WindowManager"
-msgid "Your graphics card or driver has limited support. It may work, but with issues."
-msgstr "Kartu grafis atau driver komputer anda mempunyai pendukung yang terbatas. Ini mungkin bekerja tetapi dengan masalah."
-
-
-msgctxt "WindowManager"
-msgid "Newer graphics drivers may be available to improve Blender support."
-msgstr "Kartu grafis yang lebih baru mungkin akan tersedia untuk meningkatkan pendukung Blender."
-
-
-msgctxt "WindowManager"
 msgid "Graphics card:"
 msgstr "Kartu grafis:"
 
@@ -32311,16 +32178,6 @@ msgstr "Kartu grafis anda atau versi macOS tidak didukung"
 msgctxt "WindowManager"
 msgid "Upgrading to the latest macOS version may improve Blender support"
 msgstr "Meningkatkan ke versi macOS terbaru mungkin dapat meningkatkan dukungan Blender"
-
-
-msgctxt "WindowManager"
-msgid "Your graphics card or driver is not supported."
-msgstr "Kartu grafis atau driver komputer anda tidak didukung."
-
-
-msgctxt "WindowManager"
-msgid "The program will now close."
-msgstr "Aplikasi akan ditutup sekarang."
 
 
 msgid "(Unsaved)"

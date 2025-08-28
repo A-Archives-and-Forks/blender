@@ -9,8 +9,9 @@
 #include "GPU_compute.hh"
 
 #include "gpu_backend.hh"
+#include "gpu_debug_private.hh"
 
-void GPU_compute_dispatch(GPUShader *shader,
+void GPU_compute_dispatch(blender::gpu::Shader *shader,
                           uint groups_x_len,
                           uint groups_y_len,
                           uint groups_z_len,
@@ -18,12 +19,15 @@ void GPU_compute_dispatch(GPUShader *shader,
 {
   blender::gpu::GPUBackend &gpu_backend = *blender::gpu::GPUBackend::get();
   GPU_shader_bind(shader, constants_state);
+#ifndef NDEBUG
+  blender::gpu::debug_validate_binding_image_format();
+#endif
   gpu_backend.compute_dispatch(groups_x_len, groups_y_len, groups_z_len);
 }
 
 void GPU_compute_dispatch_indirect(
-    GPUShader *shader,
-    GPUStorageBuf *indirect_buf_,
+    blender::gpu::Shader *shader,
+    blender::gpu::StorageBuf *indirect_buf_,
     const blender::gpu::shader::SpecializationConstants *constants_state)
 {
   blender::gpu::GPUBackend &gpu_backend = *blender::gpu::GPUBackend::get();
@@ -31,5 +35,8 @@ void GPU_compute_dispatch_indirect(
       indirect_buf_);
 
   GPU_shader_bind(shader, constants_state);
+#ifndef NDEBUG
+  blender::gpu::debug_validate_binding_image_format();
+#endif
   gpu_backend.compute_dispatch_indirect(indirect_buf);
 }

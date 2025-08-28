@@ -60,7 +60,7 @@ bool VDBImageLoader::load_metadata(ImageMetaData &metadata)
   bbox = grid->evalActiveVoxelBoundingBox();
   if (bbox.empty()) {
     metadata.type = IMAGE_DATA_TYPE_NANOVDB_EMPTY;
-    metadata.byte_size = 0;
+    metadata.byte_size = 1;
     grid.reset();
     return true;
   }
@@ -111,9 +111,13 @@ bool VDBImageLoader::load_metadata(ImageMetaData &metadata)
 #endif
 }
 
-bool VDBImageLoader::load_pixels_full(const ImageMetaData & /*metadata*/, uint8_t *pixels)
+bool VDBImageLoader::load_pixels_full(const ImageMetaData &metadata, uint8_t *pixels)
 {
 #ifdef WITH_NANOVDB
+  if (metadata.type == IMAGE_DATA_TYPE_NANOVDB_EMPTY) {
+    memset(pixels, 0, metadata.byte_size);
+    return true;
+  }
   if (nanogrid) {
     memcpy(pixels, nanogrid.data(), nanogrid.size());
     return true;
@@ -203,9 +207,9 @@ openvdb::GridBase::ConstPtr create_grid(const float *voxels,
                                           0.0,
                                           (double)(voxel_size.z * transform_3d[2][2]),
                                           0.0,
-                                          (double)transform_3d[0][3],
-                                          (double)transform_3d[1][3],
-                                          (double)transform_3d[2][3],
+                                          (double)transform_3d[0][3] + voxel_size.x,
+                                          (double)transform_3d[1][3] + voxel_size.y,
+                                          (double)transform_3d[2][3] + voxel_size.z,
                                           1.0);
 
   const openvdb::math::Transform::Ptr index_to_world_tfm =

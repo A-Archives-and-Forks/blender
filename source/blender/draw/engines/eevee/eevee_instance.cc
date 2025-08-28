@@ -272,9 +272,12 @@ void Instance::init_light_bake(Depsgraph *depsgraph, draw::Manager *manager)
   rcti empty_rect{0, 0, 0, 0};
   film.init(int2(1), &empty_rect);
   render_buffers.init();
+  ambient_occlusion.init();
   velocity.init();
+  raytracing.init();
   depth_of_field.init();
   shadows.init();
+  motion_blur.init();
   main_view.init();
   light_probes.init();
   planar_probes.init();
@@ -538,7 +541,7 @@ void Instance::render_sample()
   DebugScope debug_scope(debug_scope_render_sample, "EEVEE.render_sample");
 
   {
-    /* Critical section. Potential GPUShader concurrent usage. */
+    /* Critical section. Potential gpu::Shader concurrent usage. */
     DRW_submission_start();
 
     sampling.step();
@@ -897,7 +900,7 @@ void Instance::light_bake_irradiance(
     sampling.step();
 
     {
-      /* Critical section. Potential GPUShader concurrent usage. */
+      /* Critical section. Potential gpu::Shader concurrent usage. */
       DRW_submission_start();
 
       DebugScope debug_scope(debug_scope_irradiance_setup, "EEVEE.irradiance_setup");
@@ -935,7 +938,7 @@ void Instance::light_bake_irradiance(
       for (int i = 0; i < 16 && !sampling.finished(); i++) {
         sampling.step();
         {
-          /* Critical section. Potential GPUShader concurrent usage. */
+          /* Critical section. Potential gpu::Shader concurrent usage. */
           DRW_submission_start();
 
           volume_probes.bake.raylists_build();

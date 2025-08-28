@@ -221,12 +221,12 @@ static PyObject *bpy_bm_utils_vert_splice(PyObject * /*self*/, PyObject *args)
   }
 
   if (BM_edge_exists(py_vert->v, py_vert_target->v)) {
-    PyErr_SetString(PyExc_ValueError, "vert_splice(...): verts can't share an edge");
+    PyErr_SetString(PyExc_ValueError, "vert_splice(...): verts cannot share an edge");
     return nullptr;
   }
 
   if (BM_vert_pair_share_face_check(py_vert->v, py_vert_target->v)) {
-    PyErr_SetString(PyExc_ValueError, "vert_splice(...): verts can't share a face");
+    PyErr_SetString(PyExc_ValueError, "vert_splice(...): verts cannot share a face");
     return nullptr;
   }
 
@@ -399,7 +399,7 @@ static PyObject *bpy_bm_utils_edge_rotate(PyObject * /*self*/, PyObject *args)
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_bm_utils_face_split_doc,
-    ".. method:: face_split(face, vert_a, vert_b, coords=(), use_exist=True, example=None)\n"
+    ".. method:: face_split(face, vert_a, vert_b, *, coords=(), use_exist=True, example=None)\n"
     "\n"
     "   Face split with optional intermediate points.\n"
     "\n"

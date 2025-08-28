@@ -101,7 +101,7 @@ static bool bpy_blend_foreach_path_cb(BPathForeachPathData *bpath_data,
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_blend_paths_doc,
-    ".. function:: blend_paths(absolute=False, packed=False, local=False)\n"
+    ".. function:: blend_paths(*, absolute=False, packed=False, local=False)\n"
     "\n"
     "   Returns a list of paths to external files referenced by the loaded .blend file.\n"
     "\n"
@@ -171,7 +171,7 @@ static PyObject *bpy_blend_paths(PyObject * /*self*/, PyObject *args, PyObject *
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_flip_name_doc,
-    ".. function:: flip_name(name, strip_digits=False)\n"
+    ".. function:: flip_name(name, *, strip_digits=False)\n"
     "\n"
     "   Flip a name between left/right sides, useful for \n"
     "   mirroring bone names.\n"
@@ -217,7 +217,7 @@ static PyObject *bpy_flip_name(PyObject * /*self*/, PyObject *args, PyObject *kw
   return result;
 }
 
-/* `bpy_user_resource_doc`, Now in `bpy/utils.py`. */
+/* `bpy_user_resource_doc`, Now in `bpy/utils/__init__.py`. */
 static PyObject *bpy_user_resource(PyObject * /*self*/, PyObject *args, PyObject *kw)
 {
   const PyC_StringEnumItems type_items[] = {
@@ -263,7 +263,7 @@ static PyObject *bpy_user_resource(PyObject * /*self*/, PyObject *args, PyObject
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_system_resource_doc,
-    ".. function:: system_resource(type, path=\"\")\n"
+    ".. function:: system_resource(type, *, path=\"\")\n"
     "\n"
     "   Return a system resource path.\n"
     "\n"
@@ -314,7 +314,7 @@ static PyObject *bpy_system_resource(PyObject * /*self*/, PyObject *args, PyObje
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_resource_path_doc,
-    ".. function:: resource_path(type, major=bpy.app.version[0], minor=bpy.app.version[1])\n"
+    ".. function:: resource_path(type, *, major=bpy.app.version[0], minor=bpy.app.version[1])\n"
     "\n"
     "   Return the base path for storing system files.\n"
     "\n"
@@ -365,7 +365,7 @@ static PyObject *bpy_resource_path(PyObject * /*self*/, PyObject *args, PyObject
 PyDoc_STRVAR(
     /* Wrap. */
     bpy_driver_secure_code_test_doc,
-    ".. function:: _driver_secure_code_test(code)\n"
+    ".. function:: _driver_secure_code_test(code, *, namespace=None, verbose=False)\n"
     "\n"
     "   Test if the script should be considered trusted.\n"
     "\n"
@@ -745,21 +745,33 @@ void BPy_init_modules(bContext *C)
   PyDict_SetItemString(PyImport_GetModuleDict(), "_bpy", mod);
   Py_DECREF(mod);
 
-  /* needs to be first so bpy_types can run */
+  /* Needs to be first so `_bpy_types` can run. */
   PyObject *bpy_types = BPY_rna_types();
   PyModule_AddObject(bpy_types, "GeometrySet", BPyInit_geometry_set_type());
   PyModule_AddObject(mod, "types", bpy_types);
 
-  /* needs to be first so bpy_types can run */
+  /* Needs to be first so `_bpy_types` can run. */
   BPY_library_load_type_ready();
 
   BPY_rna_data_context_type_ready();
 
   BPY_rna_gizmo_module(mod);
 
-  bpy_import_test("bpy_types");
-  PyModule_AddObject(mod, "data", BPY_rna_module()); /* imports bpy_types by running this */
-  bpy_import_test("bpy_types");
+  /* Important to internalizes `_bpy_types` before creating RNA instances. */
+  {
+    /* Set a dummy module so the `_bpy_types.py` can access `bpy.types.ID`
+     * without a null pointer dereference when instancing types. */
+    PyObject *bpy_types_dict_dummy = PyDict_New();
+    BPY_rna_types_dict_set(bpy_types_dict_dummy);
+    PyObject *bpy_types_module_py = bpy_import_test("_bpy_types");
+    /* Something has gone wrong if this is ever populated. */
+    BLI_assert(PyDict_GET_SIZE(bpy_types_dict_dummy) == 0);
+    Py_DECREF(bpy_types_dict_dummy);
+
+    PyObject *bpy_types_module_py_dict = PyModule_GetDict(bpy_types_module_py);
+    BPY_rna_types_dict_set(bpy_types_module_py_dict);
+  }
+  PyModule_AddObject(mod, "data", BPY_rna_module());
   BPY_rna_types_finalize_external_types(bpy_types);
 
   PyModule_AddObject(mod, "props", BPY_rna_props());

@@ -24,7 +24,7 @@
 /* -------------------------------------------------------------------- */
 /** \name Submission critical section
  *
- * The usage of GPUShader objects is currently not thread safe. Since they are shared resources
+ * The usage of gpu::Shader objects is currently not thread safe. Since they are shared resources
  * between render engine instances, we cannot allow pass submissions in a concurrent manner.
  * \{ */
 
@@ -121,6 +121,11 @@ class ContextShared {
     WM_system_gpu_context_activate(system_gpu_context_);
     GPU_context_active_set(blender_gpu_context_);
     GPU_context_begin_frame(blender_gpu_context_);
+  }
+
+  bool is_enabled()
+  {
+    return blender_gpu_context_ == GPU_context_active_get();
   }
 
   /* Restore window drawable after disabling if restore is true. */
@@ -242,6 +247,11 @@ bool DRW_gpu_context_try_enable()
   }
   DRW_gpu_context_enable_ex(true);
   return true;
+}
+
+bool DRW_gpu_context_is_enabled()
+{
+  return viewport_context && viewport_context->is_enabled();
 }
 
 void DRW_gpu_context_disable()

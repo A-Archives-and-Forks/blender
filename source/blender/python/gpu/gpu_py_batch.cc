@@ -201,7 +201,7 @@ static PyObject *pygpu_batch_program_set(BPyGPUBatch *self, BPyGPUShader *py_sha
     return nullptr;
   }
 
-  GPUShader *shader = py_shader->shader;
+  blender::gpu::Shader *shader = py_shader->shader;
   GPU_batch_set_shader(self->batch, shader);
 
 #ifdef USE_GPU_PY_REFERENCES
@@ -324,7 +324,7 @@ static PyObject *pygpu_batch_draw(BPyGPUBatch *self, PyObject *args)
   if (py_shader && py_shader->is_builtin &&
       ELEM(self->batch->prim_type, GPU_PRIM_LINES, GPU_PRIM_LINE_STRIP, GPU_PRIM_LINE_LOOP))
   {
-    GPUShader *shader = py_shader->shader;
+    blender::gpu::Shader *shader = py_shader->shader;
     const float line_width = GPU_line_width_get();
     const bool use_linesmooth = GPU_line_smooth_get();
     if (line_width > 1.0f || use_linesmooth) {
@@ -355,7 +355,7 @@ static PyObject *pygpu_batch_draw(BPyGPUBatch *self, PyObject *args)
   /* Emit a warning when trying to draw points with a regular shader as it is too late to
    * automatically switch to a point shader. */
   if (py_shader && py_shader->is_builtin && self->batch->prim_type == GPU_PRIM_POINTS) {
-    GPUShader *shader = py_shader->shader;
+    blender::gpu::Shader *shader = py_shader->shader;
     if (shader == GPU_shader_get_builtin_shader(GPU_SHADER_3D_FLAT_COLOR)) {
       PyErr_WarnEx(PyExc_DeprecationWarning,
                    "Calling GPUBatch.draw to draw points with "
@@ -394,7 +394,7 @@ PyDoc_STRVAR(
     ".. method:: draw_instanced(program, *, instance_start=0, instance_count=0)\n"
     "\n"
     "   Draw multiple instances of the drawing program with the parameters assigned\n"
-    "   to the batch. In the vertex shader, `gl_InstanceID` will contain the instance\n"
+    "   to the batch. In the vertex shader, ``gl_InstanceID`` will contain the instance\n"
     "   number being drawn.\n"
     "\n"
     "   :arg program: Program that performs the drawing operations.\n"
@@ -575,8 +575,8 @@ PyDoc_STRVAR(
     "   Reusable container for drawable geometry.\n"
     "\n"
     "   :arg type: The primitive type of geometry to be drawn.\n"
-    "      Possible values are `POINTS`, `LINES`, `TRIS`, `LINE_STRIP`, `LINE_LOOP`, `TRI_STRIP`, "
-    "`TRI_FAN`, `LINES_ADJ`, `TRIS_ADJ` and `LINE_STRIP_ADJ`.\n"
+    "      Possible values are ``POINTS``, ``LINES``, ``TRIS``, ``LINE_STRIP``, ``LINE_LOOP``, "
+    "``TRI_STRIP``, ``TRI_FAN``, ``LINES_ADJ``, ``TRIS_ADJ`` and ``LINE_STRIP_ADJ``.\n"
     "   :type type: str\n"
     "   :arg buf: Vertex buffer containing all or some of the attributes required for drawing.\n"
     "   :type buf: :class:`gpu.types.GPUVertBuf`\n"

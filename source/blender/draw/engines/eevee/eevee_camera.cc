@@ -14,8 +14,6 @@
 #include "DNA_camera_types.h"
 #include "DNA_view3d_types.h"
 
-#include "BKE_camera.h"
-
 #include "RE_engine.h"
 #include "RE_pipeline.h"
 #include "render_types.h"
@@ -77,6 +75,10 @@ void Camera::init()
   float overscan = 0.0f;
   if ((inst_.scene->eevee.flag & SCE_EEVEE_OVERSCAN) && (inst_.drw_view || inst_.render)) {
     overscan = inst_.scene->eevee.overscan / 100.0f;
+    if (inst_.drw_view && (inst_.rv3d->dist == 0.0f || v3d_camera_params_get().lens == 0.0f)) {
+      /* In these cases we need to use the v3d winmat as-is. */
+      overscan = 0.0f;
+    }
   }
   overscan_changed_ = assign_if_different(overscan_, overscan);
   camera_changed_ = assign_if_different(last_camera_object_, inst_.camera_orig_object);
@@ -134,30 +136,25 @@ void Camera::sync()
     data.viewmat = inst_.drw_view->viewmat();
     data.viewinv = inst_.drw_view->viewinv();
 
-    CameraParams params;
-    BKE_camera_params_init(&params);
+    CameraParams params = v3d_camera_params_get();
 
-    if (inst_.rv3d->persp == RV3D_CAMOB && inst_.is_viewport_image_render) {
-      /* We are rendering camera view, no need for pan/zoom params from viewport. */
-      BKE_camera_params_from_object(&params, camera_eval);
+    if (inst_.rv3d->dist > 0.0f && params.lens > 0.0f) {
+      BKE_camera_params_compute_viewplane(&params, UNPACK2(display_extent), 1.0f, 1.0f);
+
+      BLI_assert(BLI_rctf_size_x(&params.viewplane) > 0.0f);
+      BLI_assert(BLI_rctf_size_y(&params.viewplane) > 0.0f);
+
+      BKE_camera_params_crop_viewplane(&params.viewplane, UNPACK2(display_extent), &film_rect);
+
+      RE_GetWindowMatrixWithOverscan(params.is_ortho,
+                                     params.clip_start,
+                                     params.clip_end,
+                                     params.viewplane,
+                                     overscan_,
+                                     data.winmat.ptr());
     }
     else {
-      BKE_camera_params_from_view3d(&params, inst_.depsgraph, inst_.v3d, inst_.rv3d);
-    }
-
-    BKE_camera_params_compute_viewplane(&params, UNPACK2(display_extent), 1.0f, 1.0f);
-
-    BKE_camera_params_crop_viewplane(&params.viewplane, UNPACK2(display_extent), &film_rect);
-
-    RE_GetWindowMatrixWithOverscan(params.is_ortho,
-                                   params.clip_start,
-                                   params.clip_end,
-                                   params.viewplane,
-                                   overscan_,
-                                   data.winmat.ptr());
-
-    if (params.lens == 0.0f) {
-      /* Can happen for the case of XR.
+      /* Can happen for the case of XR or if `rv3d->dist == 0`.
        * In this case the produced winmat is degenerate. So just revert to the input matrix. */
       data.winmat = inst_.drw_view->winmat();
     }
@@ -281,6 +278,24 @@ void Camera::update_bounds()
   float2 p0 = float2(bbox.vec[0]) / (this->is_perspective() ? bbox.vec[0][2] : 1.0f);
   float2 p1 = float2(bbox.vec[7]) / (this->is_perspective() ? bbox.vec[7][2] : 1.0f);
   data_.screen_diagonal_length = math::distance(p0, p1);
+}
+
+CameraParams Camera::v3d_camera_params_get() const
+{
+  BLI_assert(inst_.drw_view);
+
+  CameraParams params;
+  BKE_camera_params_init(&params);
+
+  if (inst_.rv3d->persp == RV3D_CAMOB && inst_.is_viewport_image_render) {
+    /* We are rendering camera view, no need for pan/zoom params from viewport. */
+    BKE_camera_params_from_object(&params, inst_.camera_eval_object);
+  }
+  else {
+    BKE_camera_params_from_view3d(&params, inst_.depsgraph, inst_.v3d, inst_.rv3d);
+  }
+
+  return params;
 }
 
 /** \} */

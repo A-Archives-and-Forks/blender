@@ -21,6 +21,7 @@
 #include "kernel/film/light_passes.h"
 
 #include "kernel/integrator/guiding.h"
+#include "kernel/integrator/volume_stack.h"
 
 CCL_NAMESPACE_BEGIN
 
@@ -408,19 +409,26 @@ ccl_device_inline void volume_shader_motion_blur(KernelGlobals kg,
    * "Production Volume Rendering", Wreninge et al., 2012
    */
 
+  /* Always use linear interpolation for velocity. */
+  const int cubic_flag = sd->flag & SD_VOLUME_CUBIC;
+  sd->flag &= ~SD_VOLUME_CUBIC;
+
   /* Find velocity. */
-  float3 velocity = primitive_volume_attribute<float3>(kg, sd, v_desc, true);
+  float3 velocity = primitive_volume_attribute<float3>(kg, sd, v_desc, false);
   object_dir_transform(kg, sd, &velocity);
 
   /* Find advected P. */
   sd->P = P - (time - time_offset) * velocity_scale * velocity;
 
   /* Find advected velocity. */
-  velocity = primitive_volume_attribute<float3>(kg, sd, v_desc, true);
+  velocity = primitive_volume_attribute<float3>(kg, sd, v_desc, false);
   object_dir_transform(kg, sd, &velocity);
 
   /* Find advected P. */
   sd->P = P - (time - time_offset) * velocity_scale * velocity;
+
+  /* Restore flag. */
+  sd->flag |= cubic_flag;
 }
 #  endif
 
@@ -484,12 +492,11 @@ ccl_device_inline bool volume_shader_eval_entry(KernelGlobals kg,
   return true;
 }
 
-template<const bool shadow, typename StackReadOp, typename ConstIntegratorGenericState>
+template<const bool shadow, typename ConstIntegratorGenericState>
 ccl_device_inline void volume_shader_eval(KernelGlobals kg,
                                           ConstIntegratorGenericState state,
                                           ccl_private ShaderData *ccl_restrict sd,
-                                          const uint32_t path_flag,
-                                          StackReadOp stack_read)
+                                          const uint32_t path_flag)
 {
   /* If path is being terminated, we are tracing a shadow ray or evaluating
    * emission, then we don't need to store closures. The emission and shadow
@@ -510,7 +517,7 @@ ccl_device_inline void volume_shader_eval(KernelGlobals kg,
   sd->object_flag = 0;
 
   for (int i = 0;; i++) {
-    const VolumeStack entry = stack_read(i);
+    const VolumeStack entry = volume_stack_read<shadow>(state, i);
     if (!volume_shader_eval_entry<shadow, KERNEL_FEATURE_NODE_MASK_VOLUME>(
             kg, state, sd, entry, path_flag))
     {

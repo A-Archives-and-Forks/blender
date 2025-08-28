@@ -149,9 +149,9 @@ inline constexpr DataFormat to_data_format(VertAttrType format)
   return DataFormat(int(format));
 }
 
-}  // namespace blender::gpu
+class Shader;
 
-struct GPUShader;
+}  // namespace blender::gpu
 
 constexpr static int GPU_VERT_ATTR_MAX_LEN = 16;
 constexpr static int GPU_VERT_ATTR_MAX_NAMES = 6;
@@ -306,9 +306,43 @@ struct GPUVertFormat {
     return format; \
   }
 
+namespace blender::gpu {
+
+/** Generic vertex format for single attribute buffers. */
+template<typename T> struct GenericVertexFormat {
+  T attr;
+  GPU_VERTEX_FORMAT_FUNC(GenericVertexFormat, attr);
+};
+
+template<> struct GenericVertexFormat<int8_t> {
+  /* This is a workaround to reinterpret int8_t into padded vertex format to be able to upload it
+   * on any GPU. The shaders then need to read uint32_t and use shifts and mask to decode in
+   * individual bytes. */
+  uint32_t attr;
+  GPU_VERTEX_FORMAT_FUNC(GenericVertexFormat, attr);
+};
+
+template<> struct GenericVertexFormat<uint8_t> {
+  /* This is a workaround to reinterpret uint8_t into padded vertex format to be able to upload it
+   * on any GPU. The shaders then need to read uint32_t and use shifts and mask to decode in
+   * individual bytes. */
+  uint32_t attr;
+  GPU_VERTEX_FORMAT_FUNC(GenericVertexFormat, attr);
+};
+
+template<> struct GenericVertexFormat<bool> {
+  /* This is a workaround to reinterpret bool into padded vertex format to be able to upload it
+   * on any GPU. The shaders then need to read uint32_t and use shifts and mask to decode in
+   * individual bytes. */
+  uint32_t attr;
+  GPU_VERTEX_FORMAT_FUNC(GenericVertexFormat, attr);
+};
+
+}  // namespace blender::gpu
+
 void GPU_vertformat_clear(GPUVertFormat *);
 void GPU_vertformat_copy(GPUVertFormat *dest, const GPUVertFormat &src);
-void GPU_vertformat_from_shader(GPUVertFormat *format, const GPUShader *shader);
+void GPU_vertformat_from_shader(GPUVertFormat *format, const blender::gpu::Shader *shader);
 
 uint GPU_vertformat_attr_add(GPUVertFormat *format,
                              blender::StringRef name,
