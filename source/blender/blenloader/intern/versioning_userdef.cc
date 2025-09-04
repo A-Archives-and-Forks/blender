@@ -124,12 +124,6 @@ static void do_versions_theme(const UserDef *userdef, bTheme *btheme)
   }
 
   if (!USER_VERSION_ATLEAST(400, 27)) {
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_keyframe);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_breakdown);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_movehold);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_keyframe_select);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_breakdown_select);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_movehold_select);
     FROM_DEFAULT_V4_UCHAR(space_sequencer.keyborder);
     FROM_DEFAULT_V4_UCHAR(space_sequencer.keyborder_select);
     FROM_DEFAULT_V4_UCHAR(space_sequencer.transition);
@@ -156,11 +150,6 @@ static void do_versions_theme(const UserDef *userdef, bTheme *btheme)
         &userdef->themes, btheme, "Theme", '.', offsetof(bTheme, name), sizeof(btheme->name));
   }
 
-  if (!USER_VERSION_ATLEAST(402, 17)) {
-    FROM_DEFAULT_V4_UCHAR(space_action.keytype_generated);
-    FROM_DEFAULT_V4_UCHAR(space_action.keytype_generated_select);
-  }
-
   if (!USER_VERSION_ATLEAST(402, 21)) {
     FROM_DEFAULT_V4_UCHAR(asset_shelf.back);
     FROM_DEFAULT_V4_UCHAR(asset_shelf.header_back);
@@ -168,11 +157,6 @@ static void do_versions_theme(const UserDef *userdef, bTheme *btheme)
 
   if (!USER_VERSION_ATLEAST(402, 47)) {
     FROM_DEFAULT_V4_UCHAR(space_view3d.time_gp_keyframe);
-  }
-
-  if (!USER_VERSION_ATLEAST(403, 1)) {
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_generated);
-    FROM_DEFAULT_V4_UCHAR(space_sequencer.keytype_generated_select);
   }
 
   if (!USER_VERSION_ATLEAST(402, 62)) {
@@ -392,6 +376,31 @@ static void do_versions_theme(const UserDef *userdef, bTheme *btheme)
     FROM_DEFAULT_V4_UCHAR(common.curves.handle_vertex);
     FROM_DEFAULT_V4_UCHAR(common.curves.handle_vertex_select);
     btheme->common.curves.handle_vertex_size = U_theme_default.common.curves.handle_vertex_size;
+  }
+
+  if (!USER_VERSION_ATLEAST(500, 68)) {
+    FROM_DEFAULT_V4_UCHAR(space_clip.track_selected);
+  }
+
+  if (!USER_VERSION_ATLEAST(500, 69)) {
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_extreme);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_breakdown);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_jitter);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_moving_hold);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_generated);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_extreme_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_breakdown_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_jitter_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_moving_hold_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.keyframe_generated_selected);
+    FROM_DEFAULT_V4_UCHAR(common.anim.long_key);
+    FROM_DEFAULT_V4_UCHAR(common.anim.long_key_selected);
+  }
+
+  if (!USER_VERSION_ATLEAST(500, 74)) {
+    FROM_DEFAULT_V4_UCHAR(tui.panel_active);
   }
 
   /**
@@ -1273,7 +1282,7 @@ void blo_do_versions_userdef(UserDef *userdef)
       userdef->pixelsize = 1.0f;
     }
     /* Clear old userdef flag for "Camera Parent Lock". */
-    userdef->uiflag &= ~USER_UIFLAG_UNUSED_3;
+    userdef->uiflag &= ~USER_AREA_CORNER_HANDLE;
   }
 
   if (!USER_VERSION_ATLEAST(292, 9)) {
@@ -1653,13 +1662,13 @@ void blo_do_versions_userdef(UserDef *userdef)
     }
   }
 
-  if (!USER_VERSION_ATLEAST(500, 11)) {
-    userdef->gpu_flag &= ~USER_GPU_FLAG_UNUSED_0;
-    STRNCPY(userdef->texture_cachedir, U_default.texture_cachedir);
-  }
-
   if (!USER_VERSION_ATLEAST(500, 59)) {
     userdef->preferences_display_type = USER_TEMP_SPACE_DISPLAY_WINDOW;
+  }
+
+  if (!USER_VERSION_ATLEAST(500, 74)) {
+    userdef->gpu_flag &= ~USER_GPU_FLAG_UNUSED_0;
+    STRNCPY(userdef->texture_cachedir, U_default.texture_cachedir);
   }
 
   /**

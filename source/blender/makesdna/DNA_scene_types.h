@@ -155,12 +155,6 @@ typedef enum IMB_Ffmpeg_Codec_ID {
   FFMPEG_CODEC_ID_OPUS = 86076,
 } IMB_Ffmpeg_Codec_ID;
 
-typedef enum eFFMpegVideoHdr {
-  FFM_VIDEO_HDR_NONE = 0,
-  FFM_VIDEO_HDR_REC2100_HLG = 1,
-  FFM_VIDEO_HDR_REC2100_PQ = 2,
-} eFFMpegVideoHdr;
-
 typedef struct FFMpegCodecData {
   int type;
   int codec;       /* Use `codec_id_get()` instead! IMB_Ffmpeg_Codec_ID */
@@ -184,7 +178,7 @@ typedef struct FFMpegCodecData {
   int rc_buffer_size;
   int mux_packet_size;
   int mux_rate;
-  int video_hdr; /* eFFMpegVideoHdr */
+  int _pad;
 
 #ifdef __cplusplus
   IMB_Ffmpeg_Codec_ID codec_id_get() const
@@ -1081,11 +1075,11 @@ typedef struct TimeMarker {
 typedef struct UnifiedPaintSettings {
   DNA_DEFINE_CXX_METHODS(UnifiedPaintSettings)
 
-  /** Unified radius of brush in pixels. */
+  /** Unified diameter of brush in pixels. */
   int size;
 
-  /** Unified radius of brush in Blender units. */
-  float unprojected_radius;
+  /** Unified diameter of brush in Blender units. */
+  float unprojected_size;
 
   /** Unified strength of brush. */
   float alpha;
@@ -1187,10 +1181,6 @@ typedef struct Paint {
   /** Cavity curve. */
   struct CurveMapping *cavity_curve;
 
-  /** WM Paint cursor. */
-  void *paint_cursor;
-  unsigned char paint_cursor_col[4];
-
   /** Enum #ePaintFlags. */
   int flags;
 
@@ -1204,7 +1194,6 @@ typedef struct Paint {
   int symmetry_flags;
 
   float tile_offset[3];
-  char _pad2[4];
   struct UnifiedPaintSettings unified_paint_settings;
 
   PaintRuntimeHandle *runtime;

@@ -53,6 +53,7 @@
 #include "BKE_node.hh"
 #include "BKE_node_legacy_types.hh"
 #include "BKE_node_runtime.hh"
+#include "BKE_paint.hh"
 #include "BKE_pointcache.h"
 #include "BKE_report.hh"
 
@@ -73,17 +74,17 @@
 // #include "CLG_log.h"
 // static CLG_LogRef LOG = {"blend.doversion"};
 
+static void idprops_process(IDProperty *idprops, IDProperty **system_idprops)
+{
+  BLI_assert(*system_idprops == nullptr);
+  if (idprops) {
+    /* Other ID pointers have not yet been relinked, do not try to access them for refcounting. */
+    *system_idprops = IDP_CopyProperty_ex(idprops, LIB_ID_CREATE_NO_USER_REFCOUNT);
+  }
+}
+
 void version_system_idprops_generate(Main *bmain)
 {
-  auto idprops_process = [](IDProperty *idprops, IDProperty **system_idprops) -> void {
-    BLI_assert(*system_idprops == nullptr);
-    if (idprops) {
-      /* Other ID pointers have not yet been relinked, do not try to access them for refcounting.
-       */
-      *system_idprops = IDP_CopyProperty_ex(idprops, LIB_ID_CREATE_NO_USER_REFCOUNT);
-    }
-  };
-
   ID *id_iter;
   FOREACH_MAIN_ID_BEGIN (bmain, id_iter) {
     idprops_process(id_iter->properties, &id_iter->system_properties);
@@ -96,11 +97,10 @@ void version_system_idprops_generate(Main *bmain)
     }
 
     if (scene->ed != nullptr) {
-      blender::seq::for_each_callback(&scene->ed->seqbase,
-                                      [&idprops_process](Strip *strip) -> bool {
-                                        idprops_process(strip->prop, &strip->system_properties);
-                                        return true;
-                                      });
+      blender::seq::for_each_callback(&scene->ed->seqbase, [](Strip *strip) -> bool {
+        idprops_process(strip->prop, &strip->system_properties);
+        return true;
+      });
     }
   }
 
@@ -121,6 +121,16 @@ void version_system_idprops_generate(Main *bmain)
       idprops_process(bone->prop, &bone->system_properties);
     }
   }
+}
+/* Separate callback for nodes, because they had the split implemented later. */
+void version_system_idprops_nodes_generate(Main *bmain)
+{
+  FOREACH_NODETREE_BEGIN (bmain, node_tree, id_owner) {
+    LISTBASE_FOREACH (bNode *, node, &node_tree->nodes) {
+      idprops_process(node->prop, &node->system_properties);
+    }
+  }
+  FOREACH_NODETREE_END;
 }
 
 static CustomDataLayer *find_old_seam_layer(CustomData &custom_data, const blender::StringRef name)
@@ -172,11 +182,53 @@ static void rename_mesh_uv_seam_attribute(Mesh &mesh)
   STRNCPY_UTF8(old_seam_layer->name, new_name.c_str());
 }
 
+static void update_brush_sizes(Main &bmain)
+{
+  /* This conversion was originally done in 582c7d94b8, between subversion 1 (84bee96757) and
+   * subversion 2 (fa03c53d4a). The original change should have come with a subversion bump to be
+   * filled in later, but since it didn't, the best we can do is use subversion 1 for this check.
+   * Thankfully, this only results in a single day window in which a user would have had to
+   * download the build where this versioning was not correctly applied. */
+  LISTBASE_FOREACH (Brush *, brush, &bmain.brushes) {
+    brush->size *= 2;
+    brush->unprojected_size *= 2.0f;
+  }
+
+  auto apply_to_paint = [&](Paint *paint) {
+    if (paint == nullptr) {
+      return;
+    }
+    UnifiedPaintSettings &ups = paint->unified_paint_settings;
+
+    ups.size *= 2;
+    ups.unprojected_size *= 2.0f;
+  };
+
+  LISTBASE_FOREACH (Scene *, scene, &bmain.scenes) {
+    scene->toolsettings->unified_paint_settings.size *= 2;
+    scene->toolsettings->unified_paint_settings.unprojected_size *= 2.0f;
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->vpaint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->wpaint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->sculpt));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->gp_paint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->gp_vertexpaint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->gp_sculptpaint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->gp_weightpaint));
+    apply_to_paint(reinterpret_cast<Paint *>(scene->toolsettings->curves_sculpt));
+    apply_to_paint(reinterpret_cast<Paint *>(&scene->toolsettings->imapaint));
+  }
+}
+
 static void initialize_closure_input_structure_types(bNodeTree &ntree)
 {
   LISTBASE_FOREACH (bNode *, node, &ntree.nodes) {
     if (node->type_legacy == NODE_EVALUATE_CLOSURE) {
       auto *storage = static_cast<NodeEvaluateClosure *>(node->storage);
+      if (!storage) {
+        /* Can happen with certain files saved in 4.5 which did not officially support closures
+         * yet. */
+        continue;
+      }
       for (const int i : blender::IndexRange(storage->input_items.items_num)) {
         NodeEvaluateClosureInputItem &item = storage->input_items.items[i];
         if (item.structure_type == NODE_INTERFACE_SOCKET_STRUCTURE_TYPE_AUTO) {
@@ -768,7 +820,7 @@ static void copy_unified_paint_settings(Scene &scene, Paint *paint)
   UnifiedPaintSettings &ups = paint->unified_paint_settings;
 
   ups.size = scene_ups.size;
-  ups.unprojected_radius = scene_ups.unprojected_radius;
+  ups.unprojected_size = scene_ups.unprojected_size;
   ups.alpha = scene_ups.alpha;
   ups.weight = scene_ups.weight;
   copy_v3_v3(ups.color, scene_ups.color);
@@ -1923,6 +1975,41 @@ static void do_version_glare_menus_to_inputs(bNodeTree &ntree, bNode &node)
   quality_socket.default_value_typed<bNodeSocketValueMenu>()->value = storage.quality;
 }
 
+static void initialize_missing_closure_and_bundle_node_storage(bNodeTree &ntree)
+{
+  /* When opening and saving 5.0 files with bundle/closure nodes in 4.5, the storage is lost, since
+   * Blender 4.5 does not officially support these features yet (they were experimental features
+   * though). This versioning code just adds back the storage so that it does not crash further
+   * down the line. */
+  LISTBASE_FOREACH (bNode *, node, &ntree.nodes) {
+    if (node->storage) {
+      continue;
+    }
+    switch (node->type_legacy) {
+      case NODE_CLOSURE_INPUT: {
+        node->storage = MEM_callocN<NodeClosureInput>(__func__);
+        break;
+      }
+      case NODE_CLOSURE_OUTPUT: {
+        node->storage = MEM_callocN<NodeClosureOutput>(__func__);
+        break;
+      }
+      case NODE_EVALUATE_CLOSURE: {
+        node->storage = MEM_callocN<NodeEvaluateClosure>(__func__);
+        break;
+      }
+      case NODE_COMBINE_BUNDLE: {
+        node->storage = MEM_callocN<NodeCombineBundle>(__func__);
+        break;
+      }
+      case NODE_SEPARATE_BUNDLE: {
+        node->storage = MEM_callocN<NodeSeparateBundle>(__func__);
+        break;
+      }
+    }
+  }
+}
+
 void do_versions_after_linking_500(FileData *fd, Main *bmain)
 {
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 9)) {
@@ -2086,7 +2173,57 @@ static void remove_in_and_out_node_interface(bNodeTree &node_tree)
   remove_in_and_out_node_panel_recursive(node_tree.tree_interface.root_panel);
 }
 
-void blo_do_versions_500(FileData * /*fd*/, Library * /*lib*/, Main *bmain)
+static void repair_node_link_node_pointers(FileData &fd, bNodeTree &node_tree)
+{
+  using namespace blender;
+  Map<bNodeSocket *, bNode *> socket_to_node;
+  LISTBASE_FOREACH (bNode *, node, &node_tree.nodes) {
+    LISTBASE_FOREACH (bNodeSocket *, socket, &node->inputs) {
+      socket_to_node.add(socket, node);
+    }
+    LISTBASE_FOREACH (bNodeSocket *, socket, &node->outputs) {
+      socket_to_node.add(socket, node);
+    }
+  }
+  LISTBASE_FOREACH (bNodeLink *, link, &node_tree.links) {
+    bool fixed = false;
+    bNode *to_node = socket_to_node.lookup(link->tosock);
+    if (to_node != link->tonode) {
+      link->tonode = to_node;
+      fixed = true;
+    }
+    bNode *from_node = socket_to_node.lookup(link->fromsock);
+    if (from_node != link->fromnode) {
+      link->fromnode = from_node;
+      fixed = true;
+    }
+    if (fixed) {
+      BLO_reportf_wrap(fd.reports,
+                       RPT_WARNING,
+                       "Repairing invalid state in node link from %s:%s to %s:%s",
+                       link->fromnode->name,
+                       link->fromsock->identifier,
+                       link->tonode->name,
+                       link->tosock->identifier);
+    }
+  }
+}
+
+static void sequencer_remove_listbase_pointers(Scene &scene)
+{
+  Editing *ed = scene.ed;
+  if (!ed) {
+    return;
+  }
+  const MetaStack *last_meta_stack = blender::seq::meta_stack_active_get(ed);
+  if (!last_meta_stack) {
+    return;
+  }
+  ed->current_meta_strip = last_meta_stack->parent_strip;
+  blender::seq::meta_stack_set(&scene, last_meta_stack->parent_strip);
+}
+
+void blo_do_versions_500(FileData *fd, Library * /*lib*/, Main *bmain)
 {
   using namespace blender;
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 1)) {
@@ -2095,6 +2232,8 @@ void blo_do_versions_500(FileData * /*fd*/, Library * /*lib*/, Main *bmain)
       bke::mesh_custom_normals_to_generic(*mesh);
       rename_mesh_uv_seam_attribute(*mesh);
     }
+
+    update_brush_sizes(*bmain);
   }
 
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 2)) {
@@ -2833,6 +2972,70 @@ void blo_do_versions_500(FileData * /*fd*/, Library * /*lib*/, Main *bmain)
       }
     }
     FOREACH_NODETREE_END;
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 67)) {
+    FOREACH_NODETREE_BEGIN (bmain, ntree, id) {
+      initialize_missing_closure_and_bundle_node_storage(*ntree);
+    }
+    FOREACH_NODETREE_END;
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 68)) {
+    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      sequencer_remove_listbase_pointers(*scene);
+    }
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 69)) {
+    LISTBASE_FOREACH (bNodeTree *, ntree, &bmain->nodetrees) {
+      repair_node_link_node_pointers(*fd, *ntree);
+    }
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 71)) {
+    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      scene->toolsettings->uvsculpt.size *= 2;
+    }
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 72)) {
+    LISTBASE_FOREACH (Brush *, brush, &bmain->brushes) {
+      if (brush->curve_size == nullptr) {
+        brush->curve_size = BKE_paint_default_curve();
+      }
+      if (brush->curve_strength == nullptr) {
+        brush->curve_strength = BKE_paint_default_curve();
+      }
+      if (brush->curve_jitter == nullptr) {
+        brush->curve_jitter = BKE_paint_default_curve();
+      }
+    }
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 73)) {
+    /* Old files created on WIN32 use `\r`. */
+    LISTBASE_FOREACH (Curve *, cu, &bmain->curves) {
+      if (cu->str) {
+        BLI_string_replace_char(cu->str, '\r', '\n');
+      }
+    }
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 500, 74)) {
+    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      if (scene->ed != nullptr) {
+        /* Set the first strip modifier as the active one and uncollapse the root panel. */
+        blender::seq::for_each_callback(&scene->ed->seqbase, [&](Strip *strip) -> bool {
+          seq::modifier_set_active(strip,
+                                   static_cast<StripModifierData *>(strip->modifiers.first));
+          LISTBASE_FOREACH (StripModifierData *, smd, &strip->modifiers) {
+            smd->layout_panel_open_flag |= UI_PANEL_DATA_EXPAND_ROOT;
+          }
+          return true;
+        });
+      }
+    }
   }
 
   /**

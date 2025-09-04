@@ -2853,69 +2853,6 @@ struct RegionMoveData {
   AZEdge edge;
 };
 
-static int area_max_regionsize(ScrArea *area, ARegion *scale_region, AZEdge edge)
-{
-  int dist;
-
-  /* regions in regions. */
-  if (scale_region->alignment & RGN_SPLIT_PREV) {
-    const int align = RGN_ALIGN_ENUM_FROM_MASK(scale_region->alignment);
-
-    if (ELEM(align, RGN_ALIGN_TOP, RGN_ALIGN_BOTTOM)) {
-      ARegion *region = scale_region->prev;
-      dist = region->winy + scale_region->winy - U.pixelsize;
-    }
-    else /* if (ELEM(align, RGN_ALIGN_LEFT, RGN_ALIGN_RIGHT)) */ {
-      ARegion *region = scale_region->prev;
-      dist = region->winx + scale_region->winx - U.pixelsize;
-    }
-  }
-  else {
-    if (ELEM(edge, AE_RIGHT_TO_TOPLEFT, AE_LEFT_TO_TOPRIGHT)) {
-      dist = BLI_rcti_size_x(&area->totrct);
-    }
-    else { /* AE_BOTTOM_TO_TOPLEFT, AE_TOP_TO_BOTTOMRIGHT */
-      dist = BLI_rcti_size_y(&area->totrct);
-    }
-
-    /* Subtract the width of regions on opposite side
-     * prevents dragging regions into other opposite regions. */
-    LISTBASE_FOREACH (ARegion *, region, &area->regionbase) {
-      if (region == scale_region) {
-        continue;
-      }
-
-      if (scale_region->alignment == RGN_ALIGN_LEFT && region->alignment == RGN_ALIGN_RIGHT) {
-        dist -= region->winx;
-      }
-      else if (scale_region->alignment == RGN_ALIGN_RIGHT && region->alignment == RGN_ALIGN_LEFT) {
-        dist -= region->winx;
-      }
-      else if (scale_region->alignment == RGN_ALIGN_TOP &&
-               (region->alignment == RGN_ALIGN_BOTTOM || ELEM(region->regiontype,
-                                                              RGN_TYPE_HEADER,
-                                                              RGN_TYPE_TOOL_HEADER,
-                                                              RGN_TYPE_FOOTER,
-                                                              RGN_TYPE_ASSET_SHELF_HEADER)))
-      {
-        dist -= region->winy;
-      }
-      else if (scale_region->alignment == RGN_ALIGN_BOTTOM &&
-               (region->alignment == RGN_ALIGN_TOP || ELEM(region->regiontype,
-                                                           RGN_TYPE_HEADER,
-                                                           RGN_TYPE_TOOL_HEADER,
-                                                           RGN_TYPE_FOOTER,
-                                                           RGN_TYPE_ASSET_SHELF_HEADER)))
-      {
-        dist -= region->winy;
-      }
-    }
-  }
-
-  dist /= UI_SCALE_FAC;
-  return dist;
-}
-
 static bool is_split_edge(const int alignment, const AZEdge edge)
 {
   return ((alignment == RGN_ALIGN_BOTTOM) && (edge == AE_TOP_TO_BOTTOMRIGHT)) ||
@@ -2977,7 +2914,7 @@ static wmOperatorStatus region_scale_invoke(bContext *C, wmOperator *op, const w
     rmd->area = sad->sa1;
     rmd->edge = az->edge;
     copy_v2_v2_int(rmd->orig_xy, event->xy);
-    rmd->maxsize = area_max_regionsize(rmd->area, rmd->region, rmd->edge);
+    rmd->maxsize = ED_area_max_regionsize(rmd->area, rmd->region, rmd->edge);
 
     /* if not set we do now, otherwise it uses type */
     if (rmd->region->sizex == 0) {
@@ -3848,10 +3785,10 @@ static void area_join_draw_cb(const wmWindow *win, void *userdata)
     sd->screen->do_refresh = true;
   }
 
-  if (sd->sa1 == sd->sa2) {
+  if (sd->sa1 == sd->sa2 && sd->split_fac > 0.0f) {
     screen_draw_split_preview(sd->sa1, sd->split_dir, sd->split_fac);
   }
-  else {
+  else if (sd->sa2 && sd->dir != SCREEN_DIR_NONE) {
     screen_draw_join_highlight(win, sd->sa1, sd->sa2, sd->dir, factor);
   }
 }
@@ -4455,7 +4392,7 @@ static void area_join_update_data(bContext *C, sAreaJoinData *jd, const wmEvent 
   }
 
   if (jd->sa1 == area) {
-    const int drag_threshold = 30 * UI_SCALE_FAC;
+    const int drag_threshold = 20 * UI_SCALE_FAC;
     jd->sa2 = area;
     if (!(abs(jd->start_x - event->xy[0]) > drag_threshold ||
           abs(jd->start_y - event->xy[1]) > drag_threshold))
@@ -4486,6 +4423,73 @@ static void area_join_cancel(bContext *C, wmOperator *op)
   WM_event_add_notifier(C, NC_WINDOW, nullptr);
   WM_cursor_set(CTX_wm_window(C), WM_CURSOR_DEFAULT);
   area_join_exit(C, op);
+}
+
+static void screen_area_touch_menu_create(bContext *C, ScrArea *area)
+{
+  uiPopupMenu *pup = UI_popup_menu_begin(C, "Area Options", ICON_NONE);
+  uiLayout *layout = UI_popup_menu_layout(pup);
+  layout->operator_context_set(blender::wm::OpCallContext::InvokeDefault);
+
+  PointerRNA ptr = layout->op("SCREEN_OT_area_split",
+                              IFACE_("Horizontal Split"),
+                              ICON_SPLIT_HORIZONTAL,
+                              blender::wm::OpCallContext::ExecDefault,
+                              UI_ITEM_NONE);
+  RNA_enum_set(&ptr, "direction", SCREEN_AXIS_H);
+  RNA_float_set(&ptr, "factor", 0.49999f);
+  blender::int2 pos = {area->totrct.xmin + area->winx / 2, area->totrct.ymin + area->winy / 2};
+  RNA_int_set_array(&ptr, "cursor", pos);
+
+  ptr = layout->op("SCREEN_OT_area_split",
+                   IFACE_("Vertical Split"),
+                   ICON_SPLIT_VERTICAL,
+                   blender::wm::OpCallContext::ExecDefault,
+                   UI_ITEM_NONE);
+  RNA_enum_set(&ptr, "direction", SCREEN_AXIS_V);
+  RNA_float_set(&ptr, "factor", 0.49999f);
+  RNA_int_set_array(&ptr, "cursor", pos);
+
+  layout->separator();
+
+  layout->op("SCREEN_OT_area_join", IFACE_("Move/Join/Dock Area"), ICON_AREA_DOCK);
+
+  layout->separator();
+
+  layout->op("SCREEN_OT_screen_full_area",
+             area->full ? IFACE_("Restore Areas") : IFACE_("Maximize Area"),
+             ICON_NONE);
+
+  ptr = layout->op("SCREEN_OT_screen_full_area", IFACE_("Focus Mode"), ICON_NONE);
+  RNA_boolean_set(&ptr, "use_hide_panels", true);
+
+  layout->op("SCREEN_OT_area_dupli", std::nullopt, ICON_NONE);
+  layout->separator();
+  layout->op("SCREEN_OT_area_close", IFACE_("Close Area"), ICON_X);
+
+  UI_popup_menu_end(C, pup);
+}
+
+static bool is_header_azone_location(ScrArea *area, const wmEvent *event)
+{
+  if (event->xy[0] > (area->totrct.xmin + UI_HEADER_OFFSET)) {
+    return false;
+  }
+
+  ARegion *header = BKE_area_find_region_type(area, RGN_TYPE_HEADER);
+  if (!header || header->flag & RGN_FLAG_HIDDEN) {
+    return false;
+  }
+
+  const int height = ED_area_headersize();
+  if (header->alignment == RGN_ALIGN_TOP && event->xy[1] > (area->totrct.ymax - height)) {
+    return true;
+  }
+  if (header->alignment == RGN_ALIGN_BOTTOM && event->xy[1] < (area->totrct.ymin + height)) {
+    return true;
+  }
+
+  return false;
 }
 
 /* modal callback while selecting area (space) that will be removed */
@@ -4550,6 +4554,13 @@ static wmOperatorStatus area_join_modal(bContext *C, wmOperator *op, const wmEve
         area_join_dock_cb_window(jd, op);
         ED_area_tag_redraw(jd->sa1);
         ED_area_tag_redraw(jd->sa2);
+        if (jd->dir == SCREEN_DIR_NONE && jd->dock_target == AreaDockTarget::None &&
+            jd->split_fac == 0.0f && is_header_azone_location(jd->sa1, event))
+        {
+          screen_area_touch_menu_create(C, jd->sa1);
+          area_join_cancel(C, op);
+          return OPERATOR_CANCELLED;
+        }
         if (jd->sa1 && !jd->sa2) {
           /* Break out into new window if we are really outside the source window bounds. */
           if (event->xy[0] < 0 || event->xy[0] > jd->win1->sizex || event->xy[1] < 1 ||
