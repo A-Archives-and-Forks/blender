@@ -60,51 +60,6 @@ bool OIIOImageLoader::load_metadata(ImageMetaData &metadata)
   return metadata.load_metadata(get_filepath());
 }
 
-template<TypeDesc::BASETYPE FileFormat, typename StorageType>
-static bool oiio_load_pixels_full(const ImageMetaData &metadata,
-                                  const unique_ptr<ImageInput> &in,
-                                  StorageType *pixels)
-{
-  const int64_t width = metadata.width;
-  const int64_t height = metadata.height;
-  const int channels = metadata.channels;
-  const int64_t num_pixels = width * height;
-
-  /* Read pixels through OpenImageIO. */
-  StorageType *readpixels = pixels;
-  vector<StorageType> tmppixels;
-  if (channels > 4) {
-    tmppixels.resize(num_pixels * channels);
-    readpixels = &tmppixels[0];
-  }
-
-  const int64_t scanlinesize = width * channels * sizeof(StorageType);
-  if (!in->read_image(0,
-                      0,
-                      0,
-                      channels,
-                      FileFormat,
-                      (uchar *)readpixels + (height - 1) * scanlinesize,
-                      AutoStride,
-                      -scanlinesize,
-                      AutoStride))
-  {
-    return false;
-  }
-
-  if (channels > 4) {
-    for (int64_t i = num_pixels - 1, pixel = 0; pixel < num_pixels; pixel++, i--) {
-      pixels[i * 4 + 3] = tmppixels[i * channels + 3];
-      pixels[i * 4 + 2] = tmppixels[i * channels + 2];
-      pixels[i * 4 + 1] = tmppixels[i * channels + 1];
-      pixels[i * 4 + 0] = tmppixels[i * channels + 0];
-    }
-    tmppixels.clear();
-  }
-
-  return true;
-}
-
 bool OIIOImageLoader::load_pixels_full(const ImageMetaData &metadata, uint8_t *pixels)
 {
   if (!metadata.load_pixels(get_filepath(), pixels)) {
