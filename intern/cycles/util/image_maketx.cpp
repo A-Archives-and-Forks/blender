@@ -707,7 +707,7 @@ static bool make_tx(const string &filepath,
   spec.height = metadata.height;
   spec.depth = 0;
   spec.nchannels = metadata.is_rgba() ? 4 : 1;
-  spec.set_format(TypeFloat);
+  spec.set_format(out_format);
   spec.tile_width = 64;
   spec.tile_height = 64;
   spec.tile_depth = 1;
@@ -775,9 +775,6 @@ static bool make_tx(const string &filepath,
     spec.erase_attribute("openexr:levelmode");
   }
 
-  /* Load float image buffer and conform to Cycles conventions. */
-  metadata.make_float();
-
   OIIO::ImageBuf buf(spec, OIIO::InitializePixels::No);
   std::time_t in_time = OIIO::Filesystem::last_write_time(filepath);
 
@@ -787,6 +784,15 @@ static bool make_tx(const string &filepath,
   }
 
   metadata.conform_pixels(buf.localpixels());
+
+  /* Convert to float only after conforming, so it matches the regular image
+   * loading code path exactly. */
+  if (buf.spec().format != TypeFloat) {
+    spec.set_format(TypeFloat);
+    OIIO::ImageBuf float_buf(spec, OIIO::InitializePixels::No);
+    OIIO::ImageBufAlgo::copy(float_buf, buf, TypeFloat);
+    buf = std::move(float_buf);
+  }
 
   /* Write date and time from input file. */
   buf.specmod().attribute("DateTime", datestring(in_time));
