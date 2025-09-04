@@ -56,6 +56,7 @@ bool BlenderImageLoader::load_metadata(ImageMetaData &metadata)
       metadata.width = ibuf->x;
       metadata.height = ibuf->y;
       metadata.channels = (is_float) ? ibuf->channels : 4;
+      metadata.associate_alpha = !is_float;
     }
     else {
       metadata.width = 0;
