@@ -633,7 +633,6 @@ const std::string &ColorSpaceManager::get_xyz_to_scene_linear_rgb_string()
     /* TODO: Verify this results in the same hash across platforms. */
     const Transform xyz_to_rgb = get_xyz_to_scene_linear_rgb();
     cache_xyz_to_scene_linear_hash = string_printf(
-        "xyz_to_scene_linear_rgb: "
         "%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g_%.4g",
         xyz_to_rgb.x.x,
         xyz_to_rgb.x.y,
